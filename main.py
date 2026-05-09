@@ -143,14 +143,12 @@ class OppVerzoek(BaseModel):
     naam: str = ""
     groep: str = ""
     ondersteuningsbehoefte: str = ""
-    leerling_id: Optional[str] = None 
 
 class HandelingsplanVerzoek(BaseModel):
     notities: str
     naam: str = ""
     groep: str = ""
     ondersteuningsbehoefte: str = ""
-    leerling_id: Optional[str] = None 
 
 class OudergesprekVerzoek(BaseModel):
     notities: str
@@ -345,6 +343,199 @@ def _veilig_json_parse(tekst: str) -> dict:
     return json.loads(schoon)
 
 # ══════════════════════════════════════════════════════════
+# PSEUDONIMISERING — AVG-vriendelijk
+# ══════════════════════════════════════════════════════════
+
+def pseudonimiseer(tekst: str, naam: str) -> tuple[str, dict]:
+    """
+    Vervangt de naam van de leerling door [LEERLING] in de tekst.
+    Geeft de geanonimiseerde tekst terug plus een mapping om later te herstellen.
+    Werkt ook als de naam in verschillende vormen voorkomt (hoofdletter, kleine letter).
+    """
+    if not naam or not naam.strip():
+        return tekst, {}
+
+    mapping = {}
+    placeholder = "[LEERLING]"
+
+    # Vervang de naam in alle varianten
+    import re
+    naam_schoon = naam.strip()
+
+    # Voornaam alleen
+    varianten = [naam_schoon]
+
+    # Verander ook kleine letters variant
+    if naam_schoon[0].isupper():
+        varianten.append(naam_schoon[0].lower() + naam_schoon[1:])
+
+    mapping[placeholder] = naam_schoon
+
+    geanon = tekst
+    for variant in varianten:
+        # Vervang hele woorden alleen (geen gedeeltelijke matches)
+        geanon = re.sub(r'\b' + re.escape(variant) + r'\b', placeholder, geanon)
+
+    return geanon, mapping
+
+def herstel_pseudoniem(tekst: str, mapping: dict) -> str:
+    """Zet de echte naam terug in de gegenereerde tekst."""
+    if not mapping:
+        return tekst
+    for placeholder, echte_naam in mapping.items():
+        tekst = tekst.replace(placeholder, echte_naam)
+    return tekst
+
+# ══════════════════════════════════════════════════════════
+# PRIVACY — DRIEDUBBELE CONTROLE
+# ══════════════════════════════════════════════════════════
+
+import re as _re
+import logging as _logging
+
+_privacy_log = _logging.getLogger("privacy-audit")
+
+# ── Laag 1: Pseudonimisering (al gebouwd in pseudonimiseer()) ──
+
+# ── Laag 2: NER — detecteer onbekende namen ───────────────────
+try:
+    import spacy as _spacy
+    _nlp = _spacy.load("nl_core_news_sm")
+    _NER_BESCHIKBAAR = True
+    _privacy_log.info("NER model geladen: nl_core_news_sm")
+except Exception:
+    _nlp = None
+    _NER_BESCHIKBAAR = False
+    _privacy_log.warning("NER model niet beschikbaar. Installeer met: python -m spacy download nl_core_news_sm")
+
+def _ner_scan(tekst: str) -> str:
+    """
+    Laag 2: Detecteer namen via NER die niet al vervangen zijn door laag 1.
+    Vervangt gevonden persoonsnamen door [PERSOON].
+    """
+    if not _NER_BESCHIKBAAR or not _nlp:
+        return tekst
+    try:
+        doc = _nlp(tekst)
+        vervangen = tekst
+        # Verwerk van achteren naar voren zodat indices kloppen
+        entiteiten = [(ent.start_char, ent.end_char, ent.label_)
+                      for ent in doc.ents
+                      if ent.label_ in ("PER", "PERSON")]
+        for start, end, label in sorted(entiteiten, reverse=True):
+            naam_gevonden = tekst[start:end]
+            _privacy_log.warning(
+                f"NER laag 2: persoonsnaam gevonden en vervangen: '{naam_gevonden}'"
+            )
+            vervangen = vervangen[:start] + "[PERSOON]" + vervangen[end:]
+        return vervangen
+    except Exception as e:
+        _privacy_log.error(f"NER scan fout: {e}")
+        return tekst
+
+# ── Laag 3: Patroon-blokker ───────────────────────────────────
+
+# Patronen die op namen kunnen wijzen in Nederlandse schoolcontext
+_NAAM_PATRONEN = [
+    # Naam na "heet", "is", "van" etc gevolgd door hoofdletter woord
+    r'(?:heet|genaamd|leerling)\s+([A-Z][a-z]{2,})',
+    # Initialen met punt: J. of J.K.
+    r'[A-Z]\.[A-Z]?\.',
+    # Typische Nederlandse namen die niet vervangen zijn
+    # (Dit patroon vangt losse hoofdletter-woorden die geen zin starten)
+    r'(?<![.!?]\s)(?<![\n])\b([A-Z][a-z]{2,})\b(?!\s*:)',
+]
+
+_TOEGESTANE_WOORDEN = {
+    # Woorden die met hoofdletter beginnen maar geen namen zijn
+    "CITO", "OPP", "IB", "RT", "Lezen", "Rekenen", "Spelling",
+    "Begrijpend", "Sociaal", "Werkhouding", "Groep", "School",
+    "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag",
+    "Januari", "Februari", "Maart", "April", "Mei", "Juni",
+    "Juli", "Augustus", "September", "Oktober", "November", "December",
+    "Nederland", "Nederlands", "Het", "De", "Een", "In", "Op", "Aan",
+    "Met", "Van", "Voor", "Naar", "Als", "Dit", "Dat", "Hij", "Zij",
+    "Ze", "We", "Wij", "Er", "Zijn", "Haar", "Hem", "Hun",
+    "LEERLING", "PERSOON",  # onze eigen placeholders
+}
+
+def _patroon_check(tekst: str) -> tuple[str, list[str]]:
+    """
+    Laag 3: Scan op verdachte patronen die op namen kunnen wijzen.
+    Geeft de (mogelijk aangepaste) tekst terug plus een lijst waarschuwingen.
+    """
+    waarschuwingen = []
+    schoon = tekst
+
+    # Controleer op niet-vervangen hoofdletter-woorden die op namen lijken
+    # (minimaal 3 tekens, niet in de toegestane lijst, niet na [)
+    verdachte = _re.findall(r'(?<!\[)\b([A-Z][a-z]{2,})\b', schoon)
+    for woord in verdachte:
+        if woord not in _TOEGESTANE_WOORDEN:
+            waarschuwingen.append(f"Verdacht woord gevonden: '{woord}'")
+            _privacy_log.warning(f"Patroon laag 3: verdacht woord '{woord}' in prompt")
+            # Vervang ook dit als voorzorgsmaatregel
+            schoon = _re.sub(r'\b' + _re.escape(woord) + r'\b', '[NAAM?]', schoon)
+
+    return schoon, waarschuwingen
+
+# ── Hoofd-privacyfunctie: alle drie lagen ─────────────────────
+
+def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[str, dict]:
+    """
+    Voert alle drie privacylagen uit op de tekst.
+
+    Laag 1: Pseudonimisering van de bekende naam
+    Laag 2: NER-scan voor onbekende namen
+    Laag 3: Patrooncheck voor verdachte woorden
+
+    Bij strict=True wordt een HTTPException gegooid als er na alle
+    lagen nog verdachte woorden overblijven.
+
+    Geeft de gefilterde tekst terug plus de naam-mapping voor herstel.
+    """
+    audit = {
+        "origineel_lengte": len(tekst),
+        "naam_opgegeven": bool(naam),
+        "ner_beschikbaar": _NER_BESCHIKBAAR,
+        "waarschuwingen": [],
+    }
+
+    # Laag 1: Pseudonimiseer bekende naam
+    stap1, naam_mapping = pseudonimiseer(tekst, naam)
+    if tekst != stap1:
+        audit["waarschuwingen"].append(f"Laag 1: naam '{naam}' vervangen door [LEERLING]")
+
+    # Laag 2: NER-scan
+    stap2 = _ner_scan(stap1)
+    if stap1 != stap2:
+        audit["waarschuwingen"].append("Laag 2: NER detecteerde extra persoonsgegevens")
+
+    # Laag 3: Patrooncheck
+    stap3, patroon_warnings = _patroon_check(stap2)
+    audit["waarschuwingen"].extend(patroon_warnings)
+
+    # Audit log
+    if audit["waarschuwingen"]:
+        _privacy_log.warning(
+            f"Privacy audit: {len(audit['waarschuwingen'])} waarschuwing(en) — "
+            + ", ".join(audit["waarschuwingen"])
+        )
+    else:
+        _privacy_log.info("Privacy audit: schoon — geen persoonsgegevens gedetecteerd")
+
+    if strict and patroon_warnings:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Privacyfilter: mogelijke persoonsgegevens gevonden na alle controles. "
+                "Verwijder namen uit de notities en probeer opnieuw."
+            )
+        )
+
+    return stap3, naam_mapping
+
+# ══════════════════════════════════════════════════════════
 # STATISCHE BESTANDEN
 # ══════════════════════════════════════════════════════════
 
@@ -393,13 +584,22 @@ async def analyseer(verzoek: PromptVerzoek):
     if len(verzoek.prompt.strip()) < 20:
         raise HTTPException(status_code=400, detail="Notities te kort (minimaal 20 tekens).")
 
+    # Privacy driedubbele controle — Laag 1+2+3
+    import re as _re2
+    naam_in_prompt = ""
+    naam_match = _re2.search(r'Leerling:\s*([^,\.\n]+)', verzoek.prompt)
+    if naam_match:
+        naam_in_prompt = naam_match.group(1).strip()
+    prompt_anon, naam_mapping = privacy_filter(verzoek.prompt, naam_in_prompt)
+
     async def stream():
+        volledig_buffer = []
         try:
             async with httpx.AsyncClient(timeout=90) as client:
                 async with client.stream(
                     "POST", ANTHROPIC_URL,
                     headers=_anthropic_headers(),
-                    json=_claude_body(SYSTEM_PROMPT, verzoek.prompt, 1800, stream=True),
+                    json=_claude_body(SYSTEM_PROMPT, prompt_anon, 1800, stream=True),
                 ) as res:
                     if res.status_code == 401:
                         yield json.dumps({"error": "Ongeldige API-sleutel."})
@@ -420,7 +620,10 @@ async def analyseer(verzoek: PromptVerzoek):
                                 if evt.get("type") == "content_block_delta":
                                     tekst = evt["delta"].get("text", "")
                                     if tekst:
-                                        yield tekst
+                                        volledig_buffer.append(tekst)
+                                        # Herstel naam in elk chunk dat [LEERLING] bevat
+                                        tekst_herstel = herstel_pseudoniem(tekst, naam_mapping)
+                                        yield tekst_herstel
                             except (json.JSONDecodeError, KeyError):
                                 pass
         except httpx.TimeoutException:
@@ -580,93 +783,28 @@ async def verwijder_rapport(
     )
     return {"verwijderd": True}
 
-LVS_DOMEIN_LABELS = {
-    "lezen":"Lezen","rekenen":"Rekenen","spelling":"Spelling",
-    "begrijpend":"Begrijpend lezen","sociaal":"Sociaal-emotioneel","werkhouding":"Werkhouding"
-}
-
-async def haal_leerling_context_op(leerling_id: str, token: str, user_id: str) -> str:
-    context_delen = []
-
-    # LVS scores + trend
-    try:
-        lvs = await supabase_get("lvs_profielen", token,
-            {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user_id}",
-             "select": "scores,vorige_scores,tijdlijn"})
-        if lvs:
-            scores = lvs[0].get("scores", {})
-            vorige = lvs[0].get("vorige_scores", {})
-            tijdlijn = lvs[0].get("tijdlijn", [])
-            regels = []
-            for k, label in LVS_DOMEIN_LABELS.items():
-                h = scores.get(k)
-                if h is not None:
-                    niveau = "goed" if h >= 75 else "aandacht" if h >= 60 else "risico"
-                    v = vorige.get(k)
-                    trend = f" (trend: {h-v:+d})" if v is not None and v != h else ""
-                    regels.append(f"  - {label}: {h}/100 — {niveau}{trend}")
-            if regels:
-                context_delen.append("LVS-SCORES:\n" + "\n".join(regels))
-            notities = [i for i in tijdlijn if i.get("type") != "rapport"][:5]
-            if notities:
-                context_delen.append("LVS-NOTITIES:\n" + "\n".join(
-                    f"  [{i.get('datum','')}] {i.get('type','').upper()}: {i.get('tekst','')}"
-                    for i in notities))
-    except Exception as e:
-        logger.warning(f"LVS context mislukt: {e}")
-
-    # Laatste 3 rapporten
-    try:
-        rapporten = await supabase_get("rapporten", token,
-            {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user_id}",
-             "order": "aangemaakt_op.desc", "limit": "3",
-             "select": "aangemaakt_op,rapport_data"})
-        if rapporten:
-            teksten = []
-            for r in rapporten:
-                datum = r.get("aangemaakt_op", "")[:10]
-                d = r.get("rapport_data", {})
-                s = []
-                if d.get("rapportcommentaar"): s.append(f"Rapport: {str(d['rapportcommentaar'])[:300]}")
-                if d.get("ondersteuning"):     s.append(f"Ondersteuning: {str(d['ondersteuning'])[:200]}")
-                if s: teksten.append(f"  [{datum}]\n  " + "\n  ".join(s))
-            if teksten:
-                context_delen.append("EERDERE RAPPORTEN:\n" + "\n\n".join(teksten))
-    except Exception as e:
-        logger.warning(f"Rapporten context mislukt: {e}")
-
-    if not context_delen:
-        return ""
-    return "\n\n--- CONTEXT UIT LEERLINGDOSSIER ---\n\n" + "\n\n".join(context_delen) + "\n\n--- EINDE CONTEXT ---"
-
 # ══════════════════════════════════════════════════════════
 # OPP
 # ══════════════════════════════════════════════════════════
 
 @app.post("/opp")
-async def opp(
-    verzoek: OppVerzoek,
-    user=Depends(get_user),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    token = credentials.credentials
+async def opp(verzoek: OppVerzoek, user=Depends(get_user)):
     if not verzoek.notities or len(verzoek.notities.strip()) < 20:
         raise HTTPException(status_code=400, detail="Notities moeten minimaal 20 tekens bevatten.")
+
+    # Privacy driedubbele controle — Laag 1+2+3
+    notities_anon, naam_mapping = privacy_filter(verzoek.notities, verzoek.naam)
 
     parts = []
     if verzoek.naam:
         groep_tekst = f", groep {verzoek.groep}" if verzoek.groep else ""
-        parts.append(f"Leerling: {verzoek.naam}{groep_tekst}.")
+        parts.append(f"Leerling: [LEERLING]{groep_tekst}.")
     if verzoek.ondersteuningsbehoefte:
         parts.append(f"Ondersteuningsbehoefte: {verzoek.ondersteuningsbehoefte}.")
-    parts.append(f'Notities van de leerkracht:\n"{verzoek.notities}"')
+    parts.append(f'Notities van de leerkracht:\n"{notities_anon}"')
 
-    if verzoek.leerling_id:
-        context = await haal_leerling_context_op(verzoek.leerling_id, token, user["id"])
-        if context:
-            parts.append(context)
-    
     tekst = await roep_claude_aan(OPP_PROMPT, "\n".join(parts), max_tokens=2500)
+    tekst = herstel_pseudoniem(tekst, naam_mapping)
 
     try:
         parsed = _veilig_json_parse(tekst)
@@ -680,32 +818,24 @@ async def opp(
 # ══════════════════════════════════════════════════════════
 
 @app.post("/handelingsplan")
-async def handelingsplan(
-    verzoek: HandelingsplanVerzoek,
-    user=Depends(get_user),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    token = credentials.credentials
+async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user)):
     if not verzoek.ondersteuningsbehoefte:
         raise HTTPException(status_code=400, detail="Ondersteuningsbehoefte is verplicht voor een handelingsplan.")
     if not verzoek.notities or len(verzoek.notities.strip()) < 10:
         raise HTTPException(status_code=400, detail="Notities moeten minimaal 10 tekens bevatten.")
 
+    # Privacy driedubbele controle — Laag 1+2+3
+    notities_anon, naam_mapping = privacy_filter(verzoek.notities, verzoek.naam)
+
     parts = []
     if verzoek.naam:
         groep_tekst = f", groep {verzoek.groep}" if verzoek.groep else ""
-        parts.append(f"Leerling: {verzoek.naam}{groep_tekst}.")
+        parts.append(f"Leerling: [LEERLING]{groep_tekst}.")
     parts.append(f"Ondersteuningsbehoefte: {verzoek.ondersteuningsbehoefte}.")
-    parts.append(f'Notities van de leerkracht:\n"{verzoek.notities}"')
-   
-    if verzoek.leerling_id:
-        context = await haal_leerling_context_op(verzoek.leerling_id, token, user["id"])
-        if context:
-            parts.append(context)
-
-    tekst = await roep_claude_aan(...)
+    parts.append(f'Notities van de leerkracht:\n"{notities_anon}"')
 
     tekst = await roep_claude_aan(HANDELINGSPLAN_PROMPT, "\n".join(parts), max_tokens=2500)
+    tekst = herstel_pseudoniem(tekst, naam_mapping)
 
     try:
         parsed = _veilig_json_parse(tekst)
@@ -723,14 +853,18 @@ async def oudergesprek(verzoek: OudergesprekVerzoek, user=Depends(get_user)):
     if not verzoek.notities or len(verzoek.notities.strip()) < 20:
         raise HTTPException(status_code=400, detail="Aantekeningen moeten minimaal 20 tekens bevatten.")
 
+    # Privacy driedubbele controle — Laag 1+2+3
+    notities_anon, naam_mapping = privacy_filter(verzoek.notities, verzoek.naam)
+
     parts = []
     if verzoek.naam:
         groep_tekst = f", groep {verzoek.groep}" if verzoek.groep else ""
         datum_tekst = f", gesprek op {verzoek.datum}" if verzoek.datum else ""
-        parts.append(f"Leerling: {verzoek.naam}{groep_tekst}{datum_tekst}.")
-    parts.append(f'Aantekeningen van de leerkracht:\n"{verzoek.notities}"')
+        parts.append(f"Leerling: [LEERLING]{groep_tekst}{datum_tekst}.")
+    parts.append(f'Aantekeningen van de leerkracht:\n"{notities_anon}"')
 
     tekst = await roep_claude_aan(OUDERGESPREK_PROMPT, "\n".join(parts), max_tokens=2000)
+    tekst = herstel_pseudoniem(tekst, naam_mapping)
 
     try:
         parsed = _veilig_json_parse(tekst)
