@@ -479,7 +479,53 @@ def _patroon_check(tekst: str) -> tuple[str, list[str]]:
 
     return schoon, waarschuwingen
 
-# ── Hoofd-privacyfunctie: alle drie lagen ─────────────────────
+# ── Laag 4: Extra naamscan — tweede NER pass ──────────────────
+
+def _extra_naamscan(tekst: str, originele_naam: str) -> str:
+    """
+    Laag 4: Een tweede, strengere scan specifiek gericht op de naam
+    van de leerling en mogelijke varianten die door lagen 1-3 zijn gemist.
+    Vervangt gevonden varianten door [LEERLING].
+    """
+    if not originele_naam or not originele_naam.strip():
+        return tekst
+
+    import re as _re4
+    naam_schoon = originele_naam.strip()
+    resultaat = tekst
+
+    # Scan op de naam zelf en veelvoorkomende varianten
+    varianten = set()
+    varianten.add(naam_schoon)                          # Origineel: Emma
+    varianten.add(naam_schoon.lower())                  # Kleine letters: emma
+    varianten.add(naam_schoon.upper())                  # Hoofdletters: EMMA
+    varianten.add(naam_schoon.capitalize())             # Eerste hoofdletter: Emma
+
+    # Verkorte versies (bijv. "Em" voor "Emma")
+    if len(naam_schoon) > 4:
+        varianten.add(naam_schoon[:3])                  # Eerste 3 letters
+        varianten.add(naam_schoon[:3].lower())
+
+    # Spaties of koppeltekens in naam (bijv. "Jan-Willem" → ook "Jan")
+    if '-' in naam_schoon or ' ' in naam_schoon:
+        for deel in _re4.split(r'[\s-]', naam_schoon):
+            if len(deel) > 2:
+                varianten.add(deel)
+                varianten.add(deel.lower())
+
+    for variant in varianten:
+        if len(variant) < 2:
+            continue
+        patroon = r'\b' + _re4.escape(variant) + r'\b'
+        if _re4.search(patroon, resultaat, _re4.IGNORECASE):
+            _privacy_log.warning(
+                f"Laag 4: naamvariant '{variant}' gevonden en vervangen door [LEERLING]"
+            )
+            resultaat = _re4.sub(patroon, '[LEERLING]', resultaat, flags=_re4.IGNORECASE)
+
+    return resultaat
+
+# ── Hoofd-privacyfunctie: alle vier lagen ─────────────────────
 
 def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[str, dict]:
     """
@@ -524,16 +570,37 @@ def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[st
     else:
         _privacy_log.info("Privacy audit: schoon — geen persoonsgegevens gedetecteerd")
 
-    if strict and patroon_warnings:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "Privacyfilter: mogelijke persoonsgegevens gevonden na alle controles. "
-                "Verwijder namen uit de notities en probeer opnieuw."
-            )
+    # Laag 4: Automatische blokkering
+    if patroon_warnings:
+        verdachte_woorden = [
+            w.replace("Verdacht woord gevonden: ", "").strip("'")
+            for w in patroon_warnings
+        ]
+        foutmelding = (
+            f"Privacycheck geblokkeerd: mogelijk staan er nog namen in de notities "
+            f"die niet herkend zijn als de naam van de leerling. "
+            f"Controleer de volgende woorden: {', '.join(verdachte_woorden[:5])}. "
+            f"Verwijder namen van andere personen (klasgenoten, ouders) uit de notities "
+            f"en probeer opnieuw."
         )
+        _privacy_log.error(
+            f"LAAG 4 GEBLOKKEERD: aanroep naar Anthropic geweigerd. "
+            f"Verdachte woorden: {verdachte_woorden}"
+        )
+        raise HTTPException(status_code=422, detail=foutmelding)
 
-    return stap3, naam_mapping
+
+    # ── Laag 4: Extra naamscan — tweede pass op naamvarianten ──
+    stap4 = _extra_naamscan(stap3, naam)
+    if stap3 != stap4:
+        audit["waarschuwingen"].append("Laag 4: extra naamscan vond en verving naamvarianten")
+
+    _privacy_log.info(
+        f"Privacy audit voltooid: {len(audit['waarschuwingen'])} waarschuwing(en). "
+        f"Alle 4 lagen doorlopen."
+    )
+
+    return stap4, naam_mapping
 
 # ══════════════════════════════════════════════════════════
 # STATISCHE BESTANDEN
