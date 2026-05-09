@@ -1010,8 +1010,22 @@ function toonTab(tab, knop) {
             <input class="lvs-score-input" type="number" id="lvs-s-rekenen" placeholder="Rekenen" min="0" max="100">
             <input class="lvs-score-input" type="number" id="lvs-s-spelling" placeholder="Spelling" min="0" max="100">
             <input class="lvs-score-input" type="number" id="lvs-s-begrijpend" placeholder="Begrijpend" min="0" max="100">
-            <input class="lvs-score-input" type="number" id="lvs-s-sociaal" placeholder="Sociaal" min="0" max="100">
-            <input class="lvs-score-input" type="number" id="lvs-s-werkhouding" placeholder="Werkhouding" min="0" max="100">
+            <select class="lvs-score-input" id="lvs-s-sociaal" title="Sociaal">
+              <option value="">Sociaal…</option>
+              <option value="95">Uitstekend</option>
+              <option value="80">Goed</option>
+              <option value="60">Voldoende</option>
+              <option value="40">Matig</option>
+              <option value="20">Onvoldoende</option>
+            </select>
+            <select class="lvs-score-input" id="lvs-s-werkhouding" title="Werkhouding">
+              <option value="">Werkhouding…</option>
+              <option value="95">Uitstekend</option>
+              <option value="80">Goed</option>
+              <option value="60">Voldoende</option>
+              <option value="40">Matig</option>
+              <option value="20">Onvoldoende</option>
+            </select>
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px">
@@ -1195,18 +1209,151 @@ async function genereer() {
   }
 }
 
+// ── Score helpers ────────────────────────────────────────────
+const LABEL_MAP = {
+  95: { tekst: 'Uitstekend', kleur: '#0F6E56', bg: '#E1F5EE' },
+  80: { tekst: 'Goed',       kleur: '#0F6E56', bg: '#E1F5EE' },
+  60: { tekst: 'Voldoende',  kleur: '#854F0B', bg: '#FEF3E2' },
+  40: { tekst: 'Matig',      kleur: '#A32D2D', bg: '#FCEBEB' },
+  20: { tekst: 'Onvoldoende',kleur: '#A32D2D', bg: '#FCEBEB' },
+};
+
+// Zet numerieke score om naar CITO-niveau letter
+function scoreNaarCITO(score) {
+  if (score === null || score === undefined) return null;
+  if (score >= 90) return { niveau: 'A', kleur: '#0F6E56', bg: '#E1F5EE', hoogte: 90 };
+  if (score >= 75) return { niveau: 'B', kleur: '#0F6E56', bg: '#E1F5EE', hoogte: 75 };
+  if (score >= 55) return { niveau: 'C', kleur: '#854F0B', bg: '#FEF3E2', hoogte: 55 };
+  if (score >= 35) return { niveau: 'D', kleur: '#BA7517', bg: '#FEF3E2', hoogte: 35 };
+  return                 { niveau: 'E', kleur: '#A32D2D', bg: '#FCEBEB', hoogte: 18 };
+}
+
+// Label (sociaal/werkhouding) op basis van score-waarde
+function scoreNaarLabel(score) {
+  if (!score) return null;
+  const s = parseInt(score);
+  // Zoek dichtstbijzijnde waarde
+  const nrs = Object.keys(LABEL_MAP).map(Number);
+  const dichtstbij = nrs.reduce((a, b) => Math.abs(b - s) < Math.abs(a - s) ? b : a);
+  return LABEL_MAP[dichtstbij];
+}
+
+// Bouw progressie-sectie op basis van LVS-profielen (alle rapporten)
+function bouwProgressieSectie(naam) {
+  // Haal alle opgeslagen rapporten op uit lvsProfielen cache
+  const profielData = lvsHuidig ? lvsProfielen[lvsHuidig.id] : null;
+  const tijdlijn = profielData?.tijdlijn || [];
+
+  // Zoek rapport-items in tijdlijn
+  const rapportItems = tijdlijn.filter(i => i.type === 'rapport').slice(0, 3);
+
+  // Huidige scores
+  const huidigScores = profielData?.scores || {};
+
+  return `
+    <div style="background:var(--warm);border:0.5px solid var(--warmrand);border-radius:11px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--warmrand)">
+        <div style="font-size:10px;font-weight:500;letter-spacing:.06em;color:var(--tz);text-transform:uppercase">Progressie per rapportageperiode</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${LVS_DOMEINEN.map(d => `<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--tm)"><span style="width:8px;height:8px;border-radius:2px;background:${d.kleur};display:inline-block"></span>${d.l}</span>`).join('')}
+        </div>
+      </div>
+      <div style="padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+        ${bouwPeriodeBlok('Rapport 1', rapportItems[2] || null, huidigScores, false)}
+        ${bouwPeriodeBlok('Rapport 2', rapportItems[1] || null, huidigScores, false)}
+        ${bouwPeriodeBlok('Rapport 3 — huidig', null, huidigScores, true)}
+      </div>
+    </div>`;
+}
+
+function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
+  const scores = isHuidig ? huidigScores : (tijdlijnItem?.scores || null);
+  const datum = isHuidig
+    ? new Date().toLocaleDateString('nl-NL', {month:'long', year:'numeric'})
+    : (tijdlijnItem?.datum || null);
+
+  const rand = isHuidig ? 'border:1.5px solid #D4500F' : 'border:0.5px solid var(--warmrand)';
+  const subKleur = isHuidig ? 'color:#D4500F;font-weight:500' : 'color:var(--tz)';
+
+  if (!scores && !isHuidig) {
+    return `<div style="background:#fff;${rand};border-radius:9px;padding:10px 12px;opacity:.5">
+      <div style="font-size:11px;font-weight:500;color:var(--t);margin-bottom:2px">${label}</div>
+      <div style="font-size:10px;color:var(--tz);margin-bottom:10px">Nog niet beschikbaar</div>
+      <div style="height:80px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tz);font-style:italic">—</div>
+    </div>`;
+  }
+
+  const citoVakken = LVS_DOMEINEN.filter(d => d.type === 'cito');
+  const labelVakken = LVS_DOMEINEN.filter(d => d.type === 'label');
+
+  const staven = citoVakken.map(d => {
+    const s = scores ? scores[d.k] : null;
+    const cito = s ? scoreNaarCITO(s) : null;
+    const hoogte = cito ? cito.hoogte * 0.8 : 4;
+    const kleur = cito ? cito.kleur : 'var(--rand)';
+    const niveau = cito ? cito.niveau : '—';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
+      <div style="font-size:9px;font-weight:500;color:${cito ? cito.kleur : 'var(--tz)'}">${niveau}</div>
+      <div style="width:100%;height:${hoogte}px;background:${d.kleur};border-radius:2px 2px 0 0;min-height:3px"></div>
+      <div style="font-size:9px;color:var(--tz);text-align:center">${d.l.slice(0,3)}</div>
+    </div>`;
+  }).join('');
+
+  const badges = labelVakken.map(d => {
+    const s = scores ? scores[d.k] : null;
+    const lbl = s ? scoreNaarLabel(s) : null;
+    return `<div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:10px;color:var(--tz)">${d.l}</span>
+      ${lbl
+        ? `<span style="font-size:10px;font-weight:500;color:${lbl.kleur};background:${lbl.bg};border-radius:4px;padding:1px 7px">${lbl.tekst}</span>`
+        : `<span style="font-size:10px;color:var(--tz)">—</span>`}
+    </div>`;
+  }).join('');
+
+  return `<div style="background:#fff;${rand};border-radius:9px;padding:10px 12px">
+    <div style="font-size:11px;font-weight:500;color:var(--t);margin-bottom:2px">${label}</div>
+    <div style="font-size:10px;${subKleur};margin-bottom:10px">${datum || '—'}</div>
+    <div style="display:flex;align-items:flex-end;gap:3px;height:80px;margin-bottom:8px">${staven}</div>
+    <div style="border-top:0.5px solid var(--warmrand);padding-top:7px;display:flex;flex-direction:column;gap:4px">${badges}</div>
+  </div>`;
+}
+
 function toonResultaten(data, naam, groep) {
   const r = document.getElementById('resultaat');
   r.innerHTML = '';
   const leegEl = document.getElementById('leeg');
   if (leegEl) leegEl.style.display = 'none';
 
-  if (naam) {
-    const nb = document.createElement('div');
-    nb.className = 'naambalk';
-    nb.textContent = naam + (groep ? ` — groep ${groep}` : '');
-    r.appendChild(nb);
-  }
+  // ── Rapport header ─────────────────────────────────────────
+  const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'long',year:'numeric'});
+  const header = document.createElement('div');
+  header.style.cssText = 'background:#fff;border:1px solid var(--warmrand);border-radius:12px;padding:16px 18px;margin-bottom:8px';
+  header.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-family:Georgia,serif;font-size:20px;font-weight:600;color:var(--t);margin-bottom:3px">
+          ${naam || 'Rapport'}${groep ? ' <span style="font-size:14px;font-weight:400;color:var(--tz)">— groep ' + groep + '</span>' : ''}
+        </div>
+        <div style="font-size:11px;color:var(--tz);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>Gegenereerd op ${datum}</span>
+          <span style="display:inline-flex;align-items:center;gap:3px;color:#0F6E56;background:#E1F5EE;border:0.5px solid #9FE1CB;border-radius:5px;padding:2px 7px;font-weight:500">
+            🛡 AVG-gecheckt — naam geanonimiseerd verzonden
+          </span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button onclick="allesKopierenRapport()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
+          📋 Alles kopiëren
+        </button>
+        <button onclick="downloadPDF()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
+          ⬇ PDF
+        </button>
+        ${window._huidigeLeerlingId ? `<button onclick="slaRapportOpVanuitHeader()" style="display:flex;align-items:center;gap:5px;background:var(--gm);border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;white-space:nowrap">
+          💾 Opslaan
+        </button>` : ''}
+      </div>
+    </div>`;
+  r.appendChild(header);
 
   SECTIES.forEach((s, i) => {
     const w = data[s.k];
@@ -1271,6 +1418,11 @@ function toonResultaten(data, naam, groep) {
     </div>
     <div class="pedbody" id="pedbody"><div class="pedwacht">Klik op "Analyseer" voor advies op basis van 5 wetenschappelijke theorieën.</div></div>`;
   r.appendChild(ped);
+
+  // Progressie staafdiagrammen
+  const progEl = document.createElement('div');
+  progEl.innerHTML = bouwProgressieSectie(naam);
+  r.appendChild(progEl.firstElementChild);
 
   // Delen met ouders
   const ouder = document.createElement('div');
@@ -1464,9 +1616,44 @@ function kopieer(id, knop) {
   navigator.clipboard.writeText(t).then(() => { knop.textContent = 'Gekopieerd!'; setTimeout(() => knop.textContent = 'Kopieer', 2000); });
 }
 
+function allesKopierenRapport() {
+  // Kopieer alle tekst van alle kaarten in het rapport
+  const r = document.getElementById('resultaat');
+  const teksten = [];
+  r.querySelectorAll('.kbody, .rtext').forEach(el => {
+    if (el.id && el.textContent.trim()) {
+      teksten.push(el.textContent.trim());
+    }
+  });
+  const alles = teksten.join('\n\n---\n\n');
+  navigator.clipboard.writeText(alles).then(() => {
+    const knop = r.querySelector('button[onclick="allesKopierenRapport()"]');
+    if (knop) { knop.textContent = '✓ Gekopieerd'; setTimeout(() => knop.innerHTML = '📋 Alles kopiëren', 2000); }
+  });
+}
+
+function slaRapportOpVanuitHeader() {
+  // Sla het huidige rapport op via de bestaande slaRapportOp functie
+  const rapportData = huidigeSectieData;
+  if (rapportData && window._huidigeLeerlingId) {
+    slaRapportOp(rapportData);
+    const knop = document.querySelector('button[onclick="slaRapportOpVanuitHeader()"]');
+    if (knop) { knop.textContent = '✓ Opgeslagen'; setTimeout(() => knop.innerHTML = '💾 Opslaan', 2000); }
+  }
+}
+
 function toonFout(msg) {
   const r = document.getElementById('resultaat');
-  if (r) r.innerHTML = `<div class="fout">${msg}</div>`;
+  const isPrivacy = msg && msg.includes('Privacycheck');
+  if (r) r.innerHTML = isPrivacy
+    ? `<div style="background:#E1F5EE;border:1px solid #9FE1CB;border-radius:10px;padding:16px;display:flex;gap:12px;align-items:flex-start">
+        <div style="font-size:22px;flex-shrink:0">🔒</div>
+        <div>
+          <div style="font-size:13px;font-weight:500;color:#0F6E56;margin-bottom:6px">Privacycheck geblokkeerd</div>
+          <div style="font-size:12px;color:#0F6E56;line-height:1.6">${msg.replace('🔒 Privacycheck geblokkeerd: ', '')}</div>
+        </div>
+      </div>`
+    : `<div class="fout">${msg}</div>`;
   const leeg = document.getElementById('leeg');
   if (leeg) leeg.style.display = 'none';
 }
@@ -1551,12 +1738,14 @@ function downloadPDF() {
 
 <script>
 // ── LVS ──────────────────────────────────────────────────
+// type: 'cito' = numerieke score 0-100 + CITO-niveau
+//       'label' = dropdown Uitstekend/Goed/Voldoende/Matig/Onvoldoende
 const LVS_DOMEINEN = [
-  { k:'lezen',      l:'Lezen',       kleur:'#4A9EFF' },
-  { k:'rekenen',    l:'Rekenen',     kleur:'#2ECC8F' },
-  { k:'spelling',   l:'Spelling',    kleur:'#F5C842' },
-  { k:'begrijpend', l:'Begrijpend',  kleur:'#C084FC' },
-  { k:'sociaal',    l:'Sociaal',     kleur:'#FB923C' },
+  { k:'lezen',      l:'Lezen',       kleur:'#4A9EFF', type:'cito'  },
+  { k:'rekenen',    l:'Rekenen',     kleur:'#2ECC8F', type:'cito'  },
+  { k:'spelling',   l:'Spelling',    kleur:'#F5C842', type:'cito'  },
+  { k:'begrijpend', l:'Begrijpend',  kleur:'#C084FC', type:'cito'  },
+  { k:'sociaal',    l:'Sociaal',     kleur:'#FB923C', type:'label' },
   { k:'werkhouding',l:'Werkhouding', kleur:'#D4500F' },
 ];
 
