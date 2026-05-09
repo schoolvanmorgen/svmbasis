@@ -1,0 +1,9 @@
+# Rust/Tauri build output
+src-tauri/target/
+
+# Node modules
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
