@@ -6,38 +6,39 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="School van morgen">
-<meta name="theme-color" content="#1D9E75">
+<meta name="theme-color" content="#333">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon192.png">
 <title>School van morgen — Basisschoolrapportage</title>
 <style>
 :root{
-  --g:#8B3200;--gl:#FEF2E8;--gm:#D4500F;
-  --b:#185FA5;--bl:#EAF2FB;
-  --a:#854F0B;--al:#FEF3E2;
-  --r:#A32D2D;--rl:#FCEBEB;
-  --grijs:#FAF7F2;--wit:#FFFEF9;
-  --t:#2A2825;--tm:#504E49;--tz:#9A9690;--rand:#E2DDD5;
-  --warm:#FDF8F2;--warmrand:#EDE8E0;
+  --g:#000;--gl:#f0f0f0;--gm:#000;
+  --b:#000;--bl:#f0f0f0;
+  --a:#333;--al:#f5f5f5;
+  --r:#000;--rl:#f0f0f0;
+  --grijs:#f8f8f8;--wit:#fff;
+  --t:#000;--tm:#333;--tz:#888;--rand:#ccc;
+  --warm:#f8f8f8;--warmrand:#ddd;
+  --oranje:#000;--donker:#000;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;min-width:0}
 html,body{overflow:hidden;height:100%}body{font-family:'Times New Roman',Times,serif;background:var(--wit);color:var(--t);height:100vh;font-size:15px;line-height:1.6}
 
-header{border-bottom:1px solid var(--warmrand);padding:0 1rem;height:52px;display:flex;align-items:center;justify-content:space-between;background:var(--warm);position:sticky;top:0;z-index:100;box-shadow:0 1px 6px rgba(180,160,120,.08)}
+header{border-bottom:1px solid var(--warmrand);padding:0 1rem;height:52px;display:flex;align-items:center;justify-content:space-between;background:var(--warm);position:sticky;top:0;z-index:100;box-shadow:none}
 .logo{font-family:Georgia,'Times New Roman',serif;font-size:18px;color:var(--t);letter-spacing:-.3px;position:absolute;left:50%;transform:translateX(-50%)}
-.logo em{color:var(--gm);font-style:normal}
-.badge{font-size:10px;background:var(--gl);color:var(--g);padding:2px 10px;border-radius:20px;font-weight:500;border:1px solid #F5C6C6}
+.logo em{color:var(--t);font-style:normal}
+.badge{font-size:10px;background:var(--gl);color:var(--g);padding:2px 10px;border-radius:0;font-weight:500;border:1px solid #F5C6C6}
 @media(min-width:768px){header{height:60px;padding:0 2rem}.logo{font-size:20px}}
 
 
 .leerlingen-sidebar{padding:1rem;border-right:1px solid var(--warmrand);background:#fff;width:200px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
-.leerling-item{padding:7px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .15s}
+.leerling-item{padding:7px 10px;border-radius:0;cursor:pointer;border:1px solid transparent;transition:all .15s}
 .leerling-item:hover{background:var(--warm)}
 .leerling-item.actief{background:var(--warm);border-color:var(--oranje)}
 .leerling-naam{font-size:13px;font-weight:500;color:var(--t)}
 .leerling-meta{font-size:10px;color:var(--tz);margin-top:1px}
-.hist-item{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--t)}
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:0;cursor:pointer;font-size:11px;color:var(--t)}
 .hist-item:hover{background:var(--warm)}
 
 .app{display:flex;flex-direction:column;width:100%;min-height:calc(100vh - 56px)}
@@ -54,96 +55,96 @@ header{border-bottom:1px solid var(--warmrand);padding:0 1rem;height:52px;displa
 .vlabel{font-size:11px;font-weight:600;color:var(--tz);letter-spacing:.05em;margin-bottom:5px}
 .rij2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .nwrap{position:relative}
-input[type=text]{width:100%;border:1.5px solid var(--rand);border-radius:9px;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;outline:none;transition:border-color .15s}
-input:focus{border-color:var(--gm);box-shadow:0 0 0 3px rgba(212,80,15,.08)}
+input[type=text]{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;outline:none;transition:border-color .15s}
+input:focus{border-color:var(--t);box-shadow:none}
 input::placeholder{color:var(--tz)}
-select{width:100%;border:1.5px solid var(--rand);border-radius:9px;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
-select:focus{border-color:var(--gm);box-shadow:0 0 0 3px rgba(212,80,15,.08)}
-textarea{font-family:'Times New Roman',Times,serif;width:100%;border:1.5px solid var(--rand);border-radius:9px;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;resize:vertical;min-height:140px;outline:none;line-height:1.7;transition:border-color .15s}
-textarea:focus{border-color:var(--gm);box-shadow:0 0 0 3px rgba(212,80,15,.08)}
+select{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+select:focus{border-color:var(--t);box-shadow:none}
+textarea{font-family:'Times New Roman',Times,serif;width:100%;border:1.5px solid var(--rand);border-radius:0;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;resize:vertical;min-height:140px;outline:none;line-height:1.7;transition:border-color .15s}
+textarea:focus{border-color:var(--t);box-shadow:none}
 textarea::placeholder{color:var(--tz);font-size:12px}
 .teller{position:absolute;bottom:9px;right:11px;font-size:10px;color:var(--tz);pointer-events:none}
 .nwrap{position:relative}
-.mic-knop{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:var(--gm);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.2);transition:background .2s,transform .2s;z-index:2}
+.mic-knop{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:0;border:none;background:var(--gm);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;transition:background .2s,transform .2s;z-index:2}
 .mic-knop:hover{background:var(--g);transform:scale(1.08)}
 .mic-knop.luistert{background:#e53935;animation:pulserood 1s infinite}
-@keyframes pulserood{0%,100%{box-shadow:0 0 0 0 rgba(229,57,53,.5)}50%{box-shadow:0 0 0 8px rgba(229,57,53,0)}}
+@keyframes pulserood{0%,100%{box-shadow:none}50%{box-shadow:none}}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
-.chip:hover{border-color:var(--gm);color:var(--g);background:var(--gl)}
+.chip{font-size:11px;padding:5px 12px;border-radius:0;border:1px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.chip:hover{border-color:var(--t);color:var(--g);background:var(--gl)}
 
-.genknop{width:100%;background:var(--gm);color:#fff;border:none;border-radius:12px;padding:16px;font-family:Georgia,'Times New Roman',serif;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 8px rgba(212,80,15,.25);transition:all .15s;-webkit-tap-highlight-color:transparent}
-.genknop:hover:not(:disabled){background:var(--g);box-shadow:0 3px 12px rgba(139,50,0,.3);transform:translateY(-1px)}
+.genknop{width:100%;background:var(--gm);color:#fff;border:none;border-radius:0;padding:16px;font-family:Georgia,'Times New Roman',serif;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:none;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.genknop:hover:not(:disabled){background:var(--g);box-shadow:none;transform:translateY(-1px)}
 .genknop:disabled{background:#C4C2B8;cursor:not-allowed;box-shadow:none}
-.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rondjes .7s linear infinite;display:none}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:0;animation:rondjes .7s linear infinite;display:none}
 @keyframes rondjes{to{transform:rotate(360deg)}}
 
 .leeg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;opacity:.35;text-align:center}
-.leeg-c{width:56px;height:56px;border:2px dashed var(--rand);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px}
+.leeg-c{width:56px;height:56px;border:2px dashed var(--rand);border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px}
 .leeg-t{font-size:12px;color:var(--tz);max-width:180px;line-height:1.6}
 
 .naambalk{font-family:Georgia,'Times New Roman',serif;font-size:17px;padding-bottom:10px;border-bottom:1px solid var(--warmrand);color:var(--t)}
 
-.kaart{border:1px solid var(--warmrand);border-radius:11px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.kaart{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
 .ktop{display:flex;align-items:center;gap:8px;padding:10px 15px;border-bottom:1px solid var(--warmrand)}
-.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot{width:7px;height:7px;border-radius:0;flex-shrink:0}
 .knaam{font-size:10px;font-weight:600;letter-spacing:.05em;flex:1}
-.mtag{font-size:10px;padding:2px 9px;border-radius:20px;font-weight:500}
+.mtag{font-size:10px;padding:2px 9px;border-radius:0;font-weight:500}
 .kbody{padding:14px 16px;font-size:13px;line-height:1.8;color:var(--tm)}
 
 .tg .ktop{background:#FEF0F0}.tg .dot{background:var(--gm)}.tg .knaam{color:var(--g)}.tg .mtag{background:#F5C6C6;color:var(--g)}
 .tb .ktop{background:#EDF4FC}.tb .dot{background:var(--b)}.tb .knaam{color:var(--b)}.tb .mtag{background:#C2D9F5;color:var(--b)}
-.ta .ktop{background:#FEF6EA}.ta .dot{background:#EF9F27}.ta .knaam{color:var(--a)}.ta .mtag{background:#FACC80;color:var(--a)}
+.ta .ktop{background:#FEF6EA}.ta .dot{background:#888}.ta .knaam{color:var(--a)}.ta .mtag{background:#FACC80;color:var(--a)}
 .tdk .ktop{background:var(--grijs)}.tdk .dot{background:#7A7874}.tdk .knaam{color:#5F5E5A}.tdk .mtag{background:var(--rand);color:#5F5E5A}
 
-.rblok{border:1px solid var(--warmrand);border-radius:11px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.rblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
 .rtop{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;background:#3A3835}
 .rtitel{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#F5F2EC}
-.kknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;transition:background .15s}
+.kknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:0;padding:3px 10px;cursor:pointer;font-family:inherit;transition:background .15s}
 .kknop:hover{background:rgba(255,255,255,.28)}
 .rtext{padding:16px;font-size:13px;line-height:1.9;color:var(--tm);font-style:italic}
 
-.pedblok{border:1px solid var(--warmrand);border-radius:11px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.pedblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
 .pedtop{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#3A3835}
 .pedtitel{font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#F5F2EC}
-.pedsub{font-size:9px;color:#9A9690;margin-top:1px}
-.pedknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit}
+.pedsub{font-size:9px;color:#888;margin-top:1px}
+.pedknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:0;padding:3px 10px;cursor:pointer;font-family:inherit}
 .pedknop:disabled{opacity:.45;cursor:not-allowed}
 .pedbody{padding:10px 11px;display:flex;flex-direction:column;gap:7px}
 .pedwacht{text-align:center;padding:14px;font-size:11px;color:var(--tz)}
-.prioblok{background:#FEF6EA;border:1px solid #FACC80;border-radius:9px;padding:10px 13px;font-size:11px;color:#633806;line-height:1.65}
-.priolabel{font-size:9px;font-weight:600;letter-spacing:.05em;color:#854F0B;margin-bottom:3px}
-.theorie{border:1px solid var(--warmrand);border-radius:9px;overflow:hidden;background:#fff}
+.prioblok{background:#FEF6EA;border:1px solid #FACC80;border-radius:0;padding:10px 13px;font-size:11px;color:#222;line-height:1.65}
+.priolabel{font-size:9px;font-weight:600;letter-spacing:.05em;color:#333;margin-bottom:3px}
+.theorie{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff}
 .theotop{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--grijs);border-bottom:1px solid var(--warmrand)}
 .theonaam{font-size:10px;font-weight:600;color:var(--tm);flex:1}
 .theoauteur{font-size:9px;color:var(--tz)}
 .theobody{padding:9px 11px;font-size:11px;line-height:1.65;color:var(--tm)}
 
-.ouderblok{border:1px solid var(--warmrand);border-radius:11px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.ouderblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
 .oudertop{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#EDF4FC;border-bottom:1px solid #C2D9F5}
 .oudertitel{font-size:11px;font-weight:600;color:var(--b);letter-spacing:.03em}
 .ouderbody{padding:11px 13px;display:flex;flex-direction:column;gap:7px}
 .emailrij{display:flex;gap:7px}
 .emailrij input{flex:1}
-.deelknop{padding:9px 14px;background:var(--b);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s}
+.deelknop{padding:9px 14px;background:var(--b);color:#fff;border:none;border-radius:0;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s}
 .deelknop:hover{background:#0F4A85}
 
-.oudermail-invoer{flex:1;min-width:160px;font-size:12px;padding:7px 10px;border:1.5px solid var(--rand);border-radius:8px;outline:none;font-family:inherit;transition:border-color .15s,max-width .25s}
-.oudermail-invoer:focus{border-color:var(--gm);box-shadow:0 0 0 3px rgba(212,80,15,.08)}
+.oudermail-invoer{flex:1;min-width:160px;font-size:12px;padding:7px 10px;border:1.5px solid var(--rand);border-radius:0;outline:none;font-family:inherit;transition:border-color .15s,max-width .25s}
+.oudermail-invoer:focus{border-color:var(--t);box-shadow:none}
 .deelok{font-size:11px;color:var(--g);display:none}
 
-.feedblok{border:1px solid var(--warmrand);border-radius:11px;overflow:hidden;background:var(--grijs);display:none}
+.feedblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:var(--grijs);display:none}
 .feedtop{display:flex;align-items:center;gap:7px;padding:9px 13px;border-bottom:1px solid var(--warmrand)}
 .feedtitel{font-size:10px;font-weight:600;color:var(--tm);letter-spacing:.04em}
 .feedbody{padding:11px 13px;display:flex;flex-direction:column;gap:7px}
 .feedduimen{display:flex;gap:6px}
-.dknop{padding:6px 14px;border-radius:20px;border:1px solid var(--rand);background:#fff;font-size:11px;cursor:pointer;font-family:inherit;color:var(--tm);transition:all .15s}
-.dknop.ok{background:var(--gl);border-color:var(--gm);color:var(--g)}
-.dknop.matig{background:var(--al);border-color:#EF9F27;color:var(--a)}
-.feedverstuur{font-size:11px;padding:7px 14px;border-radius:7px;background:var(--gm);color:#fff;border:none;cursor:pointer}
+.dknop{padding:6px 14px;border-radius:0;border:1px solid var(--rand);background:#fff;font-size:11px;cursor:pointer;font-family:inherit;color:var(--tm);transition:all .15s}
+.dknop.ok{background:var(--gl);border-color:var(--t);color:var(--g)}
+.dknop.matig{background:var(--al);border-color:#888;color:var(--a)}
+.feedverstuur{font-size:11px;padding:7px 14px;border-radius:0;background:var(--gm);color:#fff;border:none;cursor:pointer}
 
-.fout{background:var(--rl);border:1px solid #F7C1C1;border-radius:10px;padding:13px;font-size:12px;color:var(--r);line-height:1.6}
+.fout{background:var(--rl);border:1px solid #ccc;border-radius:0;padding:13px;font-size:12px;color:var(--r);line-height:1.6}
 
 @media(max-width:768px){
   .app{grid-template-columns:1fr}
@@ -154,43 +155,42 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 
 .tab{padding:11px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--tz);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:color .15s}
 .tab:hover{color:var(--tm)}
-.tab.actief{color:var(--gm);border-bottom-color:var(--gm);font-weight:500}
+.tab.actief{color:var(--t);border-bottom-color:var(--t);font-weight:500}
 .sectie{display:none}.sectie.actief{display:grid}
 .sectie-vol{display:none}.sectie-vol.actief{display:flex}
 
 
 
 .ondersteuning-wrap{position:relative;margin-bottom:0}
-.ondersteuning-knop{width:100%;border:1.5px solid var(--rand);border-radius:9px;padding:9px 13px;font-size:13px;color:var(--t);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;text-align:left;transition:border-color .15s}
-.ondersteuning-knop:focus{border-color:var(--gm);outline:none;box-shadow:0 0 0 3px rgba(212,80,15,.08)}
+.ondersteuning-knop{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:9px 13px;font-size:13px;color:var(--t);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;text-align:left;transition:border-color .15s}
+.ondersteuning-knop:focus{border-color:var(--t);outline:none;box-shadow:none}
 .ondersteuning-knop .pijl{font-size:10px;color:var(--tz)}
-.ondersteuning-dropdown{display:none;position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--rand);border-radius:10px;z-index:1000;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.ondersteuning-dropdown{display:none;position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--rand);border-radius:0;z-index:1000;overflow:hidden;box-shadow:none}
 .ondersteuning-dropdown.open{display:block}
 .od-item{display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer;font-size:12px;color:var(--tm);border-bottom:1px solid var(--warmrand)}
 .od-item:last-child{border-bottom:none}
 .od-item:hover{background:var(--grijs)}
-.od-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--gm);flex-shrink:0}
+.od-item input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--t);flex-shrink:0}
 .od-item label{cursor:pointer;flex:1;line-height:1.4}
 .od-item .od-sub{font-size:10px;color:var(--tz);display:block;margin-top:1px}
 .tags-rij{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-height:0}
-.od-check-item{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12px;color:var(--t);cursor:pointer;border-radius:6px}
-.od-check-item:hover{background:var(--warm)}
-.od-check-item input{accent-color:#D4500F;width:14px;height:14px;cursor:pointer}
-.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:20px;background:#EAF2FB;color:#0C447C;border:1px solid #C2D9F5}
+.od-check-item{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12px;color:var(--t);cursor:pointer;border-radius:0}
+.od-check-item input{accent-color:#000;width:14px;height:14px;cursor:pointer}
+.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:0;background:#f5f5f5;color:#111;border:1px solid #C2D9F5}
 .od-tag-x{cursor:pointer;font-size:10px;opacity:.6}
 .od-tag-x:hover{opacity:1}
 
 .tijdsbalk{display:flex;align-items:center;gap:1.5rem;padding:8px 2rem;background:var(--gl);border-bottom:.5px solid #F5C6C6}
 .tijds-item{display:flex;align-items:center;gap:7px}
 .tijds-getal{font-size:18px;font-weight:500;color:var(--g);font-family:'Times New Roman',Times,serif}
-.tijds-label{font-size:11px;color:#085041;line-height:1.3}
+.tijds-label{font-size:11px;color:#111;line-height:1.3}
 .tijds-divider{width:.5px;height:28px;background:#F5C6C6}
-.tijds-tip{font-size:11px;color:#085041;margin-left:auto;font-style:italic}
+.tijds-tip{font-size:11px;color:#111;margin-left:auto;font-style:italic}
 
 /* ── Mobiele bottom nav ── */
-.bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--warm);border-top:1px solid var(--warmrand);z-index:200;box-shadow:0 -2px 12px rgba(0,0,0,.08)}
+.bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--warm);border-top:1px solid var(--warmrand);z-index:200;box-shadow:none}
 .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 10px;cursor:pointer;border:none;background:none;color:var(--tz);font-family:inherit;font-size:10px;gap:3px;-webkit-tap-highlight-color:transparent;transition:color .15s}
-.bnav-item.actief{color:var(--gm)}
+.bnav-item.actief{color:var(--t)}
 .bnav-icon{font-size:22px;line-height:1}
 .bnav-label{font-size:9px;font-weight:500;letter-spacing:.03em}
 body{padding-bottom:64px}
@@ -210,16 +210,16 @@ body{padding-bottom:64px}
 @media(min-width:768px){.leerlingen-sidebar{display:flex}}
 
 /* ── Kaart styling verbetering voor mobiel ── */
-.kaart{border-radius:12px;overflow:hidden;background:#fff;border:1px solid var(--rand);margin-bottom:10px}
+.kaart{border-radius:0;overflow:hidden;background:#fff;border:1px solid var(--rand);margin-bottom:10px}
 .kbody{padding:12px 14px;font-size:14px;line-height:1.75}
 .ktop{padding:10px 12px}
 .knaam{font-size:10px}
 
 /* ── Leerling modal verbetering ── */
-#leerling-modal > div{width:calc(100% - 32px);max-width:360px;border-radius:16px;padding:20px}
+#leerling-modal > div{width:calc(100% - 32px);max-width:360px;border-radius:0;padding:20px}
 
 /* ── Login scherm verbetering ── */
-#login-scherm > div:last-child{width:calc(100% - 32px);max-width:360px;border-radius:16px;padding:24px}
+#login-scherm > div:last-child{width:calc(100% - 32px);max-width:360px;border-radius:0;padding:24px}
 
 </style>
 <script>
@@ -306,7 +306,7 @@ async function registreren() {
       fout.textContent = 'Registreren mislukt: ' + error.message;
     }
   } else {
-    fout.style.color = '#1D9E75';
+    fout.style.color = '#333';
     fout.textContent = 'Account aangemaakt! Check je e-mail om te bevestigen.';
   }
 }
@@ -480,17 +480,17 @@ function toonTab(tab, knop) {
     <div style="font-family:Georgia,serif;font-size:28px;color:var(--donker)">School van <span style="color:var(--oranje)">morgen</span></div>
     <div style="font-size:13px;color:var(--tz);margin-top:4px">Rapportgenerator voor het basisonderwijs</div>
   </div>
-  <div style="background:#fff;border:1px solid var(--rand);border-radius:14px;padding:28px;width:320px;display:flex;flex-direction:column;gap:12px">
-    <input id="login-email" type="email" placeholder="E-mailadres" style="width:100%;border:1.5px solid var(--rand);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
-    <input id="login-ww" type="password" placeholder="Wachtwoord" style="width:100%;border:1.5px solid var(--rand);border-radius:8px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')inloggen()">
+  <div style="background:#fff;border:1px solid var(--rand);border-radius:0;padding:28px;width:320px;display:flex;flex-direction:column;gap:12px">
+    <input id="login-email" type="email" placeholder="E-mailadres" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
+    <input id="login-ww" type="password" placeholder="Wachtwoord" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')inloggen()">
     <div id="login-fout" style="font-size:12px;color:#C0392B;min-height:16px"></div>
-    <button onclick="inloggen()" style="background:var(--oranje);color:#fff;border:none;border-radius:9px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">Inloggen</button>
+    <button onclick="inloggen()" style="background:var(--oranje);color:#fff;border:none;border-radius:0;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">Inloggen</button>
     <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
       <div style="flex:1;height:1px;background:var(--warmrand)"></div>
       <span style="font-size:11px;color:var(--tz)">of</span>
       <div style="flex:1;height:1px;background:var(--warmrand)"></div>
     </div>
-    <button onclick="registreren()" style="background:transparent;color:var(--tm);border:1px solid var(--rand);border-radius:9px;padding:9px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">Nieuw account aanmaken</button>
+    <button onclick="registreren()" style="background:transparent;color:var(--tm);border:1px solid var(--rand);border-radius:0;padding:9px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">Nieuw account aanmaken</button>
     <div style="font-size:10px;color:var(--tz);text-align:center;line-height:1.5">
       Je gegevens worden AVG-conform opgeslagen op Europese servers.<br>
       Leerlingdata is alleen voor jou zichtbaar.
@@ -500,16 +500,16 @@ function toonTab(tab, knop) {
 
 <!-- Leerling modal -->
 <div id="leerling-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:14px;padding:24px;width:300px;display:flex;flex-direction:column;gap:12px">
+  <div style="background:#fff;border-radius:0;padding:24px;width:300px;display:flex;flex-direction:column;gap:12px">
     <div style="font-weight:600;font-size:15px">Leerling toevoegen</div>
-    <input id="nieuwe-naam" type="text" placeholder="Voornaam" style="width:100%;border:1.5px solid var(--rand);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
-    <select id="nieuwe-groep" style="width:100%;border:1.5px solid var(--rand);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
+    <input id="nieuwe-naam" type="text" placeholder="Voornaam" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
+    <select id="nieuwe-groep" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
       <option value="">Groep…</option>
       <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option>
     </select>
     <div style="display:flex;gap:8px">
-      <button onclick="sluitLeerlingModal()" style="flex:1;background:transparent;border:1px solid var(--rand);border-radius:8px;padding:9px;font-size:13px;cursor:pointer;font-family:inherit">Annuleren</button>
-      <button onclick="voegLeerlingToe()" style="flex:1;background:var(--oranje);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Toevoegen</button>
+      <button onclick="sluitLeerlingModal()" style="flex:1;background:transparent;border:1px solid var(--rand);border-radius:0;padding:9px;font-size:13px;cursor:pointer;font-family:inherit">Annuleren</button>
+      <button onclick="voegLeerlingToe()" style="flex:1;background:var(--oranje);color:#fff;border:none;border-radius:0;padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Toevoegen</button>
     </div>
   </div>
 </div>
@@ -540,7 +540,7 @@ function toonTab(tab, knop) {
     <div class="tijds-label">uur bespaard<br>dit schooljaar</div>
   </div>
   <div class="tijds-tip" id="t-tip">Elk rapport bespaart gemiddeld 25 minuten schrijftijd.</div>
-  <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid #F5C6C6;background:transparent;color:#8B3200;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
+  <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #F5C6C6;background:transparent;color:#000;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
 </div>
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem">
   <button class="tab actief" onclick="toonTab('rapport',this)">Rapport</button>
@@ -568,7 +568,7 @@ function toonTab(tab, knop) {
     <div>
       <div class="vlabel">ONDERSTEUNINGSBEHOEFTES <span style="font-weight:400;color:var(--tz)">— optioneel, voor interventies in het rapport</span></div>
       <div id="od-wrap">
-        <div id="od-checklijst" style="background:#fff;border:1.5px solid var(--rand);border-radius:9px;padding:6px 4px;display:flex;flex-direction:column;gap:2px">
+        <div id="od-checklijst" style="background:#fff;border:1.5px solid var(--rand);border-radius:0;padding:6px 4px;display:flex;flex-direction:column;gap:2px">
           <label class="od-check-item"><input type="checkbox" value="Dyslexie" onchange="updateTags()"> Dyslexie</label>
           <label class="od-check-item"><input type="checkbox" value="Dyscalculie" onchange="updateTags()"> Dyscalculie</label>
           <label class="od-check-item"><input type="checkbox" value="Hoogbegaafdheid" onchange="updateTags()"> Hoogbegaafdheid</label>
@@ -593,15 +593,15 @@ function toonTab(tab, knop) {
     <div>
       <div class="vlabel" style="margin-bottom:7px">EXTRA GENEREREN <span style="font-weight:400;color:var(--tz)">— optioneel, op basis van dezelfde notities</span></div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--rand);border-radius:7px;cursor:pointer;background:#fff" id="eo-opp" onclick="toggleExtraOptie('opp')">
-          <input type="checkbox" id="cb-opp" style="width:15px;height:15px;accent-color:var(--gm);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="event.stopPropagation()">
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--rand);border-radius:0;cursor:pointer;background:#fff" id="eo-opp" onclick="toggleExtraOptie('opp')">
+          <input type="checkbox" id="cb-opp" style="width:15px;height:15px;accent-color:var(--t);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="event.stopPropagation()">
           <div>
-            <div style="font-size:13px;color:var(--t);font-weight:500">Ontwikkelingsperspectief <span style="font-size:10px;background:#EEEDFE;color:#3C3489;padding:1px 7px;border-radius:20px;font-weight:500;margin-left:4px">OPP</span></div>
+            <div style="font-size:13px;color:var(--t);font-weight:500">Ontwikkelingsperspectief <span style="font-size:10px;background:#f5f5f5;color:#222;padding:1px 7px;border-radius:0;font-weight:500;margin-left:4px">OPP</span></div>
             <div style="font-size:11px;color:var(--tz);margin-top:2px;line-height:1.5">Wettelijk compleet OPP — uitstroombestemming, bevorderende en belemmerende factoren, SMART-doelen en hoorrecht.</div>
           </div>
         </label>
-        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--rand);border-radius:7px;cursor:pointer;background:#fff" id="eo-hp" onclick="toggleExtraOptie('hp')">
-          <input type="checkbox" id="cb-hp" style="width:15px;height:15px;accent-color:var(--gm);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="event.stopPropagation()">
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--rand);border-radius:0;cursor:pointer;background:#fff" id="eo-hp" onclick="toggleExtraOptie('hp')">
+          <input type="checkbox" id="cb-hp" style="width:15px;height:15px;accent-color:var(--t);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="event.stopPropagation()">
           <div>
             <div style="font-size:13px;color:var(--t);font-weight:500">Handelingsplan</div>
             <div style="font-size:11px;color:var(--tz);margin-top:2px;line-height:1.5">Concrete doelen en aanpak per ondersteuningsbehoefte, gebaseerd op bewezen interventies.</div>
@@ -628,8 +628,8 @@ function toonTab(tab, knop) {
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <div class="vlabel" style="margin-bottom:0">LEERLINGEN</div>
     <div style="display:flex;gap:6px">
-      <button onclick="openLeerlingModal()" style="background:var(--oranje);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">+ Toevoegen</button>
-      <button onclick="uitloggen()" style="background:transparent;color:var(--tz);border:1px solid var(--rand);border-radius:6px;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit">Uitloggen</button>
+      <button onclick="openLeerlingModal()" style="background:var(--oranje);color:#fff;border:none;border-radius:0;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">+ Toevoegen</button>
+      <button onclick="uitloggen()" style="background:transparent;color:var(--tz);border:1px solid var(--rand);border-radius:0;padding:3px 8px;font-size:10px;cursor:pointer;font-family:inherit">Uitloggen</button>
     </div>
   </div>
   <div id="leerlingen-lijst" style="display:flex;flex-direction:column;gap:4px"></div>
@@ -789,26 +789,26 @@ function toonTab(tab, knop) {
 .aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
 .aaw-datum{font-family:Georgia,serif;font-size:18px;color:var(--t)}
 .aaw-datum-nav{display:flex;align-items:center;gap:8px}
-.aaw-datum-knop{background:none;border:1.5px solid var(--rand);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.aaw-datum-knop:hover{border-color:var(--gm);color:var(--gm)}
+.aaw-datum-knop{background:none;border:1.5px solid var(--rand);border-radius:0;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.aaw-datum-knop:hover{border-color:var(--t);color:var(--t)}
 .aaw-stats{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
-.aaw-stat{flex:1;min-width:80px;background:#fff;border:1px solid var(--rand);border-radius:10px;padding:10px 12px;text-align:center}
+.aaw-stat{flex:1;min-width:80px;background:#fff;border:1px solid var(--rand);border-radius:0;padding:10px 12px;text-align:center}
 .aaw-stat-getal{font-family:Georgia,serif;font-size:24px;font-weight:700}
 .aaw-stat-label{font-size:10px;color:var(--tz);margin-top:2px;font-weight:500;letter-spacing:.04em}
-.aaw-zoek{width:100%;border:1.5px solid var(--rand);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--t);background:#fff;outline:none;margin-bottom:1rem;font-family:inherit}
-.aaw-zoek:focus{border-color:var(--gm)}
+.aaw-zoek{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:11px 14px;font-size:14px;color:var(--t);background:#fff;outline:none;margin-bottom:1rem;font-family:inherit}
+.aaw-zoek:focus{border-color:var(--t)}
 .aaw-lijst{display:flex;flex-direction:column;gap:8px}
-.aaw-item{background:#fff;border:1.5px solid var(--rand);border-radius:12px;overflow:hidden;transition:border-color .15s}
+.aaw-item{background:#fff;border:1.5px solid var(--rand);border-radius:0;overflow:hidden;transition:border-color .15s}
 .aaw-item.aanwezig{border-color:#C8E6C9}
 .aaw-item.afwezig{border-color:#FFCDD2}
 .aaw-item.laat{border-color:#FFE0B2}
 .aaw-item-top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
-.aaw-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.aaw-avatar{width:38px;height:38px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
 .aaw-info{flex:1}
 .aaw-naam{font-size:14px;font-weight:500;color:var(--t)}
 .aaw-status-tekst{font-size:11px;color:var(--tz);margin-top:1px}
 .aaw-knoppen{display:flex;gap:6px;flex-shrink:0}
-.aaw-knop{width:36px;height:36px;border-radius:50%;border:2px solid var(--rand);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.aaw-knop{width:36px;height:36px;border-radius:0;border:2px solid var(--rand);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .aaw-knop:active{transform:scale(.92)}
 .aaw-knop.aanwezig-knop.actief{background:#E8F5E9;border-color:#4CAF50}
 .aaw-knop.afwezig-knop.actief{background:#FFEBEE;border-color:#EF5350}
@@ -816,17 +816,17 @@ function toonTab(tab, knop) {
 .aaw-item-extra{display:none;padding:0 14px 12px;border-top:1px solid var(--rand);background:#FAFAFA}
 .aaw-item-extra.open{display:block}
 .aaw-extra-label{font-size:10px;font-weight:600;color:var(--tz);letter-spacing:.05em;margin:10px 0 5px}
-.aaw-opmerking{width:100%;border:1.5px solid var(--rand);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--t);background:#fff;outline:none;resize:none;min-height:60px;font-family:inherit;line-height:1.5}
-.aaw-opmerking:focus{border-color:var(--gm)}
+.aaw-opmerking{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:8px 10px;font-size:13px;color:var(--t);background:#fff;outline:none;resize:none;min-height:60px;font-family:inherit;line-height:1.5}
+.aaw-opmerking:focus{border-color:var(--t)}
 .aaw-reden-knoppen{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.aaw-reden{padding:5px 12px;border-radius:20px;border:1.5px solid var(--rand);background:#fff;font-size:11px;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
-.aaw-reden.actief{border-color:var(--gm);background:var(--gl);color:var(--g)}
+.aaw-reden{padding:5px 12px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:11px;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.aaw-reden.actief{border-color:var(--t);background:var(--gl);color:var(--g)}
 .aaw-acties{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
-.aaw-actie-knop{flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--rand);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;min-width:120px}
-.aaw-actie-knop:hover{border-color:var(--gm);color:var(--gm)}
-.aaw-actie-knop.prim{background:var(--gm);color:#fff;border-color:var(--gm)}
+.aaw-actie-knop{flex:1;padding:11px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;min-width:120px}
+.aaw-actie-knop:hover{border-color:var(--t);color:var(--t)}
+.aaw-actie-knop.prim{background:var(--gm);color:#fff;border-color:var(--t)}
 .aaw-actie-knop.prim:hover{background:var(--g)}
-.aaw-export-balk{background:var(--gl);border:1px solid #F5C6C6;border-radius:10px;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
+.aaw-export-balk{background:var(--gl);border:1px solid #F5C6C6;border-radius:0;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
 .aaw-export-balk.zichtbaar{display:block}
 </style>
 
@@ -864,7 +864,7 @@ function toonTab(tab, knop) {
 
   <div class="aaw-export-balk" id="aaw-export-balk">
     ✓ Aanwezigheid opgeslagen voor <span id="aaw-export-datum"></span>
-    <button onclick="aawExporteer()" style="margin-left:10px;background:var(--gm);color:#fff;border:none;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">Exporteer CSV</button>
+    <button onclick="aawExporteer()" style="margin-left:10px;background:var(--gm);color:#fff;border:none;border-radius:0;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">Exporteer CSV</button>
   </div>
 
   <input class="aaw-zoek" type="text" placeholder="🔍  Leerling zoeken…" oninput="aawFilter(this.value)">
@@ -887,65 +887,65 @@ function toonTab(tab, knop) {
 .lvs-sidebar-titel{font-size:13px;font-weight:600;color:var(--t);margin-bottom:2px}
 .lvs-sidebar-meta{font-size:10px;color:var(--tz);letter-spacing:.04em;text-transform:uppercase}
 .lvs-zoek{padding:8px 10px;border-bottom:1px solid var(--warmrand)}
-.lvs-zoek input{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;box-sizing:border-box}
-.lvs-zoek input:focus{border-color:var(--gm)}
+.lvs-zoek input{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;box-sizing:border-box}
+.lvs-zoek input:focus{border-color:var(--t)}
 .lvs-lijst{flex:1;overflow-y:auto;padding:6px}
-.lvs-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:9px;cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:all .15s}
+.lvs-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:0;cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:all .15s}
 .lvs-item:hover{background:var(--gl)}
 .lvs-item.actief{background:var(--gl);border-color:rgba(212,80,15,.25)}
-.lvs-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:#fff}
+.lvs-av{width:32px;height:32px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:#fff}
 .lvs-item-info{flex:1;min-width:0}
 .lvs-item-naam{font-size:12px;font-weight:500;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lvs-item-groep{font-size:10px;color:var(--tz);margin-top:1px}
 .lvs-footer{padding:10px 12px;border-top:1px solid var(--warmrand)}
-.lvs-add{width:100%;background:var(--gm);color:#fff;border:none;border-radius:7px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.lvs-add{width:100%;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .lvs-hoofd{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .lvs-profiel{padding:14px 18px;border-bottom:1px solid var(--warmrand);background:#fff;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.lvs-profiel-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0}
+.lvs-profiel-av{width:44px;height:44px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0}
 .lvs-profiel-naam{font-size:17px;font-weight:600;color:var(--t)}
 .lvs-profiel-meta{font-size:11px;color:var(--tz);margin-top:2px}
-.lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .lvs-tabs{display:flex;padding:0 18px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0}
 .lvs-tab{padding:10px 12px;font-size:12px;font-weight:500;color:var(--tz);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit}
 .lvs-tab:hover{color:var(--tm)}
-.lvs-tab.actief{color:var(--gm);border-bottom-color:var(--gm)}
+.lvs-tab.actief{color:var(--t);border-bottom-color:var(--t)}
 .lvs-inhoud{flex:1;overflow-y:auto;padding:16px 18px}
 .lvs-sectie-titel{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--tz);text-transform:uppercase;margin-bottom:10px;margin-top:4px}
 .lvs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.lvs-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:10px;padding:13px}
+.lvs-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
 .lvs-domein-label{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--tz);margin-bottom:6px;text-transform:uppercase}
 .lvs-score{font-size:30px;font-weight:700;line-height:1;margin-bottom:5px;color:var(--t)}
 .lvs-trend{font-size:11px;display:flex;align-items:center;gap:3px}
-.lvs-omhoog{color:#1D9E75}
+.lvs-omhoog{color:#333}
 .lvs-omlaag{color:var(--r)}
 .lvs-gelijk{color:var(--tz)}
-.lvs-radar-wrap{background:#fff;border:1px solid var(--warmrand);border-radius:10px;padding:14px;display:flex;justify-content:center;margin-bottom:14px}
+.lvs-radar-wrap{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:14px;display:flex;justify-content:center;margin-bottom:14px}
 .lvs-tijdlijn{display:flex;flex-direction:column;gap:0}
 .lvs-tl-item{display:flex;gap:12px;padding-bottom:14px;position:relative}
 .lvs-tl-item::before{content:'';position:absolute;left:13px;top:26px;bottom:0;width:1px;background:var(--warmrand)}
 .lvs-tl-item:last-child::before{display:none}
-.lvs-tl-dot{width:26px;height:26px;border-radius:50%;background:var(--grijs);border:2px solid var(--rand);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;z-index:1}
-.lvs-tl-dot.rapport{border-color:var(--gm);background:var(--gl)}
+.lvs-tl-dot{width:26px;height:26px;border-radius:0;background:var(--grijs);border:2px solid var(--rand);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;z-index:1}
+.lvs-tl-dot.rapport{border-color:var(--t);background:var(--gl)}
 .lvs-tl-dot.notitie{border-color:var(--b);background:var(--bl)}
 .lvs-tl-inhoud{flex:1;padding-top:2px}
 .lvs-tl-datum{font-size:10px;color:var(--tz);margin-bottom:3px}
-.lvs-tl-tekst{background:#fff;border:1px solid var(--warmrand);border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.6;color:var(--tm)}
-.lvs-notitie-form{background:#fff;border:1px solid var(--warmrand);border-radius:10px;padding:13px;display:flex;flex-direction:column;gap:8px}
-.lvs-textarea{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;min-height:80px;resize:vertical;line-height:1.6;box-sizing:border-box}
-.lvs-textarea:focus{border-color:var(--gm)}
+.lvs-tl-tekst{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:9px 11px;font-size:12px;line-height:1.6;color:var(--tm)}
+.lvs-notitie-form{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px;display:flex;flex-direction:column;gap:8px}
+.lvs-textarea{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:8px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;min-height:80px;resize:vertical;line-height:1.6;box-sizing:border-box}
+.lvs-textarea:focus{border-color:var(--t)}
 .lvs-scores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.lvs-score-input{background:var(--grijs);border:1px solid var(--rand);border-radius:7px;padding:6px 8px;font-size:12px;color:var(--t);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
-.lvs-score-input:focus{border-color:var(--gm)}
+.lvs-score-input{background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 8px;font-size:12px;color:var(--t);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
+.lvs-score-input:focus{border-color:var(--t)}
 .lvs-ib-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lvs-ib-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:10px;padding:13px}
+.lvs-ib-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
 .lvs-balk-wrap{margin-bottom:7px}
 .lvs-balk-label{display:flex;justify-content:space-between;font-size:11px;color:var(--tz);margin-bottom:3px}
-.lvs-balk{height:5px;background:var(--grijs);border-radius:3px;overflow:hidden}
-.lvs-balk-fill{height:100%;border-radius:3px;transition:width .8s ease}
-.lvs-tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:500;margin:2px}
-.lvs-tag-oranje{background:var(--gl);color:var(--g);border:1px solid rgba(212,80,15,.2)}
-.lvs-tag-groen{background:#E1F5EE;color:#0F6E56;border:1px solid rgba(29,158,117,.2)}
-.lvs-tag-blauw{background:var(--bl);color:var(--b);border:1px solid rgba(24,95,165,.2)}
+.lvs-balk{height:5px;background:var(--grijs);border-radius:0;overflow:hidden}
+.lvs-balk-fill{height:100%;border-radius:0;transition:width .8s ease}
+.lvs-tag{display:inline-block;padding:2px 7px;border-radius:0;font-size:10px;font-weight:500;margin:2px}
+.lvs-tag-oranje{background:#f0f0f0;color:#000;border:1px solid #ccc}
+.lvs-tag-groen{background:#f5f5f5;color:#222;border:1px solid rgba(29,158,117,.2)}
+.lvs-tag-blauw{background:#f0f0f0;color:#000;border:1px solid #ccc}
 .lvs-leeg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;opacity:.4;text-align:center;padding:40px}
 .lvs-leeg-icon{font-size:36px}
 .lvs-leeg-tekst{font-size:13px;color:var(--tz)}
@@ -996,7 +996,7 @@ function toonTab(tab, knop) {
     <div class="lvs-inhoud" id="lvs-tab-notitie" style="display:none">
       <div class="lvs-sectie-titel">NIEUWE NOTITIE</div>
       <div class="lvs-notitie-form">
-        <select id="lvs-notitie-type" style="background:#222120;border:1px solid #2E2D2A;border-radius:7px;padding:7px 10px;font-size:12px;color:#F0EDE8;font-family:inherit;outline:none">
+        <select id="lvs-notitie-type" style="background:#222120;border:1px solid #2E2D2A;border-radius:0;padding:7px 10px;font-size:12px;color:#F0EDE8;font-family:inherit;outline:none">
           <option value="observatie">Observatie</option>
           <option value="gesprek">Gesprek met ouder</option>
           <option value="toets">Toetsresultaat</option>
@@ -1029,8 +1029,8 @@ function toonTab(tab, knop) {
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button onclick="lvsClearNotitie()" style="background:transparent;color:#9A9690;border:1px solid #2E2D2A;border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
-          <button onclick="lvsSlaNotitieOp()" style="background:#D4500F;color:#fff;border:none;border-radius:7px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
+          <button onclick="lvsClearNotitie()" style="background:transparent;color:#888;border:1px solid #2E2D2A;border-radius:0;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
+          <button onclick="lvsSlaNotitieOp()" style="background:#000;color:#fff;border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
         </div>
       </div>
     </div>
@@ -1211,21 +1211,21 @@ async function genereer() {
 
 // ── Score helpers ────────────────────────────────────────────
 const LABEL_MAP = {
-  95: { tekst: 'Uitstekend', kleur: '#0F6E56', bg: '#E1F5EE' },
-  80: { tekst: 'Goed',       kleur: '#0F6E56', bg: '#E1F5EE' },
-  60: { tekst: 'Voldoende',  kleur: '#854F0B', bg: '#FEF3E2' },
-  40: { tekst: 'Matig',      kleur: '#A32D2D', bg: '#FCEBEB' },
-  20: { tekst: 'Onvoldoende',kleur: '#A32D2D', bg: '#FCEBEB' },
+  95: { tekst: 'Uitstekend', kleur: '#222', bg: '#f5f5f5' },
+  80: { tekst: 'Goed',       kleur: '#222', bg: '#f5f5f5' },
+  60: { tekst: 'Voldoende',  kleur: '#333', bg: '#f5f5f5' },
+  40: { tekst: 'Matig',      kleur: '#222', bg: '#f5f5f5' },
+  20: { tekst: 'Onvoldoende',kleur: '#222', bg: '#f5f5f5' },
 };
 
 // Zet numerieke score om naar CITO-niveau letter
 function scoreNaarCITO(score) {
   if (score === null || score === undefined) return null;
-  if (score >= 90) return { niveau: 'A', kleur: '#0F6E56', bg: '#E1F5EE', hoogte: 90 };
-  if (score >= 75) return { niveau: 'B', kleur: '#0F6E56', bg: '#E1F5EE', hoogte: 75 };
-  if (score >= 55) return { niveau: 'C', kleur: '#854F0B', bg: '#FEF3E2', hoogte: 55 };
-  if (score >= 35) return { niveau: 'D', kleur: '#BA7517', bg: '#FEF3E2', hoogte: 35 };
-  return                 { niveau: 'E', kleur: '#A32D2D', bg: '#FCEBEB', hoogte: 18 };
+  if (score >= 90) return { niveau: 'A', kleur: '#222', bg: '#f5f5f5', hoogte: 90 };
+  if (score >= 75) return { niveau: 'B', kleur: '#222', bg: '#f5f5f5', hoogte: 75 };
+  if (score >= 55) return { niveau: 'C', kleur: '#333', bg: '#f5f5f5', hoogte: 55 };
+  if (score >= 35) return { niveau: 'D', kleur: '#444', bg: '#f5f5f5', hoogte: 35 };
+  return                 { niveau: 'E', kleur: '#222', bg: '#f5f5f5', hoogte: 18 };
 }
 
 // Label (sociaal/werkhouding) op basis van score-waarde
@@ -1251,11 +1251,11 @@ function bouwProgressieSectie(naam) {
   const huidigScores = profielData?.scores || {};
 
   return `
-    <div style="background:var(--warm);border:0.5px solid var(--warmrand);border-radius:11px;overflow:hidden">
+    <div style="background:var(--warm);border:0.5px solid var(--warmrand);border-radius:0;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--warmrand)">
         <div style="font-size:10px;font-weight:500;letter-spacing:.06em;color:var(--tz);text-transform:uppercase">Progressie per rapportageperiode</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${LVS_DOMEINEN.map(d => `<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--tm)"><span style="width:8px;height:8px;border-radius:2px;background:${d.kleur};display:inline-block"></span>${d.l}</span>`).join('')}
+          ${LVS_DOMEINEN.map(d => `<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--tm)"><span style="width:8px;height:8px;border-radius:0;background:${d.kleur};display:inline-block"></span>${d.l}</span>`).join('')}
         </div>
       </div>
       <div style="padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
@@ -1272,11 +1272,11 @@ function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
     ? new Date().toLocaleDateString('nl-NL', {month:'long', year:'numeric'})
     : (tijdlijnItem?.datum || null);
 
-  const rand = isHuidig ? 'border:1.5px solid #D4500F' : 'border:0.5px solid var(--warmrand)';
-  const subKleur = isHuidig ? 'color:#D4500F;font-weight:500' : 'color:var(--tz)';
+  const rand = isHuidig ? 'border:1.5px solid #000' : 'border:0.5px solid var(--warmrand)';
+  const subKleur = isHuidig ? 'color:#000;font-weight:500' : 'color:var(--tz)';
 
   if (!scores && !isHuidig) {
-    return `<div style="background:#fff;${rand};border-radius:9px;padding:10px 12px;opacity:.5">
+    return `<div style="background:#fff;${rand};border-radius:0;padding:10px 12px;opacity:.5">
       <div style="font-size:11px;font-weight:500;color:var(--t);margin-bottom:2px">${label}</div>
       <div style="font-size:10px;color:var(--tz);margin-bottom:10px">Nog niet beschikbaar</div>
       <div style="height:80px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tz);font-style:italic">—</div>
@@ -1294,7 +1294,7 @@ function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
     const niveau = cito ? cito.niveau : '—';
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
       <div style="font-size:9px;font-weight:500;color:${cito ? cito.kleur : 'var(--tz)'}">${niveau}</div>
-      <div style="width:100%;height:${hoogte}px;background:${d.kleur};border-radius:2px 2px 0 0;min-height:3px"></div>
+      <div style="width:100%;height:${hoogte}px;background:${d.kleur};border-radius:0;min-height:3px"></div>
       <div style="font-size:9px;color:var(--tz);text-align:center">${d.l.slice(0,3)}</div>
     </div>`;
   }).join('');
@@ -1305,12 +1305,12 @@ function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
     return `<div style="display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:10px;color:var(--tz)">${d.l}</span>
       ${lbl
-        ? `<span style="font-size:10px;font-weight:500;color:${lbl.kleur};background:${lbl.bg};border-radius:4px;padding:1px 7px">${lbl.tekst}</span>`
+        ? `<span style="font-size:10px;font-weight:500;color:${lbl.kleur};background:${lbl.bg};border-radius:0;padding:1px 7px">${lbl.tekst}</span>`
         : `<span style="font-size:10px;color:var(--tz)">—</span>`}
     </div>`;
   }).join('');
 
-  return `<div style="background:#fff;${rand};border-radius:9px;padding:10px 12px">
+  return `<div style="background:#fff;${rand};border-radius:0;padding:10px 12px">
     <div style="font-size:11px;font-weight:500;color:var(--t);margin-bottom:2px">${label}</div>
     <div style="font-size:10px;${subKleur};margin-bottom:10px">${datum || '—'}</div>
     <div style="display:flex;align-items:flex-end;gap:3px;height:80px;margin-bottom:8px">${staven}</div>
@@ -1327,7 +1327,7 @@ function toonResultaten(data, naam, groep) {
   // ── Rapport header ─────────────────────────────────────────
   const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'long',year:'numeric'});
   const header = document.createElement('div');
-  header.style.cssText = 'background:#fff;border:1px solid var(--warmrand);border-radius:12px;padding:16px 18px;margin-bottom:8px';
+  header.style.cssText = 'background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:16px 18px;margin-bottom:8px';
   header.innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
@@ -1336,19 +1336,19 @@ function toonResultaten(data, naam, groep) {
         </div>
         <div style="font-size:11px;color:var(--tz);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>Gegenereerd op ${datum}</span>
-          <span style="display:inline-flex;align-items:center;gap:3px;color:#0F6E56;background:#E1F5EE;border:0.5px solid #9FE1CB;border-radius:5px;padding:2px 7px;font-weight:500">
+          <span style="display:inline-flex;align-items:center;gap:3px;color:#222;background:#f5f5f5;border:0.5px solid #ddd;border-radius:0;padding:2px 7px;font-weight:500">
             🛡 AVG-gecheckt — naam geanonimiseerd verzonden
           </span>
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="allesKopierenRapport()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
+        <button onclick="allesKopierenRapport()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
           📋 Alles kopiëren
         </button>
-        <button onclick="downloadPDF()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:7px;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
+        <button onclick="downloadPDF()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
           ⬇ PDF
         </button>
-        ${window._huidigeLeerlingId ? `<button onclick="slaRapportOpVanuitHeader()" style="display:flex;align-items:center;gap:5px;background:var(--gm);border:none;border-radius:7px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;white-space:nowrap">
+        ${window._huidigeLeerlingId ? `<button onclick="slaRapportOpVanuitHeader()" style="display:flex;align-items:center;gap:5px;background:var(--gm);border:none;border-radius:0;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;white-space:nowrap">
           💾 Opslaan
         </button>` : ''}
       </div>
@@ -1429,7 +1429,7 @@ function toonResultaten(data, naam, groep) {
   ouder.className = 'ouderblok';
   ouder.innerHTML = `
     <div class="oudertop">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#185FA5" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 6l7 4 7-4"/></svg>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#222" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 6l7 4 7-4"/></svg>
       <span class="oudertitel">DELEN MET OUDERS</span>
     </div>
     <div class="ouderbody">
@@ -1453,7 +1453,7 @@ function toonResultaten(data, naam, groep) {
         <button class="dknop" onclick="selecteerDuim('goed',this)">👍 Ja</button>
         <button class="dknop" onclick="selecteerDuim('matig',this)">👎 Nog niet</button>
       </div>
-      <textarea style="height:65px;font-size:11px;border:1px solid var(--rand);border-radius:7px;padding:8px 10px;width:100%;outline:none" id="feedtekst" placeholder="Wat kan er beter? (optioneel)"></textarea>
+      <textarea style="height:65px;font-size:11px;border:1px solid var(--rand);border-radius:0;padding:8px 10px;width:100%;outline:none" id="feedtekst" placeholder="Wat kan er beter? (optioneel)"></textarea>
       <button class="feedverstuur" onclick="verstuurFeedback()">Feedback versturen</button>
     </div>`;
   r.appendChild(fb);
@@ -1589,7 +1589,7 @@ function toggleOudermail(veldId, checkbox) {
 // ── Delen met ouders (lokaal via mailto) ─────────────────────
 async function deelMetOuders(knop) {
   const email = document.getElementById('oudermail').value.trim();
-  if (!email || !email.includes('@')) { document.getElementById('oudermail').style.borderColor = '#E24B4A'; return; }
+  if (!email || !email.includes('@')) { document.getElementById('oudermail').style.borderColor = '#555'; return; }
   const naam = document.getElementById('naam').value.trim();
   const rapportTekst = document.getElementById('resultaat')?.innerText || '';
   const onderwerp = encodeURIComponent(`Rapport ${naam || 'leerling'}`);
@@ -1646,11 +1646,11 @@ function toonFout(msg) {
   const r = document.getElementById('resultaat');
   const isPrivacy = msg && msg.includes('Privacycheck');
   if (r) r.innerHTML = isPrivacy
-    ? `<div style="background:#E1F5EE;border:1px solid #9FE1CB;border-radius:10px;padding:16px;display:flex;gap:12px;align-items:flex-start">
+    ? `<div style="background:#f5f5f5;border:1px solid #ddd;border-radius:0;padding:16px;display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:22px;flex-shrink:0">🔒</div>
         <div>
-          <div style="font-size:13px;font-weight:500;color:#0F6E56;margin-bottom:6px">Privacycheck geblokkeerd</div>
-          <div style="font-size:12px;color:#0F6E56;line-height:1.6">${msg.replace('🔒 Privacycheck geblokkeerd: ', '')}</div>
+          <div style="font-size:13px;font-weight:500;color:#222;margin-bottom:6px">Privacycheck geblokkeerd</div>
+          <div style="font-size:12px;color:#222;line-height:1.6">${msg.replace('🔒 Privacycheck geblokkeerd: ', '')}</div>
         </div>
       </div>`
     : `<div class="fout">${msg}</div>`;
@@ -1689,13 +1689,13 @@ function downloadPDF() {
   }).join('');
   const html = '<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8"><title>' + titel + '</title>'
     + '<style>'
-    + 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 30px;color:#2A2825;font-size:14px;line-height:1.7}'
-    + 'h1{font-size:22px;border-bottom:2px solid #D4500F;padding-bottom:10px;margin-bottom:6px}'
-    + '.meta{font-size:12px;color:#9A9690;margin-bottom:30px}'
+    + 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 30px;color:#000;font-size:14px;line-height:1.7}'
+    + 'h1{font-size:22px;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:6px}'
+    + '.meta{font-size:12px;color:#888;margin-bottom:30px}'
     + '.sectie{margin-bottom:22px;page-break-inside:avoid}'
-    + '.sectie-titel{font-size:10px;font-weight:700;letter-spacing:.08em;color:#8B3200;margin-bottom:6px;text-transform:uppercase}'
-    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#504E49;background:#FAF7F2;border-left:3px solid #D4500F;padding:10px 14px;border-radius:0 6px 6px 0}'
-    + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #E2DDD5;font-size:10px;color:#9A9690}'
+    + '.sectie-titel{font-size:10px;font-weight:700;letter-spacing:.08em;color:#000;margin-bottom:6px;text-transform:uppercase}'
+    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#333;background:#f8f8f8;border-left:3px solid #000;padding:10px 14px;border-radius:0'
+    + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}'
     + '</style></head><body>'
     + '<h1>' + titel + '</h1>'
     + '<div class="meta">Gegenereerd op ' + datum + ' &middot; School van morgen</div>'
@@ -1741,15 +1741,15 @@ function downloadPDF() {
 // type: 'cito' = numerieke score 0-100 + CITO-niveau
 //       'label' = dropdown Uitstekend/Goed/Voldoende/Matig/Onvoldoende
 const LVS_DOMEINEN = [
-  { k:'lezen',      l:'Lezen',       kleur:'#4A9EFF', type:'cito'  },
-  { k:'rekenen',    l:'Rekenen',     kleur:'#2ECC8F', type:'cito'  },
-  { k:'spelling',   l:'Spelling',    kleur:'#F5C842', type:'cito'  },
-  { k:'begrijpend', l:'Begrijpend',  kleur:'#C084FC', type:'cito'  },
-  { k:'sociaal',    l:'Sociaal',     kleur:'#FB923C', type:'label' },
-  { k:'werkhouding',l:'Werkhouding', kleur:'#D4500F' },
+  { k:'lezen',      l:'Lezen',       kleur:'#555', type:'cito'  },
+  { k:'rekenen',    l:'Rekenen',     kleur:'#555', type:'cito'  },
+  { k:'spelling',   l:'Spelling',    kleur:'#888', type:'cito'  },
+  { k:'begrijpend', l:'Begrijpend',  kleur:'#555', type:'cito'  },
+  { k:'sociaal',    l:'Sociaal',     kleur:'#555', type:'label' },
+  { k:'werkhouding',l:'Werkhouding', kleur:'#000' },
 ];
 
-const LVS_KLEUREN = ['#D4500F','#2ECC8F','#4A9EFF','#F5C842','#C084FC','#FB923C'];
+const LVS_KLEUREN = ['#000','#555','#555','#888','#555','#555'];
 let lvsLeerlingen = JSON.parse(localStorage.getItem('lvs_leerlingen') || '[]');
 let lvsHuidig = null;
 
@@ -1870,11 +1870,11 @@ function lvsRenderRadar() {
       ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
     } else {
       ctx.fillStyle='rgba(46,204,143,0.12)'; ctx.fill();
-      ctx.strokeStyle='#2ECC8F'; ctx.lineWidth=2; ctx.stroke();
+      ctx.strokeStyle='#555'; ctx.lineWidth=2; ctx.stroke();
       for (let i = 0; i < n; i++) {
         const a = (i/n)*2*Math.PI - Math.PI/2;
         ctx.beginPath(); ctx.arc(cx+R*data[i]*Math.cos(a), cy+R*data[i]*Math.sin(a), 3.5, 0, 2*Math.PI);
-        ctx.fillStyle='#2ECC8F'; ctx.fill();
+        ctx.fillStyle='#555'; ctx.fill();
       }
     }
   });
@@ -1936,7 +1936,7 @@ function lvsRenderIB() {
   if (!lvsHuidig) return;
   const l = lvsHuidig;
   const gem = Math.round(Object.values(l.scores).reduce((a,b)=>a+b,0)/Object.values(l.scores).length);
-  const kleurGem = gem>=75?'#2ECC8F':gem>=60?'#F5C842':'#E05252';
+  const kleurGem = gem>=75?'#555':gem>=60?'#888':'#E05252';
   document.getElementById('lvs-ib').innerHTML =
     '<div class="lvs-ib-kaart"><div class="lvs-sectie-titel">VOORTGANG PER DOMEIN</div>'
     + LVS_DOMEINEN.map(d =>
@@ -2038,7 +2038,7 @@ function mobieltoonTab(tab, knop) {
 // ══════════════════════════════════════════════════════════
 
 const AAW_REDENEN = ['Ziek', 'Dokter', 'Tandarts', 'Vakantie', 'Familieomstandigheid', 'Overig'];
-const AAW_KLEUREN = ['#D4500F','#2ECC8F','#4A9EFF','#F5C842','#C084FC','#FB923C','#E05252','#34D399'];
+const AAW_KLEUREN = ['#000','#555','#555','#888','#555','#555','#E05252','#777'];
 
 let aawDatum = new Date();
 let aawLeerlingen = JSON.parse(localStorage.getItem('aaw_leerlingen') || '[]');
@@ -2118,7 +2118,7 @@ function aawRender(zoek) {
   if (lijst.length === 0) {
     document.getElementById('aaw-lijst').innerHTML =
       '<div style="text-align:center;padding:30px;color:var(--tz);font-size:13px">'
-      + 'Geen leerlingen gevonden.<br><button onclick="aawVoegLeerlingToe()" style="margin-top:12px;background:var(--gm);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;cursor:pointer;font-family:inherit">+ Leerlingen importeren uit LVS</button>'
+      + 'Geen leerlingen gevonden.<br><button onclick="aawVoegLeerlingToe()" style="margin-top:12px;background:var(--gm);color:#fff;border:none;border-radius:0;padding:10px 18px;font-size:13px;cursor:pointer;font-family:inherit">+ Leerlingen importeren uit LVS</button>'
       + '</div>';
     return;
   }
