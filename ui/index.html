@@ -231,7 +231,7 @@ body{padding-bottom:64px}
     + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}'
     + '
 
-.aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem;width:100%}
+.aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem;width:100%;flex:1;overflow-y:auto}
 .aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
 .aaw-datum{font-family:Georgia,serif;font-size:18px;color:var(--t)}
 .aaw-datum-nav{display:flex;align-items:center;gap:8px}
@@ -276,7 +276,7 @@ body{padding-bottom:64px}
 .aaw-export-balk.zichtbaar{display:block}
 
 
-.lvs-wrap{display:flex;width:100%;flex:1;background:var(--grijs);overflow:hidden;min-height:0}
+.lvs-wrap{display:flex;width:100%;height:100%;background:var(--grijs);overflow:hidden}
 .lvs-sidebar{width:220px;background:#fff;border-right:1px solid var(--warmrand);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
 .lvs-sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--warmrand)}
 .lvs-sidebar-titel{font-size:13px;font-weight:600;color:var(--t);margin-bottom:2px}
@@ -1591,7 +1591,7 @@ function downloadPDF() {
 </script>
 
 <!-- Mobiele bottom navigation -->
-<div class="sectie" id="tab-aanwezigheid" style="display:none;flex:1;overflow:hidden;min-height:0">
+<div class="sectie" id="tab-aanwezigheid" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
 
 
 <div class="aaw-wrap">
@@ -1644,7 +1644,7 @@ function downloadPDF() {
 </div>
 </div>
 
-<div class="sectie" id="tab-lvs" style="display:none;flex:1;overflow:hidden;min-height:0">
+<div class="sectie" id="tab-lvs" style="display:none;flex:1;overflow:hidden;min-height:0;flex-direction:column">
 
 
 <div class="lvs-wrap">
