@@ -567,22 +567,22 @@ function toonTab(tab, knop) {
   const lvsEl = document.getElementById('tab-lvs');
   const aawEl = document.getElementById('tab-aanwezigheid');
   if (tab === 'lvs') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
+    if (aawEl) aawEl.style.cssText = 'display:none';
     if (lvsEl) {
       lvsEl.style.cssText = 'display:flex;flex:1;overflow:hidden;min-height:0';
       if (typeof lvsInit === 'function') lvsInit();
     }
   } else if (tab === 'aanwezigheid') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (lvsEl) lvsEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
+    if (lvsEl) lvsEl.style.cssText = 'display:none';
     if (aawEl) {
       aawEl.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0';
       if (typeof aawInit === 'function') aawInit();
     }
   } else {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
+    if (lvsEl) lvsEl.style.cssText = 'display:none';
+    if (aawEl) aawEl.style.cssText = 'display:none';
     if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
     const el = document.getElementById('tab-' + tab);
     if (el) el.classList.add('actief');
