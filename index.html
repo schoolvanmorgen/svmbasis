@@ -443,23 +443,25 @@ function toonTab(tab, knop) {
   const lvsEl = document.getElementById('tab-lvs');
   const aawEl = document.getElementById('tab-aanwezigheid');
   if (tab === 'lvs') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.visibility = 'hidden';
+    if (aawEl) { aawEl.style.display = 'none'; aawEl.style.visibility = 'visible'; }
     if (lvsEl) {
-      lvsEl.style.cssText = 'display:flex;position:absolute;inset:0;padding:0;overflow:hidden;z-index:1';
+      lvsEl.style.cssText = 'display:flex;visibility:visible;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2';
       if (typeof lvsInit === 'function') lvsInit();
     }
   } else if (tab === 'aanwezigheid') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (lvsEl) lvsEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.visibility = 'hidden';
+    if (lvsEl) { lvsEl.style.display = 'none'; lvsEl.style.visibility = 'visible'; }
     if (aawEl) {
-      aawEl.style.cssText = 'display:flex;flex-direction:column;position:absolute;inset:0;padding:0;overflow:hidden;z-index:1';
+      aawEl.style.cssText = 'display:flex;visibility:visible;flex-direction:column;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2';
       if (typeof aawInit === 'function') aawInit();
     }
   } else {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0;position:relative';
+    if (lvsEl) { lvsEl.style.display = 'none'; lvsEl.style.visibility = 'hidden'; }
+    if (aawEl) { aawEl.style.display = 'none'; aawEl.style.visibility = 'hidden'; }
+    if (tabInhoud) {
+      tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0;visibility:visible';
+    }
     const el = document.getElementById('tab-' + tab);
     if (el) el.classList.add('actief');
   }
