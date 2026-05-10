@@ -2157,22 +2157,22 @@ function aawRender(zoek) {
     const kleur = l.kleur || AAW_KLEUREN[0];
 
     return '<div class="aaw-item ' + data.status + '" id="aaw-item-' + l.id + '">'
-      + '<div class="aaw-item-top" onclick="aawToggleExtra('' + l.id + '')">'
+      + '<div class="aaw-item-top" onclick="aawToggleExtra(\'' + l.id + '\')">'
       + '<div class="aaw-avatar" style="background:' + kleur + '22;color:' + kleur + ';border:1px solid ' + kleur + '44">' + (l.initialen || l.naam.slice(0,2).toUpperCase()) + '</div>'
       + '<div class="aaw-info"><div class="aaw-naam">' + l.naam + '</div>'
       + '<div class="aaw-status-tekst">' + statusLabel + (data.reden ? ' · ' + data.reden : '') + '</div></div>'
       + '<div class="aaw-knoppen" onclick="event.stopPropagation()">'
-      + '<button class="aaw-knop aanwezig-knop ' + (data.status === 'aanwezig' ? 'actief' : '') + '" onclick="aawZetStatus('' + l.id + '','aanwezig')" title="Aanwezig">✅</button>'
-      + '<button class="aaw-knop laat-knop ' + (data.status === 'laat' ? 'actief' : '') + '" onclick="aawZetStatus('' + l.id + '','laat')" title="Te laat">🕐</button>'
-      + '<button class="aaw-knop afwezig-knop ' + (data.status === 'afwezig' ? 'actief' : '') + '" onclick="aawZetStatus('' + l.id + '','afwezig')" title="Afwezig">❌</button>'
+      + '<button class="aaw-knop aanwezig-knop ' + (data.status === 'aanwezig' ? 'actief' : '') + '" onclick="aawZetStatus(\'' + l.id + '\',\'aanwezig\')" title="Aanwezig">✅</button>'
+      + '<button class="aaw-knop laat-knop ' + (data.status === 'laat' ? 'actief' : '') + '" onclick="aawZetStatus(\'' + l.id + '\',\'laat\')" title="Te laat">🕐</button>'
+      + '<button class="aaw-knop afwezig-knop ' + (data.status === 'afwezig' ? 'actief' : '') + '" onclick="aawZetStatus(\'' + l.id + '\',\'afwezig\')" title="Afwezig">❌</button>'
       + '</div></div>'
       + '<div class="aaw-item-extra" id="aaw-extra-' + l.id + '">'
       + '<div class="aaw-extra-label">REDEN AFWEZIGHEID</div>'
       + '<div class="aaw-reden-knoppen">'
-      + AAW_REDENEN.map(r => '<button class="aaw-reden ' + (data.reden === r ? 'actief' : '') + '" onclick="aawZetReden('' + l.id + '','' + r + '')">' + r + '</button>').join('')
+      + AAW_REDENEN.map(r => '<button class="aaw-reden ' + (data.reden === r ? 'actief' : '') + '" onclick="aawZetReden(\'' + l.id + '\',\'' + r + '\')">' + r + '</button>').join('')
       + '</div>'
       + '<div class="aaw-extra-label">OPMERKING / BERICHT VAN OUDERS</div>'
-      + '<textarea class="aaw-opmerking" placeholder="Bericht van ouders, bijzonderheden…" onchange="aawZetOpmerking('' + l.id + '',this.value)">' + (data.opmerking || '') + '</textarea>'
+      + '<textarea class="aaw-opmerking" placeholder="Bericht van ouders, bijzonderheden…" onchange="aawZetOpmerking(\'' + l.id + '\',this.value)">' + (data.opmerking || '') + '</textarea>'
       + '</div>'
       + '</div>';
   }).join('');
