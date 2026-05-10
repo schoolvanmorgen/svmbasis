@@ -567,24 +567,17 @@ function toonTab(tab, knop) {
   const lvsEl = document.getElementById('tab-lvs');
   const aawEl = document.getElementById('tab-aanwezigheid');
   if (tab === 'lvs') {
-    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
-    if (aawEl) aawEl.style.cssText = 'display:none';
-    if (lvsEl) {
-      lvsEl.style.cssText = 'display:flex;flex:1;overflow:hidden;min-height:0';
-      if (typeof lvsInit === 'function') lvsInit();
-
-    }
+    if (tabInhoud) tabInhoud.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (lvsEl) { lvsEl.style.display = 'block'; if (typeof lvsInit === 'function') lvsInit(); }
   } else if (tab === 'aanwezigheid') {
-    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
-    if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl) {
-      aawEl.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0';
-      if (typeof aawInit === 'function') aawInit();
-    }
+    if (tabInhoud) tabInhoud.style.display = 'none';
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) { aawEl.style.display = 'block'; if (typeof aawInit === 'function') aawInit(); }
   } else {
-    if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl) aawEl.style.cssText = 'display:none';
-    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.display = '';
     const el = document.getElementById('tab-' + tab);
     if (el) el.classList.add('actief');
   }
@@ -687,14 +680,13 @@ function toonTab(tab, knop) {
   <div class="tijds-tip" id="t-tip">Elk rapport bespaart gemiddeld 25 minuten schrijftijd.</div>
   <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #e0e0e0;background:transparent;color:#000;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
 </div>
-<div style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem">
   <button class="tab actief" onclick="toonTab('rapport',this)">Rapport</button>
   <button class="tab" onclick="toonTab('oudergesprek',this)">Oudergesprek</button>
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
   <button class="tab" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
 </div>
-<div id="tab-inhoud" style="flex:1;overflow:hidden;display:flex;min-height:0">
+<div id="tab-inhoud">
   <div class="invoer">
     <div>
       <div class="vlabel">LEERLING</div>
@@ -1591,7 +1583,7 @@ function downloadPDF() {
 </script>
 
 <!-- Mobiele bottom navigation -->
-<div class="sectie" id="tab-aanwezigheid" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+<div class="sectie" id="tab-aanwezigheid" style="display:none;padding:0">
 
 
 <div class="aaw-wrap">
@@ -1644,7 +1636,7 @@ function downloadPDF() {
 </div>
 </div>
 
-<div class="sectie" id="tab-lvs" style="display:none;flex:1;overflow:hidden;min-height:0;flex-direction:column">
+<div class="sectie" id="tab-lvs" style="display:none;padding:0;height:calc(100vh - 120px);overflow:hidden">
 
 
 <div class="lvs-wrap">
@@ -1739,7 +1731,6 @@ function downloadPDF() {
 </div>
 </div>
 
-</div><!-- einde flex wrapper -->
 </div><!-- einde app-scherm -->
 <nav class="bottom-nav" id="bottom-nav">
   <button class="bnav-item actief" onclick="mobieltoonTab('rapport', this)" data-tab="rapport">
@@ -2028,11 +2019,11 @@ function mobieltoonTab(tab, knop) {
   if (tab === 'lvs') {
     if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
     if (aawEl2) aawEl2.style.cssText = 'display:none';
-    if (lvsEl) { lvsEl.style.cssText = 'display:flex;flex:1;overflow:hidden;min-height:0'; lvsInit(); }
+    if (lvsEl) { lvsEl.style.display = 'block'; lvsInit(); }
   } else if (tab === 'aanwezigheid') {
     if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
     if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl2) { aawEl2.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0'; aawInit(); }
+    if (aawEl2) { aawEl2.style.display = 'block'; aawInit(); }
   } else if (tab === 'rapport') {
     if (lvsEl) lvsEl.style.cssText = 'display:none';
     if (aawEl2) aawEl2.style.cssText = 'display:none';
