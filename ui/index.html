@@ -443,25 +443,23 @@ function toonTab(tab, knop) {
   const lvsEl = document.getElementById('tab-lvs');
   const aawEl = document.getElementById('tab-aanwezigheid');
   if (tab === 'lvs') {
-    if (tabInhoud) tabInhoud.style.visibility = 'hidden';
-    if (aawEl) { aawEl.style.display = 'none'; aawEl.style.visibility = 'visible'; }
+    if (tabInhoud) tabInhoud.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
     if (lvsEl) {
-      lvsEl.style.cssText = 'display:flex;visibility:visible;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2';
+      lvsEl.style.cssText = 'display:flex;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2';
       if (typeof lvsInit === 'function') lvsInit();
     }
   } else if (tab === 'aanwezigheid') {
-    if (tabInhoud) tabInhoud.style.visibility = 'hidden';
-    if (lvsEl) { lvsEl.style.display = 'none'; lvsEl.style.visibility = 'visible'; }
+    if (tabInhoud) tabInhoud.style.display = 'none';
+    if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) {
-      aawEl.style.cssText = 'display:flex;visibility:visible;flex-direction:column;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2';
+      aawEl.style.cssText = 'display:flex;flex-direction:column;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2;background:#fff';
       if (typeof aawInit === 'function') aawInit();
     }
   } else {
-    if (lvsEl) { lvsEl.style.display = 'none'; lvsEl.style.visibility = 'hidden'; }
-    if (aawEl) { aawEl.style.display = 'none'; aawEl.style.visibility = 'hidden'; }
-    if (tabInhoud) {
-      tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0;visibility:visible';
-    }
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
     const el = document.getElementById('tab-' + tab);
     if (el) el.classList.add('actief');
   }
@@ -779,265 +777,7 @@ function toonTab(tab, knop) {
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- Aanwezigheidsregistratie tab                          -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div class="sectie" id="tab-aanwezigheid" style="display:none;padding:0;overflow:hidden">
-<style>
-.aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem}
-.aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
-.aaw-datum{font-family:Georgia,serif;font-size:18px;color:var(--t)}
-.aaw-datum-nav{display:flex;align-items:center;gap:8px}
-.aaw-datum-knop{background:none;border:1.5px solid var(--rand);border-radius:0;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.aaw-datum-knop:hover{border-color:var(--t);color:var(--t)}
-.aaw-stats{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
-.aaw-stat{flex:1;min-width:80px;background:#fff;border:1px solid var(--rand);border-radius:0;padding:10px 12px;text-align:center}
-.aaw-stat-getal{font-family:Georgia,serif;font-size:24px;font-weight:700}
-.aaw-stat-label{font-size:10px;color:var(--tz);margin-top:2px;font-weight:500;letter-spacing:.04em}
-.aaw-zoek{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:11px 14px;font-size:14px;color:var(--t);background:#fff;outline:none;margin-bottom:1rem;font-family:inherit}
-.aaw-zoek:focus{border-color:var(--t)}
-.aaw-lijst{display:flex;flex-direction:column;gap:8px}
-.aaw-item{background:#fff;border:1.5px solid var(--rand);border-radius:0;overflow:hidden;transition:border-color .15s}
-.aaw-item.aanwezig{border-color:#e8e8e8}
-.aaw-item.afwezig{border-color:#e8e8e8}
-.aaw-item.laat{border-color:#e8e8e8}
-.aaw-item-top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
-.aaw-avatar{width:38px;height:38px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
-.aaw-info{flex:1}
-.aaw-naam{font-size:14px;font-weight:500;color:var(--t)}
-.aaw-status-tekst{font-size:11px;color:var(--tz);margin-top:1px}
-.aaw-knoppen{display:flex;gap:6px;flex-shrink:0}
-.aaw-knop{width:36px;height:36px;border-radius:0;border:2px solid var(--rand);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
-.aaw-knop:active{transform:scale(.92)}
-.aaw-knop.aanwezig-knop.actief{background:#f5f5f5;border-color:#333}
-.aaw-knop.afwezig-knop.actief{background:#f5f5f5;border-color:#333}
-.aaw-knop.laat-knop.actief{background:#f5f5f5;border-color:#333}
-.aaw-item-extra{display:none;padding:0 14px 12px;border-top:1px solid var(--rand);background:#f8f8f8}
-.aaw-item-extra.open{display:block}
-.aaw-extra-label{font-size:10px;font-weight:600;color:var(--tz);letter-spacing:.05em;margin:10px 0 5px}
-.aaw-opmerking{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:8px 10px;font-size:13px;color:var(--t);background:#fff;outline:none;resize:none;min-height:60px;font-family:inherit;line-height:1.5}
-.aaw-opmerking:focus{border-color:var(--t)}
-.aaw-reden-knoppen{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.aaw-reden{padding:5px 12px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:11px;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
-.aaw-reden.actief{border-color:var(--t);background:var(--gl);color:var(--g)}
-.aaw-acties{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
-.aaw-actie-knop{flex:1;padding:11px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;min-width:120px}
-.aaw-actie-knop:hover{border-color:var(--t);color:var(--t)}
-.aaw-actie-knop.prim{background:var(--gm);color:#fff;border-color:var(--t)}
-.aaw-actie-knop.prim:hover{background:var(--g)}
-.aaw-export-balk{background:var(--gl);border:1px solid #e0e0e0;border-radius:0;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
-.aaw-export-balk.zichtbaar{display:block}
-</style>
 
-<div class="aaw-wrap">
-  <div class="aaw-header">
-    <div>
-      <div class="vlabel">AANWEZIGHEIDSREGISTRATIE</div>
-      <div class="aaw-datum" id="aaw-datum-tekst"></div>
-    </div>
-    <div class="aaw-datum-nav">
-      <button class="aaw-datum-knop" onclick="aawVorigeDag()">‹</button>
-      <button class="aaw-datum-knop" onclick="aawVandaag()" style="font-size:11px;width:auto;padding:0 10px">Vandaag</button>
-      <button class="aaw-datum-knop" onclick="aawVolgendeDag()">›</button>
-    </div>
-  </div>
-
-  <div class="aaw-stats">
-    <div class="aaw-stat">
-      <div class="aaw-stat-getal" id="aaw-tel-aanwezig" style="color:#333">0</div>
-      <div class="aaw-stat-label">AANWEZIG</div>
-    </div>
-    <div class="aaw-stat">
-      <div class="aaw-stat-getal" id="aaw-tel-afwezig" style="color:#333">0</div>
-      <div class="aaw-stat-label">AFWEZIG</div>
-    </div>
-    <div class="aaw-stat">
-      <div class="aaw-stat-getal" id="aaw-tel-laat" style="color:#333">0</div>
-      <div class="aaw-stat-label">TE LAAT</div>
-    </div>
-    <div class="aaw-stat">
-      <div class="aaw-stat-getal" id="aaw-tel-onbekend" style="color:var(--tz)">0</div>
-      <div class="aaw-stat-label">ONBEKEND</div>
-    </div>
-  </div>
-
-  <div class="aaw-export-balk" id="aaw-export-balk">
-    ✓ Aanwezigheid opgeslagen voor <span id="aaw-export-datum"></span>
-    <button onclick="aawExporteer()" style="margin-left:10px;background:var(--gm);color:#fff;border:none;border-radius:0;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">Exporteer CSV</button>
-  </div>
-
-  <input class="aaw-zoek" type="text" placeholder="🔍  Leerling zoeken…" oninput="aawFilter(this.value)">
-
-  <div class="aaw-acties">
-    <button class="aaw-actie-knop" onclick="aawAlleAanwezig()">✅ Iedereen aanwezig</button>
-    <button class="aaw-actie-knop prim" onclick="aawSlaOp()">Opslaan</button>
-  </div>
-
-  <div style="height:12px"></div>
-  <div class="aaw-lijst" id="aaw-lijst"></div>
-</div>
-</div>
-
-<div class="sectie" id="tab-lvs" style="display:none;padding:0;overflow:hidden">
-<style>
-.lvs-wrap{display:flex;width:100%;height:100%;background:var(--grijs);overflow:hidden}
-.lvs-sidebar{width:220px;background:#fff;border-right:1px solid var(--warmrand);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
-.lvs-sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--warmrand)}
-.lvs-sidebar-titel{font-size:13px;font-weight:600;color:var(--t);margin-bottom:2px}
-.lvs-sidebar-meta{font-size:10px;color:var(--tz);letter-spacing:.04em;text-transform:uppercase}
-.lvs-zoek{padding:8px 10px;border-bottom:1px solid var(--warmrand)}
-.lvs-zoek input{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;box-sizing:border-box}
-.lvs-zoek input:focus{border-color:var(--t)}
-.lvs-lijst{flex:1;overflow-y:auto;padding:6px}
-.lvs-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:0;cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:all .15s}
-.lvs-item:hover{background:var(--gl)}
-.lvs-item.actief{background:var(--gl);border-color:rgba(212,80,15,.25)}
-.lvs-av{width:32px;height:32px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:#fff}
-.lvs-item-info{flex:1;min-width:0}
-.lvs-item-naam{font-size:12px;font-weight:500;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lvs-item-groep{font-size:10px;color:var(--tz);margin-top:1px}
-.lvs-footer{padding:10px 12px;border-top:1px solid var(--warmrand)}
-.lvs-add{width:100%;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-.lvs-hoofd{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.lvs-profiel{padding:14px 18px;border-bottom:1px solid var(--warmrand);background:#fff;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.lvs-profiel-av{width:44px;height:44px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0}
-.lvs-profiel-naam{font-size:17px;font-weight:600;color:var(--t)}
-.lvs-profiel-meta{font-size:11px;color:var(--tz);margin-top:2px}
-.lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
-.lvs-tabs{display:flex;padding:0 18px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0}
-.lvs-tab{padding:10px 12px;font-size:12px;font-weight:500;color:var(--tz);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit}
-.lvs-tab:hover{color:var(--tm)}
-.lvs-tab.actief{color:var(--t);border-bottom-color:var(--t)}
-.lvs-inhoud{flex:1;overflow-y:auto;padding:16px 18px}
-.lvs-sectie-titel{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--tz);text-transform:uppercase;margin-bottom:10px;margin-top:4px}
-.lvs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.lvs-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
-.lvs-domein-label{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--tz);margin-bottom:6px;text-transform:uppercase}
-.lvs-score{font-size:30px;font-weight:700;line-height:1;margin-bottom:5px;color:var(--t)}
-.lvs-trend{font-size:11px;display:flex;align-items:center;gap:3px}
-.lvs-omhoog{color:#333}
-.lvs-omlaag{color:var(--r)}
-.lvs-gelijk{color:var(--tz)}
-.lvs-radar-wrap{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:14px;display:flex;justify-content:center;margin-bottom:14px}
-.lvs-tijdlijn{display:flex;flex-direction:column;gap:0}
-.lvs-tl-item{display:flex;gap:12px;padding-bottom:14px;position:relative}
-.lvs-tl-item::before{content:'';position:absolute;left:13px;top:26px;bottom:0;width:1px;background:var(--warmrand)}
-.lvs-tl-item:last-child::before{display:none}
-.lvs-tl-dot{width:26px;height:26px;border-radius:0;background:var(--grijs);border:2px solid var(--rand);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;z-index:1}
-.lvs-tl-dot.rapport{border-color:var(--t);background:var(--gl)}
-.lvs-tl-dot.notitie{border-color:var(--b);background:var(--bl)}
-.lvs-tl-inhoud{flex:1;padding-top:2px}
-.lvs-tl-datum{font-size:10px;color:var(--tz);margin-bottom:3px}
-.lvs-tl-tekst{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:9px 11px;font-size:12px;line-height:1.6;color:var(--tm)}
-.lvs-notitie-form{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px;display:flex;flex-direction:column;gap:8px}
-.lvs-textarea{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:8px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;min-height:80px;resize:vertical;line-height:1.6;box-sizing:border-box}
-.lvs-textarea:focus{border-color:var(--t)}
-.lvs-scores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.lvs-score-input{background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 8px;font-size:12px;color:var(--t);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
-.lvs-score-input:focus{border-color:var(--t)}
-.lvs-ib-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lvs-ib-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
-.lvs-balk-wrap{margin-bottom:7px}
-.lvs-balk-label{display:flex;justify-content:space-between;font-size:11px;color:var(--tz);margin-bottom:3px}
-.lvs-balk{height:5px;background:var(--grijs);border-radius:0;overflow:hidden}
-.lvs-balk-fill{height:100%;border-radius:0;transition:width .8s ease}
-.lvs-tag{display:inline-block;padding:2px 7px;border-radius:0;font-size:10px;font-weight:500;margin:2px}
-.lvs-tag-oranje{background:#f0f0f0;color:#000;border:1px solid #ccc}
-.lvs-tag-groen{background:#f5f5f5;color:#222;border:1px solid rgba(29,158,117,.2)}
-.lvs-tag-blauw{background:#f0f0f0;color:#000;border:1px solid #ccc}
-.lvs-leeg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;opacity:.4;text-align:center;padding:40px}
-.lvs-leeg-icon{font-size:36px}
-.lvs-leeg-tekst{font-size:13px;color:var(--tz)}
-</style>
-
-<div class="lvs-wrap">
-  <div class="lvs-sidebar">
-    <div class="lvs-sidebar-header">
-      <div class="lvs-sidebar-titel">Leerlingen</div>
-      <div class="lvs-sidebar-meta">SCHOOLJAAR 2025–2026</div>
-    </div>
-    <div class="lvs-zoek"><input type="text" placeholder="Zoeken…" oninput="lvsFilter(this.value)"></div>
-    <div class="lvs-lijst" id="lvs-lijst"></div>
-    <div class="lvs-footer">
-      <button class="lvs-add" onclick="lvsVoegToe()">+ Leerling toevoegen</button>
-    </div>
-  </div>
-
-  <div class="lvs-hoofd">
-    <div class="lvs-profiel">
-      <div class="lvs-profiel-av" id="lvs-av">FK</div>
-      <div>
-        <div class="lvs-profiel-naam" id="lvs-naam">Selecteer een leerling</div>
-        <div class="lvs-profiel-meta" id="lvs-meta">—</div>
-      </div>
-      <button class="lvs-gen-knop" onclick="lvsGenereer()">Genereer rapport</button>
-    </div>
-
-    <div class="lvs-tabs">
-      <button class="lvs-tab actief" onclick="lvsToonTab('profiel',this)">Profiel</button>
-      <button class="lvs-tab" onclick="lvsToonTab('tijdlijn',this)">Tijdlijn</button>
-      <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Notitie toevoegen</button>
-      <button class="lvs-tab" onclick="lvsToonTab('ib',this)">IB-dashboard</button>
-    </div>
-
-    <div class="lvs-inhoud" id="lvs-tab-profiel">
-      <div class="lvs-sectie-titel">ONTWIKKELING PER DOMEIN</div>
-      <div class="lvs-grid" id="lvs-domeinen"></div>
-      <div class="lvs-sectie-titel">VOORTGANG OVER TIJD</div>
-      <div class="lvs-radar-wrap"><canvas id="lvs-radar" width="300" height="240"></canvas></div>
-    </div>
-
-    <div class="lvs-inhoud" id="lvs-tab-tijdlijn" style="display:none">
-      <div class="lvs-sectie-titel">GESCHIEDENIS</div>
-      <div class="lvs-tijdlijn" id="lvs-tijdlijn"></div>
-    </div>
-
-    <div class="lvs-inhoud" id="lvs-tab-notitie" style="display:none">
-      <div class="lvs-sectie-titel">NIEUWE NOTITIE</div>
-      <div class="lvs-notitie-form">
-        <select id="lvs-notitie-type" style="background:#111;border:1px solid #111;border-radius:0;padding:7px 10px;font-size:12px;color:#f5f5f5;font-family:inherit;outline:none">
-          <option value="observatie">Observatie</option>
-          <option value="gesprek">Gesprek met ouder</option>
-          <option value="toets">Toetsresultaat</option>
-          <option value="bijzonderheid">Bijzonderheid</option>
-        </select>
-        <textarea class="lvs-textarea" id="lvs-notitie-tekst" placeholder="Beschrijf je observatie, gesprek of resultaat…"></textarea>
-        <div>
-          <div style="font-size:10px;color:#444;margin-bottom:6px">SCORES BIJWERKEN (optioneel, 0–100)</div>
-          <div class="lvs-scores-grid">
-            <input class="lvs-score-input" type="number" id="lvs-s-lezen" placeholder="Lezen" min="0" max="100">
-            <input class="lvs-score-input" type="number" id="lvs-s-rekenen" placeholder="Rekenen" min="0" max="100">
-            <input class="lvs-score-input" type="number" id="lvs-s-spelling" placeholder="Spelling" min="0" max="100">
-            <input class="lvs-score-input" type="number" id="lvs-s-begrijpend" placeholder="Begrijpend" min="0" max="100">
-            <select class="lvs-score-input" id="lvs-s-sociaal" title="Sociaal">
-              <option value="">Sociaal…</option>
-              <option value="95">Uitstekend</option>
-              <option value="80">Goed</option>
-              <option value="60">Voldoende</option>
-              <option value="40">Matig</option>
-              <option value="20">Onvoldoende</option>
-            </select>
-            <select class="lvs-score-input" id="lvs-s-werkhouding" title="Werkhouding">
-              <option value="">Werkhouding…</option>
-              <option value="95">Uitstekend</option>
-              <option value="80">Goed</option>
-              <option value="60">Voldoende</option>
-              <option value="40">Matig</option>
-              <option value="20">Onvoldoende</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button onclick="lvsClearNotitie()" style="background:transparent;color:#888;border:1px solid #111;border-radius:0;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
-          <button onclick="lvsSlaNotitieOp()" style="background:#000;color:#fff;border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="lvs-inhoud" id="lvs-tab-ib" style="display:none">
-      <div class="lvs-sectie-titel">IB-OVERZICHT</div>
-      <div class="lvs-ib-grid" id="lvs-ib"></div>
-    </div>
-  </div>
-</div>
-</div>
 
 
 </div><!-- einde tab-inhoud -->
@@ -1707,6 +1447,266 @@ function downloadPDF() {
 </script>
 
 <!-- Mobiele bottom navigation -->
+<div class="sectie" id="tab-aanwezigheid" style="display:none;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2;background:#fff">
+<style>
+.aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem}
+.aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
+.aaw-datum{font-family:Georgia,serif;font-size:18px;color:var(--t)}
+.aaw-datum-nav{display:flex;align-items:center;gap:8px}
+.aaw-datum-knop{background:none;border:1.5px solid var(--rand);border-radius:0;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.aaw-datum-knop:hover{border-color:var(--t);color:var(--t)}
+.aaw-stats{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+.aaw-stat{flex:1;min-width:80px;background:#fff;border:1px solid var(--rand);border-radius:0;padding:10px 12px;text-align:center}
+.aaw-stat-getal{font-family:Georgia,serif;font-size:24px;font-weight:700}
+.aaw-stat-label{font-size:10px;color:var(--tz);margin-top:2px;font-weight:500;letter-spacing:.04em}
+.aaw-zoek{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:11px 14px;font-size:14px;color:var(--t);background:#fff;outline:none;margin-bottom:1rem;font-family:inherit}
+.aaw-zoek:focus{border-color:var(--t)}
+.aaw-lijst{display:flex;flex-direction:column;gap:8px}
+.aaw-item{background:#fff;border:1.5px solid var(--rand);border-radius:0;overflow:hidden;transition:border-color .15s}
+.aaw-item.aanwezig{border-color:#e8e8e8}
+.aaw-item.afwezig{border-color:#e8e8e8}
+.aaw-item.laat{border-color:#e8e8e8}
+.aaw-item-top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
+.aaw-avatar{width:38px;height:38px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.aaw-info{flex:1}
+.aaw-naam{font-size:14px;font-weight:500;color:var(--t)}
+.aaw-status-tekst{font-size:11px;color:var(--tz);margin-top:1px}
+.aaw-knoppen{display:flex;gap:6px;flex-shrink:0}
+.aaw-knop{width:36px;height:36px;border-radius:0;border:2px solid var(--rand);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.aaw-knop:active{transform:scale(.92)}
+.aaw-knop.aanwezig-knop.actief{background:#f5f5f5;border-color:#333}
+.aaw-knop.afwezig-knop.actief{background:#f5f5f5;border-color:#333}
+.aaw-knop.laat-knop.actief{background:#f5f5f5;border-color:#333}
+.aaw-item-extra{display:none;padding:0 14px 12px;border-top:1px solid var(--rand);background:#f8f8f8}
+.aaw-item-extra.open{display:block}
+.aaw-extra-label{font-size:10px;font-weight:600;color:var(--tz);letter-spacing:.05em;margin:10px 0 5px}
+.aaw-opmerking{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:8px 10px;font-size:13px;color:var(--t);background:#fff;outline:none;resize:none;min-height:60px;font-family:inherit;line-height:1.5}
+.aaw-opmerking:focus{border-color:var(--t)}
+.aaw-reden-knoppen{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.aaw-reden{padding:5px 12px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:11px;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.aaw-reden.actief{border-color:var(--t);background:var(--gl);color:var(--g)}
+.aaw-acties{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
+.aaw-actie-knop{flex:1;padding:11px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;min-width:120px}
+.aaw-actie-knop:hover{border-color:var(--t);color:var(--t)}
+.aaw-actie-knop.prim{background:var(--gm);color:#fff;border-color:var(--t)}
+.aaw-actie-knop.prim:hover{background:var(--g)}
+.aaw-export-balk{background:var(--gl);border:1px solid #e0e0e0;border-radius:0;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
+.aaw-export-balk.zichtbaar{display:block}
+</style>
+
+<div class="aaw-wrap">
+  <div class="aaw-header">
+    <div>
+      <div class="vlabel">AANWEZIGHEIDSREGISTRATIE</div>
+      <div class="aaw-datum" id="aaw-datum-tekst"></div>
+    </div>
+    <div class="aaw-datum-nav">
+      <button class="aaw-datum-knop" onclick="aawVorigeDag()">‹</button>
+      <button class="aaw-datum-knop" onclick="aawVandaag()" style="font-size:11px;width:auto;padding:0 10px">Vandaag</button>
+      <button class="aaw-datum-knop" onclick="aawVolgendeDag()">›</button>
+    </div>
+  </div>
+
+  <div class="aaw-stats">
+    <div class="aaw-stat">
+      <div class="aaw-stat-getal" id="aaw-tel-aanwezig" style="color:#333">0</div>
+      <div class="aaw-stat-label">AANWEZIG</div>
+    </div>
+    <div class="aaw-stat">
+      <div class="aaw-stat-getal" id="aaw-tel-afwezig" style="color:#333">0</div>
+      <div class="aaw-stat-label">AFWEZIG</div>
+    </div>
+    <div class="aaw-stat">
+      <div class="aaw-stat-getal" id="aaw-tel-laat" style="color:#333">0</div>
+      <div class="aaw-stat-label">TE LAAT</div>
+    </div>
+    <div class="aaw-stat">
+      <div class="aaw-stat-getal" id="aaw-tel-onbekend" style="color:var(--tz)">0</div>
+      <div class="aaw-stat-label">ONBEKEND</div>
+    </div>
+  </div>
+
+  <div class="aaw-export-balk" id="aaw-export-balk">
+    ✓ Aanwezigheid opgeslagen voor <span id="aaw-export-datum"></span>
+    <button onclick="aawExporteer()" style="margin-left:10px;background:var(--gm);color:#fff;border:none;border-radius:0;padding:3px 10px;font-size:11px;cursor:pointer;font-family:inherit">Exporteer CSV</button>
+  </div>
+
+  <input class="aaw-zoek" type="text" placeholder="🔍  Leerling zoeken…" oninput="aawFilter(this.value)">
+
+  <div class="aaw-acties">
+    <button class="aaw-actie-knop" onclick="aawAlleAanwezig()">✅ Iedereen aanwezig</button>
+    <button class="aaw-actie-knop prim" onclick="aawSlaOp()">Opslaan</button>
+  </div>
+
+  <div style="height:12px"></div>
+  <div class="aaw-lijst" id="aaw-lijst"></div>
+</div>
+</div>
+
+<div class="sectie" id="tab-lvs" style="display:none;position:absolute;inset:0;padding:0;overflow:hidden;z-index:2">
+<style>
+.lvs-wrap{display:flex;width:100%;height:100%;background:var(--grijs);overflow:hidden}
+.lvs-sidebar{width:220px;background:#fff;border-right:1px solid var(--warmrand);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.lvs-sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--warmrand)}
+.lvs-sidebar-titel{font-size:13px;font-weight:600;color:var(--t);margin-bottom:2px}
+.lvs-sidebar-meta{font-size:10px;color:var(--tz);letter-spacing:.04em;text-transform:uppercase}
+.lvs-zoek{padding:8px 10px;border-bottom:1px solid var(--warmrand)}
+.lvs-zoek input{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;box-sizing:border-box}
+.lvs-zoek input:focus{border-color:var(--t)}
+.lvs-lijst{flex:1;overflow-y:auto;padding:6px}
+.lvs-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:0;cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:all .15s}
+.lvs-item:hover{background:var(--gl)}
+.lvs-item.actief{background:var(--gl);border-color:rgba(212,80,15,.25)}
+.lvs-av{width:32px;height:32px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:#fff}
+.lvs-item-info{flex:1;min-width:0}
+.lvs-item-naam{font-size:12px;font-weight:500;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lvs-item-groep{font-size:10px;color:var(--tz);margin-top:1px}
+.lvs-footer{padding:10px 12px;border-top:1px solid var(--warmrand)}
+.lvs-add{width:100%;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.lvs-hoofd{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.lvs-profiel{padding:14px 18px;border-bottom:1px solid var(--warmrand);background:#fff;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.lvs-profiel-av{width:44px;height:44px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0}
+.lvs-profiel-naam{font-size:17px;font-weight:600;color:var(--t)}
+.lvs-profiel-meta{font-size:11px;color:var(--tz);margin-top:2px}
+.lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.lvs-tabs{display:flex;padding:0 18px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0}
+.lvs-tab{padding:10px 12px;font-size:12px;font-weight:500;color:var(--tz);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit}
+.lvs-tab:hover{color:var(--tm)}
+.lvs-tab.actief{color:var(--t);border-bottom-color:var(--t)}
+.lvs-inhoud{flex:1;overflow-y:auto;padding:16px 18px}
+.lvs-sectie-titel{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--tz);text-transform:uppercase;margin-bottom:10px;margin-top:4px}
+.lvs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.lvs-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
+.lvs-domein-label{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--tz);margin-bottom:6px;text-transform:uppercase}
+.lvs-score{font-size:30px;font-weight:700;line-height:1;margin-bottom:5px;color:var(--t)}
+.lvs-trend{font-size:11px;display:flex;align-items:center;gap:3px}
+.lvs-omhoog{color:#333}
+.lvs-omlaag{color:var(--r)}
+.lvs-gelijk{color:var(--tz)}
+.lvs-radar-wrap{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:14px;display:flex;justify-content:center;margin-bottom:14px}
+.lvs-tijdlijn{display:flex;flex-direction:column;gap:0}
+.lvs-tl-item{display:flex;gap:12px;padding-bottom:14px;position:relative}
+.lvs-tl-item::before{content:'';position:absolute;left:13px;top:26px;bottom:0;width:1px;background:var(--warmrand)}
+.lvs-tl-item:last-child::before{display:none}
+.lvs-tl-dot{width:26px;height:26px;border-radius:0;background:var(--grijs);border:2px solid var(--rand);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;z-index:1}
+.lvs-tl-dot.rapport{border-color:var(--t);background:var(--gl)}
+.lvs-tl-dot.notitie{border-color:var(--b);background:var(--bl)}
+.lvs-tl-inhoud{flex:1;padding-top:2px}
+.lvs-tl-datum{font-size:10px;color:var(--tz);margin-bottom:3px}
+.lvs-tl-tekst{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:9px 11px;font-size:12px;line-height:1.6;color:var(--tm)}
+.lvs-notitie-form{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px;display:flex;flex-direction:column;gap:8px}
+.lvs-textarea{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:8px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;min-height:80px;resize:vertical;line-height:1.6;box-sizing:border-box}
+.lvs-textarea:focus{border-color:var(--t)}
+.lvs-scores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.lvs-score-input{background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 8px;font-size:12px;color:var(--t);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
+.lvs-score-input:focus{border-color:var(--t)}
+.lvs-ib-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lvs-ib-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
+.lvs-balk-wrap{margin-bottom:7px}
+.lvs-balk-label{display:flex;justify-content:space-between;font-size:11px;color:var(--tz);margin-bottom:3px}
+.lvs-balk{height:5px;background:var(--grijs);border-radius:0;overflow:hidden}
+.lvs-balk-fill{height:100%;border-radius:0;transition:width .8s ease}
+.lvs-tag{display:inline-block;padding:2px 7px;border-radius:0;font-size:10px;font-weight:500;margin:2px}
+.lvs-tag-oranje{background:#f0f0f0;color:#000;border:1px solid #ccc}
+.lvs-tag-groen{background:#f5f5f5;color:#222;border:1px solid rgba(29,158,117,.2)}
+.lvs-tag-blauw{background:#f0f0f0;color:#000;border:1px solid #ccc}
+.lvs-leeg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;opacity:.4;text-align:center;padding:40px}
+.lvs-leeg-icon{font-size:36px}
+.lvs-leeg-tekst{font-size:13px;color:var(--tz)}
+</style>
+
+<div class="lvs-wrap">
+  <div class="lvs-sidebar">
+    <div class="lvs-sidebar-header">
+      <div class="lvs-sidebar-titel">Leerlingen</div>
+      <div class="lvs-sidebar-meta">SCHOOLJAAR 2025–2026</div>
+    </div>
+    <div class="lvs-zoek"><input type="text" placeholder="Zoeken…" oninput="lvsFilter(this.value)"></div>
+    <div class="lvs-lijst" id="lvs-lijst"></div>
+    <div class="lvs-footer">
+      <button class="lvs-add" onclick="lvsVoegToe()">+ Leerling toevoegen</button>
+    </div>
+  </div>
+
+  <div class="lvs-hoofd">
+    <div class="lvs-profiel">
+      <div class="lvs-profiel-av" id="lvs-av">FK</div>
+      <div>
+        <div class="lvs-profiel-naam" id="lvs-naam">Selecteer een leerling</div>
+        <div class="lvs-profiel-meta" id="lvs-meta">—</div>
+      </div>
+      <button class="lvs-gen-knop" onclick="lvsGenereer()">Genereer rapport</button>
+    </div>
+
+    <div class="lvs-tabs">
+      <button class="lvs-tab actief" onclick="lvsToonTab('profiel',this)">Profiel</button>
+      <button class="lvs-tab" onclick="lvsToonTab('tijdlijn',this)">Tijdlijn</button>
+      <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Notitie toevoegen</button>
+      <button class="lvs-tab" onclick="lvsToonTab('ib',this)">IB-dashboard</button>
+    </div>
+
+    <div class="lvs-inhoud" id="lvs-tab-profiel">
+      <div class="lvs-sectie-titel">ONTWIKKELING PER DOMEIN</div>
+      <div class="lvs-grid" id="lvs-domeinen"></div>
+      <div class="lvs-sectie-titel">VOORTGANG OVER TIJD</div>
+      <div class="lvs-radar-wrap"><canvas id="lvs-radar" width="300" height="240"></canvas></div>
+    </div>
+
+    <div class="lvs-inhoud" id="lvs-tab-tijdlijn" style="display:none">
+      <div class="lvs-sectie-titel">GESCHIEDENIS</div>
+      <div class="lvs-tijdlijn" id="lvs-tijdlijn"></div>
+    </div>
+
+    <div class="lvs-inhoud" id="lvs-tab-notitie" style="display:none">
+      <div class="lvs-sectie-titel">NIEUWE NOTITIE</div>
+      <div class="lvs-notitie-form">
+        <select id="lvs-notitie-type" style="background:#111;border:1px solid #111;border-radius:0;padding:7px 10px;font-size:12px;color:#f5f5f5;font-family:inherit;outline:none">
+          <option value="observatie">Observatie</option>
+          <option value="gesprek">Gesprek met ouder</option>
+          <option value="toets">Toetsresultaat</option>
+          <option value="bijzonderheid">Bijzonderheid</option>
+        </select>
+        <textarea class="lvs-textarea" id="lvs-notitie-tekst" placeholder="Beschrijf je observatie, gesprek of resultaat…"></textarea>
+        <div>
+          <div style="font-size:10px;color:#444;margin-bottom:6px">SCORES BIJWERKEN (optioneel, 0–100)</div>
+          <div class="lvs-scores-grid">
+            <input class="lvs-score-input" type="number" id="lvs-s-lezen" placeholder="Lezen" min="0" max="100">
+            <input class="lvs-score-input" type="number" id="lvs-s-rekenen" placeholder="Rekenen" min="0" max="100">
+            <input class="lvs-score-input" type="number" id="lvs-s-spelling" placeholder="Spelling" min="0" max="100">
+            <input class="lvs-score-input" type="number" id="lvs-s-begrijpend" placeholder="Begrijpend" min="0" max="100">
+            <select class="lvs-score-input" id="lvs-s-sociaal" title="Sociaal">
+              <option value="">Sociaal…</option>
+              <option value="95">Uitstekend</option>
+              <option value="80">Goed</option>
+              <option value="60">Voldoende</option>
+              <option value="40">Matig</option>
+              <option value="20">Onvoldoende</option>
+            </select>
+            <select class="lvs-score-input" id="lvs-s-werkhouding" title="Werkhouding">
+              <option value="">Werkhouding…</option>
+              <option value="95">Uitstekend</option>
+              <option value="80">Goed</option>
+              <option value="60">Voldoende</option>
+              <option value="40">Matig</option>
+              <option value="20">Onvoldoende</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <button onclick="lvsClearNotitie()" style="background:transparent;color:#888;border:1px solid #111;border-radius:0;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
+          <button onclick="lvsSlaNotitieOp()" style="background:#000;color:#fff;border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="lvs-inhoud" id="lvs-tab-ib" style="display:none">
+      <div class="lvs-sectie-titel">IB-OVERZICHT</div>
+      <div class="lvs-ib-grid" id="lvs-ib"></div>
+    </div>
+  </div>
+</div>
+</div>
+
 </div><!-- einde flex wrapper -->
 <nav class="bottom-nav" id="bottom-nav">
   <button class="bnav-item actief" onclick="mobieltoonTab('rapport', this)" data-tab="rapport">
