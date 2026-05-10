@@ -561,7 +561,7 @@ function toonTab(tab, knop) {
   if (knop) knop.classList.add('actief');
   document.querySelectorAll('.sectie, .sectie-vol').forEach(s => {
     s.classList.remove('actief');
-    if (s.id !== 'tab-lvs') s.style.display = '';
+    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid') s.style.display = '';
   });
   const tabInhoud = document.getElementById('tab-inhoud');
   const lvsEl = document.getElementById('tab-lvs');
