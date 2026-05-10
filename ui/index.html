@@ -28,7 +28,7 @@ html,body{overflow:hidden;height:100%}body{font-family:'Times New Roman',Times,s
 header{border-bottom:1px solid var(--warmrand);padding:0 1rem;height:52px;display:flex;align-items:center;justify-content:space-between;background:var(--warm);position:sticky;top:0;z-index:100;box-shadow:none}
 .logo{font-family:Georgia,'Times New Roman',serif;font-size:18px;color:var(--t);letter-spacing:-.3px;position:absolute;left:50%;transform:translateX(-50%)}
 .logo em{color:var(--t);font-style:normal}
-.badge{font-size:10px;background:var(--gl);color:var(--g);padding:2px 10px;border-radius:0;font-weight:500;border:1px solid #F5C6C6}
+.badge{font-size:10px;background:var(--gl);color:var(--g);padding:2px 10px;border-radius:0;font-weight:500;border:1px solid #e0e0e0}
 @media(min-width:768px){header{height:60px;padding:0 2rem}.logo{font-size:20px}}
 
 
@@ -67,7 +67,7 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .nwrap{position:relative}
 .mic-knop{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:0;border:none;background:var(--gm);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;transition:background .2s,transform .2s;z-index:2}
 .mic-knop:hover{background:var(--g);transform:scale(1.08)}
-.mic-knop.luistert{background:#e53935;animation:pulserood 1s infinite}
+.mic-knop.luistert{background:#000;animation:pulserood 1s infinite}
 @keyframes pulserood{0%,100%{box-shadow:none}50%{box-shadow:none}}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
@@ -76,7 +76,7 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 
 .genknop{width:100%;background:var(--gm);color:#fff;border:none;border-radius:0;padding:16px;font-family:Georgia,'Times New Roman',serif;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:none;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .genknop:hover:not(:disabled){background:var(--g);box-shadow:none;transform:translateY(-1px)}
-.genknop:disabled{background:#C4C2B8;cursor:not-allowed;box-shadow:none}
+.genknop:disabled{background:#ccc;cursor:not-allowed;box-shadow:none}
 .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:0;animation:rondjes .7s linear infinite;display:none}
 @keyframes rondjes{to{transform:rotate(360deg)}}
 
@@ -93,27 +93,27 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .mtag{font-size:10px;padding:2px 9px;border-radius:0;font-weight:500}
 .kbody{padding:14px 16px;font-size:13px;line-height:1.8;color:var(--tm)}
 
-.tg .ktop{background:#FEF0F0}.tg .dot{background:var(--gm)}.tg .knaam{color:var(--g)}.tg .mtag{background:#F5C6C6;color:var(--g)}
-.tb .ktop{background:#EDF4FC}.tb .dot{background:var(--b)}.tb .knaam{color:var(--b)}.tb .mtag{background:#C2D9F5;color:var(--b)}
-.ta .ktop{background:#FEF6EA}.ta .dot{background:#888}.ta .knaam{color:var(--a)}.ta .mtag{background:#FACC80;color:var(--a)}
-.tdk .ktop{background:var(--grijs)}.tdk .dot{background:#7A7874}.tdk .knaam{color:#5F5E5A}.tdk .mtag{background:var(--rand);color:#5F5E5A}
+.tg .ktop{background:#f5f5f5}.tg .dot{background:var(--gm)}.tg .knaam{color:var(--g)}.tg .mtag{background:#e0e0e0;color:var(--g)}
+.tb .ktop{background:#f5f5f5}.tb .dot{background:var(--b)}.tb .knaam{color:var(--b)}.tb .mtag{background:#e8e8e8;color:var(--b)}
+.ta .ktop{background:#f8f8f8}.ta .dot{background:#888}.ta .knaam{color:var(--a)}.ta .mtag{background:#ddd;color:var(--a)}
+.tdk .ktop{background:var(--grijs)}.tdk .dot{background:#666}.tdk .knaam{color:#555}.tdk .mtag{background:var(--rand);color:#555}
 
 .rblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
-.rtop{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;background:#3A3835}
-.rtitel{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#F5F2EC}
+.rtop{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;background:#222}
+.rtitel{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#f5f5f5}
 .kknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:0;padding:3px 10px;cursor:pointer;font-family:inherit;transition:background .15s}
 .kknop:hover{background:rgba(255,255,255,.28)}
 .rtext{padding:16px;font-size:13px;line-height:1.9;color:var(--tm);font-style:italic}
 
 .pedblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
-.pedtop{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#3A3835}
-.pedtitel{font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#F5F2EC}
+.pedtop{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#222}
+.pedtitel{font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#f5f5f5}
 .pedsub{font-size:9px;color:#888;margin-top:1px}
 .pedknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:0;padding:3px 10px;cursor:pointer;font-family:inherit}
 .pedknop:disabled{opacity:.45;cursor:not-allowed}
 .pedbody{padding:10px 11px;display:flex;flex-direction:column;gap:7px}
 .pedwacht{text-align:center;padding:14px;font-size:11px;color:var(--tz)}
-.prioblok{background:#FEF6EA;border:1px solid #FACC80;border-radius:0;padding:10px 13px;font-size:11px;color:#222;line-height:1.65}
+.prioblok{background:#f8f8f8;border:1px solid #ddd;border-radius:0;padding:10px 13px;font-size:11px;color:#222;line-height:1.65}
 .priolabel{font-size:9px;font-weight:600;letter-spacing:.05em;color:#333;margin-bottom:3px}
 .theorie{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff}
 .theotop{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--grijs);border-bottom:1px solid var(--warmrand)}
@@ -122,13 +122,13 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .theobody{padding:9px 11px;font-size:11px;line-height:1.65;color:var(--tm)}
 
 .ouderblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
-.oudertop{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#EDF4FC;border-bottom:1px solid #C2D9F5}
+.oudertop{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#f5f5f5;border-bottom:1px solid #e8e8e8}
 .oudertitel{font-size:11px;font-weight:600;color:var(--b);letter-spacing:.03em}
 .ouderbody{padding:11px 13px;display:flex;flex-direction:column;gap:7px}
 .emailrij{display:flex;gap:7px}
 .emailrij input{flex:1}
 .deelknop{padding:9px 14px;background:var(--b);color:#fff;border:none;border-radius:0;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s}
-.deelknop:hover{background:#0F4A85}
+.deelknop:hover{background:#222}
 
 .oudermail-invoer{flex:1;min-width:160px;font-size:12px;padding:7px 10px;border:1.5px solid var(--rand);border-radius:0;outline:none;font-family:inherit;transition:border-color .15s,max-width .25s}
 .oudermail-invoer:focus{border-color:var(--t);box-shadow:none}
@@ -176,15 +176,15 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .tags-rij{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-height:0}
 .od-check-item{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12px;color:var(--t);cursor:pointer;border-radius:0}
 .od-check-item input{accent-color:#000;width:14px;height:14px;cursor:pointer}
-.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:0;background:#f5f5f5;color:#111;border:1px solid #C2D9F5}
+.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:0;background:#f5f5f5;color:#111;border:1px solid #e8e8e8}
 .od-tag-x{cursor:pointer;font-size:10px;opacity:.6}
 .od-tag-x:hover{opacity:1}
 
-.tijdsbalk{display:flex;align-items:center;gap:1.5rem;padding:8px 2rem;background:var(--gl);border-bottom:.5px solid #F5C6C6}
+.tijdsbalk{display:flex;align-items:center;gap:1.5rem;padding:8px 2rem;background:var(--gl);border-bottom:.5px solid #e0e0e0}
 .tijds-item{display:flex;align-items:center;gap:7px}
 .tijds-getal{font-size:18px;font-weight:500;color:var(--g);font-family:'Times New Roman',Times,serif}
 .tijds-label{font-size:11px;color:#111;line-height:1.3}
-.tijds-divider{width:.5px;height:28px;background:#F5C6C6}
+.tijds-divider{width:.5px;height:28px;background:#e0e0e0}
 .tijds-tip{font-size:11px;color:#111;margin-left:auto;font-style:italic}
 
 /* ── Mobiele bottom nav ── */
@@ -288,7 +288,7 @@ async function registreren() {
   const wachtwoord = document.getElementById('login-ww').value;
   const fout = document.getElementById('login-fout');
   fout.textContent = '';
-  fout.style.color = '#C0392B';
+  fout.style.color = '#000';
   if (!email) { fout.textContent = 'Vul een e-mailadres in.'; return; }
   if (wachtwoord.length < 8) { fout.textContent = 'Wachtwoord moet minimaal 8 tekens zijn.'; return; }
   const { error } = await sb.auth.signUp({ email, password: wachtwoord });
@@ -299,7 +299,7 @@ async function registreren() {
       fout.textContent = 'Account bestaat al, je wordt ingelogd…';
       const { error: loginError } = await sb.auth.signInWithPassword({ email, password: wachtwoord });
       if (loginError) {
-        fout.style.color = '#C0392B';
+        fout.style.color = '#000';
         fout.textContent = 'Inloggen mislukt: ' + loginError.message;
       }
     } else {
@@ -483,7 +483,7 @@ function toonTab(tab, knop) {
   <div style="background:#fff;border:1px solid var(--rand);border-radius:0;padding:28px;width:320px;display:flex;flex-direction:column;gap:12px">
     <input id="login-email" type="email" placeholder="E-mailadres" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
     <input id="login-ww" type="password" placeholder="Wachtwoord" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')inloggen()">
-    <div id="login-fout" style="font-size:12px;color:#C0392B;min-height:16px"></div>
+    <div id="login-fout" style="font-size:12px;color:#000;min-height:16px"></div>
     <button onclick="inloggen()" style="background:var(--oranje);color:#fff;border:none;border-radius:0;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">Inloggen</button>
     <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
       <div style="flex:1;height:1px;background:var(--warmrand)"></div>
@@ -540,7 +540,7 @@ function toonTab(tab, knop) {
     <div class="tijds-label">uur bespaard<br>dit schooljaar</div>
   </div>
   <div class="tijds-tip" id="t-tip">Elk rapport bespaart gemiddeld 25 minuten schrijftijd.</div>
-  <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #F5C6C6;background:transparent;color:#000;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
+  <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #e0e0e0;background:transparent;color:#000;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
 </div>
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem">
   <button class="tab actief" onclick="toonTab('rapport',this)">Rapport</button>
@@ -799,9 +799,9 @@ function toonTab(tab, knop) {
 .aaw-zoek:focus{border-color:var(--t)}
 .aaw-lijst{display:flex;flex-direction:column;gap:8px}
 .aaw-item{background:#fff;border:1.5px solid var(--rand);border-radius:0;overflow:hidden;transition:border-color .15s}
-.aaw-item.aanwezig{border-color:#C8E6C9}
-.aaw-item.afwezig{border-color:#FFCDD2}
-.aaw-item.laat{border-color:#FFE0B2}
+.aaw-item.aanwezig{border-color:#e8e8e8}
+.aaw-item.afwezig{border-color:#e8e8e8}
+.aaw-item.laat{border-color:#e8e8e8}
 .aaw-item-top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
 .aaw-avatar{width:38px;height:38px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
 .aaw-info{flex:1}
@@ -810,10 +810,10 @@ function toonTab(tab, knop) {
 .aaw-knoppen{display:flex;gap:6px;flex-shrink:0}
 .aaw-knop{width:36px;height:36px;border-radius:0;border:2px solid var(--rand);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .aaw-knop:active{transform:scale(.92)}
-.aaw-knop.aanwezig-knop.actief{background:#E8F5E9;border-color:#4CAF50}
-.aaw-knop.afwezig-knop.actief{background:#FFEBEE;border-color:#EF5350}
-.aaw-knop.laat-knop.actief{background:#FFF3E0;border-color:#FF9800}
-.aaw-item-extra{display:none;padding:0 14px 12px;border-top:1px solid var(--rand);background:#FAFAFA}
+.aaw-knop.aanwezig-knop.actief{background:#f5f5f5;border-color:#333}
+.aaw-knop.afwezig-knop.actief{background:#f5f5f5;border-color:#333}
+.aaw-knop.laat-knop.actief{background:#f5f5f5;border-color:#333}
+.aaw-item-extra{display:none;padding:0 14px 12px;border-top:1px solid var(--rand);background:#f8f8f8}
 .aaw-item-extra.open{display:block}
 .aaw-extra-label{font-size:10px;font-weight:600;color:var(--tz);letter-spacing:.05em;margin:10px 0 5px}
 .aaw-opmerking{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:8px 10px;font-size:13px;color:var(--t);background:#fff;outline:none;resize:none;min-height:60px;font-family:inherit;line-height:1.5}
@@ -826,7 +826,7 @@ function toonTab(tab, knop) {
 .aaw-actie-knop:hover{border-color:var(--t);color:var(--t)}
 .aaw-actie-knop.prim{background:var(--gm);color:#fff;border-color:var(--t)}
 .aaw-actie-knop.prim:hover{background:var(--g)}
-.aaw-export-balk{background:var(--gl);border:1px solid #F5C6C6;border-radius:0;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
+.aaw-export-balk{background:var(--gl);border:1px solid #e0e0e0;border-radius:0;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
 .aaw-export-balk.zichtbaar{display:block}
 </style>
 
@@ -845,15 +845,15 @@ function toonTab(tab, knop) {
 
   <div class="aaw-stats">
     <div class="aaw-stat">
-      <div class="aaw-stat-getal" id="aaw-tel-aanwezig" style="color:#4CAF50">0</div>
+      <div class="aaw-stat-getal" id="aaw-tel-aanwezig" style="color:#333">0</div>
       <div class="aaw-stat-label">AANWEZIG</div>
     </div>
     <div class="aaw-stat">
-      <div class="aaw-stat-getal" id="aaw-tel-afwezig" style="color:#EF5350">0</div>
+      <div class="aaw-stat-getal" id="aaw-tel-afwezig" style="color:#333">0</div>
       <div class="aaw-stat-label">AFWEZIG</div>
     </div>
     <div class="aaw-stat">
-      <div class="aaw-stat-getal" id="aaw-tel-laat" style="color:#FF9800">0</div>
+      <div class="aaw-stat-getal" id="aaw-tel-laat" style="color:#333">0</div>
       <div class="aaw-stat-label">TE LAAT</div>
     </div>
     <div class="aaw-stat">
@@ -996,7 +996,7 @@ function toonTab(tab, knop) {
     <div class="lvs-inhoud" id="lvs-tab-notitie" style="display:none">
       <div class="lvs-sectie-titel">NIEUWE NOTITIE</div>
       <div class="lvs-notitie-form">
-        <select id="lvs-notitie-type" style="background:#222120;border:1px solid #2E2D2A;border-radius:0;padding:7px 10px;font-size:12px;color:#F0EDE8;font-family:inherit;outline:none">
+        <select id="lvs-notitie-type" style="background:#111;border:1px solid #111;border-radius:0;padding:7px 10px;font-size:12px;color:#f5f5f5;font-family:inherit;outline:none">
           <option value="observatie">Observatie</option>
           <option value="gesprek">Gesprek met ouder</option>
           <option value="toets">Toetsresultaat</option>
@@ -1004,7 +1004,7 @@ function toonTab(tab, knop) {
         </select>
         <textarea class="lvs-textarea" id="lvs-notitie-tekst" placeholder="Beschrijf je observatie, gesprek of resultaat…"></textarea>
         <div>
-          <div style="font-size:10px;color:#5A5956;margin-bottom:6px">SCORES BIJWERKEN (optioneel, 0–100)</div>
+          <div style="font-size:10px;color:#444;margin-bottom:6px">SCORES BIJWERKEN (optioneel, 0–100)</div>
           <div class="lvs-scores-grid">
             <input class="lvs-score-input" type="number" id="lvs-s-lezen" placeholder="Lezen" min="0" max="100">
             <input class="lvs-score-input" type="number" id="lvs-s-rekenen" placeholder="Rekenen" min="0" max="100">
@@ -1029,7 +1029,7 @@ function toonTab(tab, knop) {
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button onclick="lvsClearNotitie()" style="background:transparent;color:#888;border:1px solid #2E2D2A;border-radius:0;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
+          <button onclick="lvsClearNotitie()" style="background:transparent;color:#888;border:1px solid #111;border-radius:0;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
           <button onclick="lvsSlaNotitieOp()" style="background:#000;color:#fff;border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
         </div>
       </div>
@@ -1403,8 +1403,8 @@ function toonResultaten(data, naam, groep) {
   // PDF downloadknop
   const pdfKnop = document.createElement('button');
   pdfKnop.className = 'genknop';
-  pdfKnop.style.cssText = 'background:#3A3835;box-shadow:none;margin-top:4px';
-  pdfKnop.innerHTML = '&#11015; Download als PDF';
+  pdfKnop.style.cssText = 'background:#222;box-shadow:none;margin-top:4px';
+  pdfKnop.innerHTML = '&#000; Download als PDF';
   pdfKnop.onclick = downloadPDF;
   r.appendChild(pdfKnop);
 
@@ -1761,7 +1761,7 @@ function lvsRenderLijst(lijst) {
   const el = document.getElementById('lvs-lijst');
   if (!el) return;
   if (!lijst.length) {
-    el.innerHTML = '<div style="color:#5A5956;font-size:11px;padding:10px">Nog geen leerlingen.</div>';
+    el.innerHTML = '<div style="color:#444;font-size:11px;padding:10px">Nog geen leerlingen.</div>';
     return;
   }
   el.innerHTML = lijst.map(l => {
@@ -1893,7 +1893,7 @@ function lvsRenderTijdlijn() {
   const el = document.getElementById('lvs-tijdlijn');
   if (!el) return;
   if (!lvsHuidig.tijdlijn.length) {
-    el.innerHTML = '<div style="color:#5A5956;font-size:12px">Nog geen notities of rapporten.</div>';
+    el.innerHTML = '<div style="color:#444;font-size:12px">Nog geen notities of rapporten.</div>';
     return;
   }
   el.innerHTML = lvsHuidig.tijdlijn.map(item =>
@@ -1936,7 +1936,7 @@ function lvsRenderIB() {
   if (!lvsHuidig) return;
   const l = lvsHuidig;
   const gem = Math.round(Object.values(l.scores).reduce((a,b)=>a+b,0)/Object.values(l.scores).length);
-  const kleurGem = gem>=75?'#555':gem>=60?'#888':'#E05252';
+  const kleurGem = gem>=75?'#555':gem>=60?'#888':'#555';
   document.getElementById('lvs-ib').innerHTML =
     '<div class="lvs-ib-kaart"><div class="lvs-sectie-titel">VOORTGANG PER DOMEIN</div>'
     + LVS_DOMEINEN.map(d =>
@@ -1947,9 +1947,9 @@ function lvsRenderIB() {
     + '<div class="lvs-sectie-titel">SAMENVATTING</div>'
     + '<div style="font-size:36px;font-weight:700;color:' + kleurGem + ';margin-bottom:12px">' + gem + '</div>'
     + '<div class="lvs-sectie-titel" style="margin-top:8px">STERKE PUNTEN</div>'
-    + '<div>' + (LVS_DOMEINEN.filter(d=>l.scores[d.k]>=75).map(d=>'<span class="lvs-tag lvs-tag-groen">'+d.l+'</span>').join('')||'<span style="font-size:11px;color:#5A5956">—</span>') + '</div>'
+    + '<div>' + (LVS_DOMEINEN.filter(d=>l.scores[d.k]>=75).map(d=>'<span class="lvs-tag lvs-tag-groen">'+d.l+'</span>').join('')||'<span style="font-size:11px;color:#444">—</span>') + '</div>'
     + '<div class="lvs-sectie-titel" style="margin-top:12px">AANDACHTSPUNTEN</div>'
-    + '<div>' + (LVS_DOMEINEN.filter(d=>l.scores[d.k]<60).map(d=>'<span class="lvs-tag lvs-tag-blauw">'+d.l+'</span>').join('')||'<span style="font-size:11px;color:#5A5956">Geen</span>') + '</div>'
+    + '<div>' + (LVS_DOMEINEN.filter(d=>l.scores[d.k]<60).map(d=>'<span class="lvs-tag lvs-tag-blauw">'+d.l+'</span>').join('')||'<span style="font-size:11px;color:#444">Geen</span>') + '</div>'
     + '</div>';
 }
 
@@ -2038,7 +2038,7 @@ function mobieltoonTab(tab, knop) {
 // ══════════════════════════════════════════════════════════
 
 const AAW_REDENEN = ['Ziek', 'Dokter', 'Tandarts', 'Vakantie', 'Familieomstandigheid', 'Overig'];
-const AAW_KLEUREN = ['#000','#555','#555','#888','#555','#555','#E05252','#777'];
+const AAW_KLEUREN = ['#000','#555','#555','#888','#555','#555','#555','#777'];
 
 let aawDatum = new Date();
 let aawLeerlingen = JSON.parse(localStorage.getItem('aaw_leerlingen') || '[]');
