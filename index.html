@@ -231,7 +231,7 @@ body{padding-bottom:64px}
     + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}'
     + '
 
-.aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem}
+.aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem;width:100%}
 .aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
 .aaw-datum{font-family:Georgia,serif;font-size:18px;color:var(--t)}
 .aaw-datum-nav{display:flex;align-items:center;gap:8px}
@@ -276,7 +276,7 @@ body{padding-bottom:64px}
 .aaw-export-balk.zichtbaar{display:block}
 
 
-.lvs-wrap{display:flex;width:100%;height:100%;background:var(--grijs);overflow:hidden}
+.lvs-wrap{display:flex;width:100%;flex:1;background:var(--grijs);overflow:hidden;min-height:0}
 .lvs-sidebar{width:220px;background:#fff;border-right:1px solid var(--warmrand);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
 .lvs-sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--warmrand)}
 .lvs-sidebar-titel{font-size:13px;font-weight:600;color:var(--t);margin-bottom:2px}
@@ -572,16 +572,7 @@ function toonTab(tab, knop) {
     if (lvsEl) {
       lvsEl.style.cssText = 'display:flex;flex:1;overflow:hidden;min-height:0';
       if (typeof lvsInit === 'function') lvsInit();
-      // DEBUG: wat ligt er bovenop in het midden van het scherm?
-      setTimeout(() => {
-        const cx = window.innerWidth / 2;
-        const cy = window.innerHeight / 2;
-        const el = document.elementFromPoint(cx, cy);
-        console.log('ELEMENT OP MIDDEN:', el, el?.id, el?.className, el?.tagName);
-        console.log('LVS rect:', lvsEl?.getBoundingClientRect());
-        console.log('tabInhoud rect:', tabInhoud?.getBoundingClientRect());
-        console.log('wrapper rect:', lvsEl?.parentElement?.getBoundingClientRect());
-      }, 100);
+
     }
   } else if (tab === 'aanwezigheid') {
     if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
@@ -2032,36 +2023,34 @@ function mobieltoonTab(tab, knop) {
   const oppEl = document.getElementById('tab-opp-sectie');
   const gesprekEl = document.getElementById('tab-oudergesprek');
 
-  if (lvsEl) lvsEl.style.display = 'none';
-
   const aawEl2 = document.getElementById('tab-aanwezigheid');
 
   if (tab === 'lvs') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (lvsEl) { lvsEl.style.display = 'block'; lvsInit(); }
-    if (aawEl2) aawEl2.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
+    if (aawEl2) aawEl2.style.cssText = 'display:none';
+    if (lvsEl) { lvsEl.style.cssText = 'display:flex;flex:1;overflow:hidden;min-height:0'; lvsInit(); }
   } else if (tab === 'aanwezigheid') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl2) { aawEl2.style.display = 'block'; aawInit(); }
+    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
+    if (lvsEl) lvsEl.style.cssText = 'display:none';
+    if (aawEl2) { aawEl2.style.cssText = 'display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0'; aawInit(); }
   } else if (tab === 'rapport') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl2) aawEl2.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = '';
+    if (lvsEl) lvsEl.style.cssText = 'display:none';
+    if (aawEl2) aawEl2.style.cssText = 'display:none';
+    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
     document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
     const rapportEl = document.getElementById('tab-rapport');
     if (rapportEl) rapportEl.classList.add('actief');
   } else if (tab === 'opp') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl2) aawEl2.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = '';
+    if (lvsEl) lvsEl.style.cssText = 'display:none';
+    if (aawEl2) aawEl2.style.cssText = 'display:none';
+    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
     document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
     const oppTabEl = document.getElementById('tab-opp');
     if (oppTabEl) oppTabEl.classList.add('actief');
   } else if (tab === 'oudergesprek') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl2) aawEl2.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = '';
+    if (lvsEl) lvsEl.style.cssText = 'display:none';
+    if (aawEl2) aawEl2.style.cssText = 'display:none';
+    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
     document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
     const gesprek = document.getElementById('tab-oudergesprek');
     if (gesprek) gesprek.classList.add('actief');
