@@ -572,6 +572,16 @@ function toonTab(tab, knop) {
     if (lvsEl) {
       lvsEl.style.cssText = 'display:flex;flex:1;overflow:hidden;min-height:0';
       if (typeof lvsInit === 'function') lvsInit();
+      // DEBUG: wat ligt er bovenop in het midden van het scherm?
+      setTimeout(() => {
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const el = document.elementFromPoint(cx, cy);
+        console.log('ELEMENT OP MIDDEN:', el, el?.id, el?.className, el?.tagName);
+        console.log('LVS rect:', lvsEl?.getBoundingClientRect());
+        console.log('tabInhoud rect:', tabInhoud?.getBoundingClientRect());
+        console.log('wrapper rect:', lvsEl?.parentElement?.getBoundingClientRect());
+      }, 100);
     }
   } else if (tab === 'aanwezigheid') {
     if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
@@ -765,7 +775,7 @@ function toonTab(tab, knop) {
     </div>
   </div>
 
-</div></div><!-- einde tab-rapport -->
+</div><!-- einde tab-rapport -->
 
 <!-- ── OPP Tab ── -->
 <div class="sectie" id="tab-opp">
@@ -1739,6 +1749,7 @@ function downloadPDF() {
 </div>
 
 </div><!-- einde flex wrapper -->
+</div><!-- einde app-scherm -->
 <nav class="bottom-nav" id="bottom-nav">
   <button class="bnav-item actief" onclick="mobieltoonTab('rapport', this)" data-tab="rapport">
     <span class="bnav-icon">📝</span>
