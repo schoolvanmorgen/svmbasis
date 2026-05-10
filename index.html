@@ -23,20 +23,20 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;min-width:0}
-html,body{overflow:hidden;height:100%}body{font-family:'Times New Roman',Times,serif;background:var(--wit);color:var(--t);height:100vh;font-size:15px;line-height:1.6}
+html,body{overflow:hidden;height:100%}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#000;height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-header{border-bottom:1px solid var(--warmrand);padding:0 1rem;height:52px;display:flex;align-items:center;justify-content:space-between;background:var(--warm);position:sticky;top:0;z-index:100;box-shadow:none}
-.logo{font-family:Georgia,'Times New Roman',serif;font-size:18px;color:var(--t);letter-spacing:-.3px;position:absolute;left:50%;transform:translateX(-50%)}
+header{border-bottom:1px solid #000;padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:sticky;top:0;z-index:100}
+.logo{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#000;letter-spacing:.08em;text-transform:uppercase;position:absolute;left:50%;transform:translateX(-50%)}
 .logo em{color:var(--t);font-style:normal}
 .badge{font-size:10px;background:var(--gl);color:var(--g);padding:2px 10px;border-radius:0;font-weight:500;border:1px solid #e0e0e0}
 @media(min-width:768px){header{height:60px;padding:0 2rem}.logo{font-size:20px}}
 
 
-.leerlingen-sidebar{padding:1rem;border-right:1px solid var(--warmrand);background:#fff;width:200px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
-.leerling-item{padding:7px 10px;border-radius:0;cursor:pointer;border:1px solid transparent;transition:all .15s}
-.leerling-item:hover{background:var(--warm)}
-.leerling-item.actief{background:var(--warm);border-color:var(--oranje)}
-.leerling-naam{font-size:13px;font-weight:500;color:var(--t)}
+.leerlingen-sidebar{padding:0;border-right:1px solid #000;background:#fff;width:200px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
+.leerling-item{padding:9px 14px;border-radius:0;cursor:pointer;border-left:2px solid transparent;transition:all .12s}
+.leerling-item:hover{background:#f8f8f8}
+.leerling-item.actief{background:#f8f8f8;border-left-color:#000}
+.leerling-naam{font-size:12px;font-weight:500;color:#000;letter-spacing:.01em}
 .leerling-meta{font-size:10px;color:var(--tz);margin-top:1px}
 .hist-item{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:0;cursor:pointer;font-size:11px;color:var(--t)}
 .hist-item:hover{background:var(--warm)}
@@ -52,15 +52,15 @@ header{border-bottom:1px solid var(--warmrand);padding:0 1rem;height:52px;displa
 
 .ptitel{font-family:Georgia,'Times New Roman',serif;font-size:20px;letter-spacing:-.2px;color:var(--t)}
 .psub{font-size:12px;color:var(--tz);margin-top:4px;line-height:1.5}
-.vlabel{font-size:11px;font-weight:600;color:var(--tz);letter-spacing:.05em;margin-bottom:5px}
+.vlabel{font-size:10px;font-weight:700;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 .rij2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .nwrap{position:relative}
-input[type=text]{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;outline:none;transition:border-color .15s}
-input:focus{border-color:var(--t);box-shadow:none}
+input[type=text]{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;border-radius:0;padding:10px 12px;font-size:13px;color:#000;background:#fff;outline:none;transition:border-color .15s}
+input:focus{border-color:#000;box-shadow:none}
 input::placeholder{color:var(--tz)}
-select{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+select{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
 select:focus{border-color:var(--t);box-shadow:none}
-textarea{font-family:'Times New Roman',Times,serif;width:100%;border:1.5px solid var(--rand);border-radius:0;padding:12px 14px;font-size:15px;color:var(--t);background:#fff;resize:vertical;min-height:140px;outline:none;line-height:1.7;transition:border-color .15s}
+textarea{font-family:inherit;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;resize:vertical;min-height:140px;outline:none;line-height:1.7;transition:border-color .15s}
 textarea:focus{border-color:var(--t);box-shadow:none}
 textarea::placeholder{color:var(--tz);font-size:12px}
 .teller{position:absolute;bottom:9px;right:11px;font-size:10px;color:var(--tz);pointer-events:none}
@@ -71,12 +71,12 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 @keyframes pulserood{0%,100%{box-shadow:none}50%{box-shadow:none}}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-size:11px;padding:5px 12px;border-radius:0;border:1px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
-.chip:hover{border-color:var(--t);color:var(--g);background:var(--gl)}
+.chip{font-size:11px;padding:4px 10px;border-radius:0;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer;font-family:inherit;transition:all .12s;letter-spacing:.02em}
+.chip:hover{border-color:#000;color:#000;background:#f8f8f8}
 
-.genknop{width:100%;background:var(--gm);color:#fff;border:none;border-radius:0;padding:16px;font-family:Georgia,'Times New Roman',serif;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:none;transition:all .15s;-webkit-tap-highlight-color:transparent}
-.genknop:hover:not(:disabled){background:var(--g);box-shadow:none;transform:translateY(-1px)}
-.genknop:disabled{background:#ccc;cursor:not-allowed;box-shadow:none}
+.genknop{width:100%;background:#000;color:#fff;border:none;border-radius:0;padding:14px;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.genknop:hover:not(:disabled){background:#333}
+.genknop:disabled{background:#ccc;color:#888;cursor:not-allowed}
 .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:0;animation:rondjes .7s linear infinite;display:none}
 @keyframes rondjes{to{transform:rotate(360deg)}}
 
@@ -84,9 +84,9 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .leeg-c{width:56px;height:56px;border:2px dashed var(--rand);border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px}
 .leeg-t{font-size:12px;color:var(--tz);max-width:180px;line-height:1.6}
 
-.naambalk{font-family:Georgia,'Times New Roman',serif;font-size:17px;padding-bottom:10px;border-bottom:1px solid var(--warmrand);color:var(--t)}
+.naambalk{font-family:inherit;font-size:18px;font-weight:600;letter-spacing:-.01em;padding-bottom:12px;border-bottom:2px solid #000;color:#000;margin-bottom:4px}
 
-.kaart{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
+.kaart{border:1px solid #e0e0e0;border-top:2px solid #000;border-radius:0;overflow:hidden;background:#fff}
 .ktop{display:flex;align-items:center;gap:8px;padding:10px 15px;border-bottom:1px solid var(--warmrand)}
 .dot{width:7px;height:7px;border-radius:0;flex-shrink:0}
 .knaam{font-size:10px;font-weight:600;letter-spacing:.05em;flex:1}
@@ -153,9 +153,9 @@ textarea::placeholder{color:var(--tz);font-size:12px}
   .logo{font-size:16px}
 }
 
-.tab{padding:11px 18px;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:var(--tz);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:color .15s}
+.tab{padding:12px 14px;font-size:12px;font-weight:500;letter-spacing:.04em;color:#888;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:inherit;text-transform:uppercase}
 .tab:hover{color:var(--tm)}
-.tab.actief{color:var(--t);border-bottom-color:var(--t);font-weight:500}
+.tab.actief{color:#000;border-bottom-color:#000}
 .sectie{display:none}.sectie.actief{display:grid}
 .sectie-vol{display:none}.sectie-vol.actief{display:flex}
 
@@ -545,8 +545,8 @@ function toonTab(tab, knop) {
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem">
   <button class="tab actief" onclick="toonTab('rapport',this)">Rapport</button>
   <button class="tab" onclick="toonTab('oudergesprek',this)">Oudergesprek</button>
-  <button class="tab" onclick="toonTab('lvs',this)">📊 Leerlingvolgsysteem</button>
-  <button class="tab" onclick="toonTab('aanwezigheid',this)">✅ Aanwezigheid</button>
+  <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
+  <button class="tab" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;display:flex;min-height:0">
   <div class="invoer">
