@@ -1510,7 +1510,7 @@ async function roepAPIaanStream(prompt, onChunk) {
   try {
     res = await fetch(API_BASE + '/analyseer', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + huidigToken },
       body: JSON.stringify({ prompt }),
       signal: controller.signal
     });
@@ -1555,7 +1555,7 @@ async function roepAPIaan(prompt) {
   try {
     res = await fetch(API_BASE + '/analyseer', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + huidigToken },
       body: JSON.stringify({ prompt }),
       signal: controller.signal
     });

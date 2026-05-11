@@ -18,9 +18,15 @@ logger = logging.getLogger("school-van-morgen")
 # ── App setup ─────────────────────────────────────────────
 app = FastAPI(title="School van morgen", version="1.0.0")
 
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
+    if o.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["POST", "GET", "DELETE", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
 )
@@ -30,7 +36,7 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_URL     = "https://api.anthropic.com/v1/messages"
 MODEL             = "claude-sonnet-4-20250514"
 
-SUPABASE_URL      = os.environ.get("SUPABASE_URL", "https://ruaorbvprxcnnaltyvpi.supabase.co")
+SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 
 security = HTTPBearer(auto_error=False)
@@ -38,15 +44,19 @@ security = HTTPBearer(auto_error=False)
 # ── Startup check ─────────────────────────────────────────
 @app.on_event("startup")
 async def startup():
-    missing = []
+    ontbrekend = []
     if not ANTHROPIC_API_KEY:
-        missing.append("ANTHROPIC_API_KEY")
+        ontbrekend.append("ANTHROPIC_API_KEY")
+    if not SUPABASE_URL:
+        ontbrekend.append("SUPABASE_URL")
     if not SUPABASE_ANON_KEY:
-        missing.append("SUPABASE_ANON_KEY")
-    if missing:
-        logger.warning(f"Ontbrekende omgevingsvariabelen: {', '.join(missing)}")
-    else:
-        logger.info("Alle omgevingsvariabelen ingesteld.")
+        ontbrekend.append("SUPABASE_ANON_KEY")
+    if ontbrekend:
+        raise RuntimeError(
+            f"Verplichte omgevingsvariabelen niet ingesteld: {', '.join(ontbrekend)}. "
+            f"Voeg ze toe aan je .env bestand en herstart de server."
+        )
+    logger.info(f"Opstartcontrole geslaagd. CORS toegestaan voor: {ALLOWED_ORIGINS}")
 
 # ══════════════════════════════════════════════════════════
 # SYSTEM PROMPTS
@@ -676,13 +686,21 @@ for _static_dir in ["static", "."]:
 # RAPPORT GENEREREN (STREAMING)
 # ══════════════════════════════════════════════════════════
 
+MAX_PROMPT_LENGTE = 4000  # ruim genoeg voor alle echte notities; voorkomt misbruik
+
 @app.post("/analyseer")
-async def analyseer(verzoek: PromptVerzoek):
-    """Rapport genereren met streaming."""
+async def analyseer(
+    verzoek: PromptVerzoek,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """Rapport genereren met streaming. Vereist een geldig Supabase-sessietoken."""
     if not ANTHROPIC_API_KEY:
         raise HTTPException(status_code=500, detail="Anthropic API-sleutel niet ingesteld op de server.")
     if len(verzoek.prompt.strip()) < 20:
         raise HTTPException(status_code=400, detail="Notities te kort (minimaal 20 tekens).")
+    if len(verzoek.prompt) > MAX_PROMPT_LENGTE:
+        raise HTTPException(status_code=400, detail=f"Notities te lang (maximaal {MAX_PROMPT_LENGTE} tekens).")
 
     # Privacy driedubbele controle — Laag 1+2+3
     import re as _re2
@@ -891,6 +909,8 @@ async def verwijder_rapport(
 async def opp(verzoek: OppVerzoek, user=Depends(get_user)):
     if not verzoek.notities or len(verzoek.notities.strip()) < 20:
         raise HTTPException(status_code=400, detail="Notities moeten minimaal 20 tekens bevatten.")
+    if len(verzoek.notities) > MAX_PROMPT_LENGTE:
+        raise HTTPException(status_code=400, detail=f"Notities te lang (maximaal {MAX_PROMPT_LENGTE} tekens).")
 
     # Privacy driedubbele controle — Laag 1+2+3
     notities_anon, naam_mapping = privacy_filter(verzoek.notities, verzoek.naam)
@@ -977,6 +997,8 @@ async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user))
         raise HTTPException(status_code=400, detail="Ondersteuningsbehoefte is verplicht voor een handelingsplan.")
     if not verzoek.notities or len(verzoek.notities.strip()) < 10:
         raise HTTPException(status_code=400, detail="Notities moeten minimaal 10 tekens bevatten.")
+    if len(verzoek.notities) > MAX_PROMPT_LENGTE:
+        raise HTTPException(status_code=400, detail=f"Notities te lang (maximaal {MAX_PROMPT_LENGTE} tekens).")
 
     # Privacy driedubbele controle — Laag 1+2+3
     notities_anon, naam_mapping = privacy_filter(verzoek.notities, verzoek.naam)
@@ -1006,6 +1028,8 @@ async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user))
 async def oudergesprek(verzoek: OudergesprekVerzoek, user=Depends(get_user)):
     if not verzoek.notities or len(verzoek.notities.strip()) < 20:
         raise HTTPException(status_code=400, detail="Aantekeningen moeten minimaal 20 tekens bevatten.")
+    if len(verzoek.notities) > MAX_PROMPT_LENGTE:
+        raise HTTPException(status_code=400, detail=f"Notities te lang (maximaal {MAX_PROMPT_LENGTE} tekens).")
 
     # Privacy driedubbele controle — Laag 1+2+3
     notities_anon, naam_mapping = privacy_filter(verzoek.notities, verzoek.naam)
@@ -1036,6 +1060,8 @@ async def pedagogisch_advies(verzoek: PromptVerzoek, user=Depends(get_user)):
     """Pedagogisch advies op basis van 5 theorieen. Apart endpoint voor betere foutafhandeling."""
     if len(verzoek.prompt.strip()) < 20:
         raise HTTPException(status_code=400, detail="Notities te kort.")
+    if len(verzoek.prompt) > MAX_PROMPT_LENGTE:
+        raise HTTPException(status_code=400, detail=f"Notities te lang (maximaal {MAX_PROMPT_LENGTE} tekens).")
     tekst = await roep_claude_aan(PEDAGOGISCH_PROMPT, verzoek.prompt, max_tokens=1500)
     try:
         parsed = _veilig_json_parse(tekst)
