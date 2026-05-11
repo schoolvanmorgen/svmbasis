@@ -1736,8 +1736,55 @@ function downloadPDF() {
 
   <div class="aaw-acties">
     <button class="aaw-actie-knop" onclick="aawAlleAanwezig()">✅ Iedereen aanwezig</button>
-    <button class="aaw-actie-knop" onclick="openLeerlingModal()" style="font-size:11px">+ Leerlingen importeren</button>
+    <button class="aaw-actie-knop" onclick="aawOpenImport()">+ Leerlingen toevoegen</button>
     <button class="aaw-actie-knop prim" onclick="aawSlaOp()">Opslaan</button>
+  </div>
+
+  <!-- Aanwezigheid import modal -->
+  <div id="aaw-import-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border:1px solid #000;width:100%;max-width:440px;display:flex;flex-direction:column;overflow:hidden">
+      <div style="display:flex;border-bottom:1px solid #ddd">
+        <button id="aaw-itab-1" onclick="aawImportTab(1)" style="flex:1;padding:11px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:none;background:#000;color:#fff;cursor:pointer;font-family:inherit">Hele klas</button>
+        <button id="aaw-itab-2" onclick="aawImportTab(2)" style="flex:1;padding:11px 6px;font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;border:none;background:#f8f8f8;color:#888;cursor:pointer;font-family:inherit;border-left:1px solid #ddd">Importeren</button>
+      </div>
+
+      <!-- Tab 1: Hele klas -->
+      <div id="aaw-itab-inhoud-1" style="padding:20px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:12px;color:#888;line-height:1.5">Plak of typ alle namen — één naam per regel.</div>
+        <select id="aaw-klas-groep" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none">
+          <option value="">Groep kiezen…</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+        <textarea id="aaw-klas-namen" placeholder="Emma&#10;Liam&#10;Sophie&#10;Noah&#10;..." rows="7"
+          style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.7;box-sizing:border-box"
+          oninput="document.getElementById('aaw-klas-teller').textContent=this.value.split('\n').filter(function(n){return n.trim()}).length+' namen'"></textarea>
+        <div id="aaw-klas-teller" style="font-size:11px;color:#888">0 namen</div>
+        <div id="aaw-klas-voortgang" style="display:none;font-size:12px;color:#000;font-weight:500"></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="aawSluitImport()" style="flex:1;background:transparent;border:1px solid #ccc;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;color:#333">Annuleren</button>
+          <button onclick="aawImporteerKlas()" style="flex:1;background:#000;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Toevoegen</button>
+        </div>
+      </div>
+
+      <!-- Tab 2: Bestand importeren -->
+      <div id="aaw-itab-inhoud-2" style="padding:20px;display:none;flex-direction:column;gap:10px">
+        <div style="font-size:12px;color:#888;line-height:1.7">Werkt met <strong>ParnasSys</strong> en <strong>Magister</strong> exports (CSV of Excel).</div>
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border:1px dashed #ccc;cursor:pointer;font-size:13px;color:#888">
+          <span>📂</span>
+          <span id="aaw-bestandsnaam">CSV of Excel bestand kiezen…</span>
+          <input type="file" id="aaw-bestand" accept=".csv,.xlsx,.xls" style="display:none" onchange="aawLeesBestand(this)">
+        </label>
+        <div id="aaw-preview" style="display:none;flex-direction:column;gap:8px">
+          <div id="aaw-preview-info" style="font-size:12px;color:#333;font-weight:500"></div>
+          <div id="aaw-preview-lijst" style="max-height:180px;overflow-y:auto;border:1px solid #ddd;font-size:12px"></div>
+          <div id="aaw-import-voortgang" style="display:none;font-size:12px;font-weight:500"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button onclick="aawSluitImport()" style="flex:1;background:transparent;border:1px solid #ccc;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;color:#333">Annuleren</button>
+          <button onclick="aawImporteerBestand()" id="aaw-import-knop" disabled style="flex:1;background:#000;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.4">Importeren</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div style="height:12px"></div>
@@ -2443,9 +2490,117 @@ function aawExporteer() {
 }
 
 function aawVoegLeerlingToe() {
-  // Open leerlingenmodal - na toevoegen herlaad aanwezigheid
-  openLeerlingModal();
-  window._aawModalCallback = true;
+  aawOpenImport();
+}
+
+function aawOpenImport() {
+  document.getElementById('aaw-import-modal').style.display = 'flex';
+  aawImportTab(1);
+}
+
+function aawSluitImport() {
+  document.getElementById('aaw-import-modal').style.display = 'none';
+}
+
+function aawImportTab(nr) {
+  [1,2].forEach(function(i) {
+    const inhoud = document.getElementById('aaw-itab-inhoud-' + i);
+    const btn = document.getElementById('aaw-itab-' + i);
+    if (inhoud) inhoud.style.display = i === nr ? 'flex' : 'none';
+    if (btn) {
+      btn.style.background = i === nr ? '#000' : '#f8f8f8';
+      btn.style.color = i === nr ? '#fff' : '#888';
+      btn.style.fontWeight = i === nr ? '600' : '500';
+    }
+  });
+}
+
+async function aawImporteerKlas() {
+  const groep = document.getElementById('aaw-klas-groep').value;
+  const namenRaw = document.getElementById('aaw-klas-namen').value;
+  const namen = namenRaw.split('\n').map(function(n) { return n.trim(); }).filter(Boolean);
+  if (!groep) { alert('Kies een groep.'); return; }
+  if (!namen.length) { alert('Voer minimaal één naam in.'); return; }
+  const voortgang = document.getElementById('aaw-klas-voortgang');
+  voortgang.style.display = 'block';
+  for (let i = 0; i < namen.length; i++) {
+    voortgang.textContent = (i+1) + ' / ' + namen.length + ' toegevoegd…';
+    await fetch('/leerlingen', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voornaam: namen[i], groep: groep })
+    });
+  }
+  await laadLeerlingen();
+  voortgang.textContent = namen.length + ' leerlingen toegevoegd.';
+  setTimeout(function() { aawSluitImport(); aawInit(); }, 1000);
+}
+
+function aawLeesBestand(input) {
+  const bestand = input.files[0];
+  if (!bestand) return;
+  document.getElementById('aaw-bestandsnaam').textContent = bestand.name;
+  const ext = bestand.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = function(e) { aawVerwerkCsv(e.target.result); };
+    reader.readAsText(bestand);
+  } else {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      aawVerwerkCsv(XLSX.utils.sheet_to_csv(ws));
+    };
+    reader.readAsArrayBuffer(bestand);
+  }
+}
+
+function aawVerwerkCsv(csv) {
+  const regels = csv.split('\n').filter(Boolean);
+  if (!regels.length) return;
+  const headers = regels[0].split(',').map(function(h) { return h.trim().replace(/"/g,'').toLowerCase(); });
+  const naamIdx = headers.findIndex(function(h) { return h.includes('roepnaam') || h.includes('voornaam'); });
+  const groepIdx = headers.findIndex(function(h) { return h.includes('groepsnaam') || h.includes('klas') || h.includes('groep'); });
+  const leerlingen = [];
+  for (let i = 1; i < regels.length; i++) {
+    const cols = regels[i].split(',').map(function(c) { return c.trim().replace(/"/g,''); });
+    const naam = naamIdx >= 0 ? cols[naamIdx] : cols[0];
+    const groep = groepIdx >= 0 ? cols[groepIdx] : '';
+    if (naam) leerlingen.push({ naam: naam, groep: groep.replace(/[^0-9]/g,'') || '' });
+  }
+  window._aawImportLeerlingen = leerlingen;
+  const preview = document.getElementById('aaw-preview');
+  const info = document.getElementById('aaw-preview-info');
+  const lijst = document.getElementById('aaw-preview-lijst');
+  const knop = document.getElementById('aaw-import-knop');
+  if (preview) preview.style.display = 'flex';
+  if (info) info.textContent = leerlingen.length + ' leerlingen gevonden';
+  if (lijst) lijst.innerHTML = leerlingen.slice(0,8).map(function(l) {
+    return '<div style="padding:4px 8px;border-bottom:1px solid #eee">' + l.naam + (l.groep ? ' — groep ' + l.groep : '') + '</div>';
+  }).join('') + (leerlingen.length > 8 ? '<div style="padding:4px 8px;color:#888">en ' + (leerlingen.length-8) + ' meer…</div>' : '');
+  if (knop) { knop.disabled = false; knop.style.opacity = '1'; }
+}
+
+async function aawImporteerBestand() {
+  const leerlingen = window._aawImportLeerlingen || [];
+  if (!leerlingen.length) return;
+  const knop = document.getElementById('aaw-import-knop');
+  const voortgang = document.getElementById('aaw-import-voortgang');
+  knop.disabled = true;
+  if (voortgang) voortgang.style.display = 'block';
+  for (let i = 0; i < leerlingen.length; i++) {
+    if (voortgang) voortgang.textContent = (i+1) + ' / ' + leerlingen.length + ' geïmporteerd…';
+    await fetch('/leerlingen', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voornaam: leerlingen[i].naam, groep: leerlingen[i].groep })
+    });
+  }
+  await laadLeerlingen();
+  if (voortgang) voortgang.textContent = leerlingen.length + ' leerlingen geïmporteerd.';
+  setTimeout(function() { aawSluitImport(); aawInit(); }, 1000);
 }
 
 // ── Tijdsbesparing tracker ────────────────────────────────
