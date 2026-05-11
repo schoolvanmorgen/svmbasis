@@ -1878,11 +1878,22 @@ const LVS_DOMEINEN = [
 const LVS_KLEUREN = ['#000','#333','#555','#777','#444','#666'];
 let lvsLeerlingen = [];
 let lvsHuidig = null;
-let lvsProfielCache = {};
+// Cache met TTL van 60 seconden — voorkomt verouderde data bij gebruik op meerdere apparaten
+const LVS_CACHE_TTL_MS = 60 * 1000;
+let lvsProfielCache = {}; // { [leerlingId]: { data: {...}, ts: Date.now() } }
+
+function _lvsCacheGeldig(leerlingId) {
+  const entry = lvsProfielCache[leerlingId];
+  return entry && (Date.now() - entry.ts) < LVS_CACHE_TTL_MS;
+}
+
+function _lvsCacheOpslaan(leerlingId, data) {
+  lvsProfielCache[leerlingId] = { data: data, ts: Date.now() };
+}
 
 // ── Supabase helpers voor LVS ────────────────────────────
 async function lvsHaalProfielOp(leerlingId) {
-  if (lvsProfielCache[leerlingId]) return lvsProfielCache[leerlingId];
+  if (_lvsCacheGeldig(leerlingId)) return lvsProfielCache[leerlingId].data;
   if (!huidigToken) return null;
   try {
     const res = await fetch(API_BASE + '/lvs/' + leerlingId, {
@@ -1890,7 +1901,7 @@ async function lvsHaalProfielOp(leerlingId) {
     });
     if (!res.ok) return null;
     const data = await res.json();
-    lvsProfielCache[leerlingId] = data;
+    _lvsCacheOpslaan(leerlingId, data);
     return data;
   } catch(e) { return null; }
 }
@@ -1903,7 +1914,7 @@ async function lvsSlaProfielOp(leerlingId, profiel) {
       headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
       body: JSON.stringify(profiel)
     });
-    lvsProfielCache[leerlingId] = profiel;
+    _lvsCacheOpslaan(leerlingId, profiel);
   } catch(e) { console.error('LVS opslaan mislukt:', e); }
 }
 
@@ -2072,7 +2083,6 @@ async function lvsSlaNotitieOp() {
   });
   lvsHuidig.tijdlijn.unshift({ type, datum, tekst });
   await lvsSla();
-  lvsProfielCache[lvsHuidig.id] = { scores: lvsHuidig.scores, vorige: lvsHuidig.vorige, tijdlijn: lvsHuidig.tijdlijn };
   lvsClearNotitie();
   lvsRenderDomeinen(); lvsRenderRadar(); lvsRenderTijdlijn();
   lvsToonTab('tijdlijn', document.querySelectorAll('.lvs-tab')[1]);
