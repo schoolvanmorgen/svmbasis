@@ -212,6 +212,33 @@ class LvsTijdlijnItem(BaseModel):
     leerling_id: str
     item: dict  # {type, datum, tekst}
 
+class ToetsImport(BaseModel):
+    leerling_id: str
+    vakgebied: str          # lezen | rekenen | spelling | begrijpend | sociaal | werkhouding
+    score: int              # 0-100
+    niveau: Optional[str] = None   # I | II | III | IV | V (CITO-niveau)
+    afname_datum: Optional[str] = None
+    bron: Optional[str] = "handmatig"  # handmatig | csv | cito
+
+class ToetsBatch(BaseModel):
+    toetsen: List[ToetsImport]
+
+class GroepsplanRij(BaseModel):
+    leerling_id: str
+    vakgebied: str
+    instructieniveau: str   # onafhankelijk | basis | intensief | individueel
+
+class GroepsplanOpslaan(BaseModel):
+    groep: str
+    schooljaar: Optional[str] = "2025-2026"
+    rijen: List[GroepsplanRij]
+    notities: Optional[str] = ""
+
+class SchoolProfiel(BaseModel):
+    naam: str
+    brin: Optional[str] = ""
+    adres: Optional[str] = ""
+
 # ══════════════════════════════════════════════════════════
 # AUTH HELPER
 # ══════════════════════════════════════════════════════════
@@ -1176,6 +1203,206 @@ async def haal_alle_lvs_profielen_op(
 # ══════════════════════════════════════════════════════════
 # GLOBALE ERROR HANDLER
 # ══════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════
+# SCHOOL & ROLLEN
+# ══════════════════════════════════════════════════════════
+
+@app.get("/school/profiel")
+async def haal_school_profiel_op(user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    meta = user.get("user_metadata", {})
+    school_id = meta.get("school_id")
+    if not school_id:
+        return {"school_id": None, "naam": None, "rol": meta.get("rol", "leerkracht"), "aangemeld": False}
+    data = await supabase_get("scholen", token, {"id": f"eq.{school_id}"})
+    school = data[0] if data else {}
+    return {"school_id": school_id, "naam": school.get("naam"), "brin": school.get("brin"), "rol": meta.get("rol", "leerkracht"), "aangemeld": True}
+
+@app.get("/school/collegas")
+async def haal_collegas_op(user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    meta = user.get("user_metadata", {})
+    rol = meta.get("rol", "leerkracht")
+    school_id = meta.get("school_id")
+    if not school_id:
+        raise HTTPException(status_code=403, detail="Geen schoolaccount gekoppeld.")
+    if rol not in ("ib", "directeur"):
+        raise HTTPException(status_code=403, detail="Alleen IB-ers en directeuren kunnen dit inzien.")
+    data = await supabase_get("leerkrachten_scholen", token, {"school_id": f"eq.{school_id}", "select": "leerkracht_id,rol,email,voornaam"})
+    return data or []
+
+@app.post("/school/aanmaken")
+async def maak_school_aan(profiel: SchoolProfiel, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    school_data = {"naam": profiel.naam, "brin": profiel.brin, "adres": profiel.adres, "aangemaakt_door": user["id"]}
+    school = await supabase_post("scholen", token, school_data)
+    if not school:
+        raise HTTPException(status_code=500, detail="School aanmaken mislukt.")
+    school_id = school[0]["id"]
+    await supabase_post("leerkrachten_scholen", token, {
+        "leerkracht_id": user["id"], "school_id": school_id, "rol": "directeur", "email": user.get("email", "")
+    })
+    return {"school_id": school_id, "naam": profiel.naam}
+
+@app.post("/school/uitnodigen")
+async def nodig_collega_uit(body: dict, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    meta = user.get("user_metadata", {})
+    if meta.get("rol") != "directeur":
+        raise HTTPException(status_code=403, detail="Alleen de directeur kan collega's uitnodigen.")
+    school_id = meta.get("school_id")
+    if not school_id:
+        raise HTTPException(status_code=400, detail="Geen schoolaccount gekoppeld.")
+    import secrets, hashlib
+    uitnodiging_token = secrets.token_urlsafe(24)
+    token_hash = hashlib.sha256(uitnodiging_token.encode()).hexdigest()
+    await supabase_post("school_uitnodigingen", token, {
+        "school_id": school_id, "rol": body.get("rol", "leerkracht"),
+        "token_hash": token_hash, "aangemaakt_door": user["id"], "gebruikt": False
+    })
+    return {"uitnodigingstoken": uitnodiging_token, "school_id": school_id, "rol": body.get("rol", "leerkracht")}
+
+@app.post("/school/deelnemen")
+async def neem_deel_aan_school(body: dict, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    import hashlib
+    uitnodiging = body.get("uitnodigingstoken", "").strip()
+    if not uitnodiging:
+        raise HTTPException(status_code=400, detail="Uitnodigingstoken ontbreekt.")
+    token_hash = hashlib.sha256(uitnodiging.encode()).hexdigest()
+    uitnodigingen = await supabase_get("school_uitnodigingen", token, {"token_hash": f"eq.{token_hash}", "gebruikt": "eq.false"})
+    if not uitnodigingen:
+        raise HTTPException(status_code=404, detail="Ongeldig of verlopen uitnodigingstoken.")
+    inv = uitnodigingen[0]
+    await supabase_post("leerkrachten_scholen", token, {
+        "leerkracht_id": user["id"], "school_id": inv["school_id"], "rol": inv["rol"], "email": user.get("email", "")
+    })
+    await supabase_patch(f"school_uitnodigingen?token_hash=eq.{token_hash}", token, {"gebruikt": True})
+    return {"school_id": inv["school_id"], "rol": inv["rol"]}
+
+
+# ══════════════════════════════════════════════════════════
+# TOETSREGISTRATIE
+# ══════════════════════════════════════════════════════════
+
+@app.post("/toetsen")
+async def sla_toets_op(item: ToetsImport, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    if not 0 <= item.score <= 100:
+        raise HTTPException(status_code=400, detail="Score moet tussen 0 en 100 liggen.")
+    data = {
+        "leerkracht_id": user["id"], "leerling_id": item.leerling_id,
+        "vakgebied": item.vakgebied, "score": item.score, "niveau": item.niveau,
+        "afname_datum": item.afname_datum or datetime.now(timezone.utc).date().isoformat(),
+        "bron": item.bron, "aangemaakt_op": datetime.now(timezone.utc).isoformat()
+    }
+    result = await supabase_post("toetsresultaten", token, data)
+    if not result:
+        raise HTTPException(status_code=500, detail="Toets opslaan mislukt.")
+    # Automatisch LVS bijwerken
+    profiel = await supabase_get("lvs_profielen", token, {"leerling_id": f"eq.{item.leerling_id}", "leerkracht_id": f"eq.{user['id']}"})
+    if profiel:
+        huidig = profiel[0]
+        scores = huidig.get("scores", {})
+        vorige = huidig.get("vorige_scores", {})
+        tijdlijn = huidig.get("tijdlijn", [])
+        vorige[item.vakgebied] = scores.get(item.vakgebied, 0)
+        scores[item.vakgebied] = item.score
+        tijdlijn.insert(0, {
+            "type": "toets",
+            "datum": item.afname_datum or datetime.now(timezone.utc).date().isoformat(),
+            "tekst": f"{item.vakgebied.capitalize()} score {item.score}" + (f" niveau {item.niveau}" if item.niveau else "") + f" ({item.bron})"
+        })
+        await supabase_patch(f"lvs_profielen?leerling_id=eq.{item.leerling_id}&leerkracht_id=eq.{user['id']}", token,
+            {"scores": scores, "vorige_scores": vorige, "tijdlijn": tijdlijn})
+    return result[0]
+
+@app.post("/toetsen/batch")
+async def importeer_toetsen(batch: ToetsBatch, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    if len(batch.toetsen) > 500:
+        raise HTTPException(status_code=400, detail="Maximaal 500 toetsen per import.")
+    resultaten, fouten = [], []
+    for i, item in enumerate(batch.toetsen):
+        try:
+            if not 0 <= item.score <= 100:
+                fouten.append({"index": i, "fout": f"Score {item.score} buiten bereik"}); continue
+            data = {
+                "leerkracht_id": user["id"], "leerling_id": item.leerling_id,
+                "vakgebied": item.vakgebied, "score": item.score, "niveau": item.niveau,
+                "afname_datum": item.afname_datum or datetime.now(timezone.utc).date().isoformat(),
+                "bron": item.bron or "csv", "aangemaakt_op": datetime.now(timezone.utc).isoformat()
+            }
+            result = await supabase_post("toetsresultaten", token, data)
+            if result:
+                resultaten.append(result[0])
+        except Exception as e:
+            fouten.append({"index": i, "fout": str(e)})
+    return {"geimporteerd": len(resultaten), "fouten": len(fouten), "foutdetails": fouten[:10]}
+
+@app.get("/toetsen/{leerling_id}")
+async def haal_toetsen_op(leerling_id: str, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    data = await supabase_get("toetsresultaten", token, {
+        "leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}",
+        "order": "afname_datum.desc", "select": "*"
+    })
+    return data or []
+
+
+# ══════════════════════════════════════════════════════════
+# GROEPSPLAN
+# ══════════════════════════════════════════════════════════
+
+@app.get("/groepsplan")
+async def haal_groepsplan_op(groep: str, schooljaar: str = "2025-2026", user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    data = await supabase_get("groepsplannen", token, {
+        "leerkracht_id": f"eq.{user['id']}", "groep": f"eq.{groep}", "schooljaar": f"eq.{schooljaar}", "select": "*"
+    })
+    if not data:
+        return {"groep": groep, "schooljaar": schooljaar, "rijen": [], "notities": ""}
+    plan = data[0]
+    rijen = await supabase_get("groepsplan_rijen", token, {"groepsplan_id": f"eq.{plan['id']}", "select": "*"})
+    return {**plan, "rijen": rijen or []}
+
+@app.put("/groepsplan")
+async def sla_groepsplan_op(plan: GroepsplanOpslaan, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    bestaand = await supabase_get("groepsplannen", token, {
+        "leerkracht_id": f"eq.{user['id']}", "groep": f"eq.{plan.groep}", "schooljaar": f"eq.{plan.schooljaar}"
+    })
+    plan_data = {
+        "leerkracht_id": user["id"], "groep": plan.groep, "schooljaar": plan.schooljaar,
+        "notities": plan.notities, "bijgewerkt_op": datetime.now(timezone.utc).isoformat()
+    }
+    if bestaand:
+        plan_id = bestaand[0]["id"]
+        await supabase_patch(f"groepsplannen?id=eq.{plan_id}", token, plan_data)
+        await supabase_delete(f"groepsplan_rijen?groepsplan_id=eq.{plan_id}", token)
+    else:
+        nieuw = await supabase_post("groepsplannen", token, plan_data)
+        plan_id = nieuw[0]["id"] if nieuw else None
+        if not plan_id:
+            raise HTTPException(status_code=500, detail="Groepsplan aanmaken mislukt.")
+    for rij in plan.rijen:
+        await supabase_post("groepsplan_rijen", token, {
+            "groepsplan_id": plan_id, "leerling_id": rij.leerling_id,
+            "vakgebied": rij.vakgebied, "instructieniveau": rij.instructieniveau
+        })
+    return {"groepsplan_id": plan_id, "rijen_opgeslagen": len(plan.rijen)}
+
+@app.delete("/groepsplan/{plan_id}")
+async def verwijder_groepsplan(plan_id: str, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    bestaand = await supabase_get("groepsplannen", token, {"id": f"eq.{plan_id}", "leerkracht_id": f"eq.{user['id']}"})
+    if not bestaand:
+        raise HTTPException(status_code=404, detail="Groepsplan niet gevonden.")
+    await supabase_delete(f"groepsplan_rijen?groepsplan_id=eq.{plan_id}", token)
+    await supabase_delete(f"groepsplannen?id=eq.{plan_id}", token)
+    return {"verwijderd": True}
+
 
 @app.exception_handler(HTTPException)
 async def http_fout_handler(request: Request, exc: HTTPException):

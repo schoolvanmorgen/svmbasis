@@ -300,6 +300,18 @@ body{padding-bottom:64px}
 .lvs-profiel-naam{font-size:17px;font-weight:600;color:var(--t)}
 .lvs-profiel-meta{font-size:11px;color:var(--tz);margin-top:2px}
 .lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.gp-vak-btn{padding:6px 12px;font-size:12px;font-weight:500;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)}
+.gp-vak-btn.actief{background:#000;color:#fff;border-color:#000}
+.gp-vak-btn:hover:not(.actief){background:var(--warm)}
+.gp-niveaubalk{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:4px 0}
+.gp-niveau-knop{padding:6px 4px;font-size:11px;font-weight:500;border:1px solid var(--rand);border-right:none;background:#fff;cursor:pointer;font-family:inherit;color:var(--tz);text-align:center}
+.gp-niveau-knop:last-child{border-right:1px solid var(--rand)}
+.gp-niveau-knop.onafhankelijk.actief{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7}
+.gp-niveau-knop.basis.actief{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
+.gp-niveau-knop.intensief.actief{background:#fff3e0;color:#e65100;border-color:#ffcc80}
+.gp-niveau-knop.individueel.actief{background:#fce4ec;color:#880e4f;border-color:#f48fb1}
+.gp-leerling-rij{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--rand);font-size:13px}
+.gp-leerling-naam{width:130px;flex-shrink:0;color:var(--donker);font-weight:500}
 .lvs-tabs{display:flex;padding:0 18px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0}
 .lvs-tab{padding:10px 12px;font-size:12px;font-weight:500;color:var(--tz);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit}
 .lvs-tab:hover{color:var(--tm)}
@@ -743,11 +755,33 @@ function toonTab(tab, knop) {
     const notEl = document.getElementById('tab-notities');
     if (notEl) notEl.classList.add('actief');
     if (typeof notitieRender === 'function') notitieRender();
+  } else if (tab === 'groepsplan') {
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.display = '';
+    const notEl2 = document.getElementById('tab-notities');
+    if (notEl2) notEl2.classList.remove('actief');
+    const el = document.getElementById('tab-groepsplan');
+    if (el) el.classList.add('actief');
+    // Vul groep voorin vanuit actieve leerling
+    if (huidigeLeerling && huidigeLeerling.groep) {
+      const gpGroepEl = document.getElementById('gp-groep');
+      if (gpGroepEl && !gpGroepEl.value) { gpGroepEl.value = huidigeLeerling.groep; gpLaad(); }
+    }
+  } else if (tab === 'school') {
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.display = '';
+    const notEl3 = document.getElementById('tab-notities');
+    if (notEl3) notEl3.classList.remove('actief');
+    const el2 = document.getElementById('tab-school');
+    if (el2) el2.classList.add('actief');
+    schoolInit();
   } else {
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
-    const notEl2 = document.getElementById('tab-notities');
-    if (notEl2) notEl2.classList.remove('actief');
+    const notEl4 = document.getElementById('tab-notities');
+    if (notEl4) notEl4.classList.remove('actief');
     if (tabInhoud) tabInhoud.style.display = '';
     const el = document.getElementById('tab-' + tab);
     if (el) el.classList.add('actief');
@@ -856,6 +890,8 @@ function toonTab(tab, knop) {
   <button class="tab" onclick="toonTab('notities',this)">Notities</button>
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
   <button class="tab" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
+  <button class="tab" onclick="toonTab('groepsplan',this)">Groepsplan</button>
+  <button class="tab" onclick="toonTab('school',this)">School</button>
 </div>
 <div id="tab-inhoud">
   <div class="invoer">
@@ -1059,6 +1095,81 @@ function toonTab(tab, knop) {
   </div>
 </div>
 </div><!-- einde tab-handelingsplan -->
+
+<!-- ── Groepsplan Tab ── -->
+<div class="sectie" id="tab-groepsplan">
+<div class="app">
+  <div class="invoer">
+    <div><div class="ptitel">Groepsplan</div><div class="psub">Deel leerlingen per vakgebied in op instructieniveau. Exporteer als PDF voor de IB-er of inspectie.</div></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="vlabel" style="margin-bottom:0;width:100%">GROEP &amp; SCHOOLJAAR</div>
+      <select id="gp-groep" onchange="gpLaad()" style="border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff;flex:1">
+        <option value="">Kies groep...</option>
+        <option>1</option><option>2</option><option>3</option><option>4</option>
+        <option>5</option><option>6</option><option>7</option><option>8</option>
+      </select>
+      <select id="gp-schooljaar" style="border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
+        <option value="2025-2026">2025-2026</option><option value="2024-2025">2024-2025</option>
+      </select>
+    </div>
+    <div>
+      <div class="vlabel">VAKGEBIED</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="gp-vak-knoppen">
+        <button class="gp-vak-btn actief" onclick="gpSelecteerVak('lezen',this)">Lezen</button>
+        <button class="gp-vak-btn" onclick="gpSelecteerVak('rekenen',this)">Rekenen</button>
+        <button class="gp-vak-btn" onclick="gpSelecteerVak('spelling',this)">Spelling</button>
+        <button class="gp-vak-btn" onclick="gpSelecteerVak('begrijpend',this)">Begrijpend lezen</button>
+        <button class="gp-vak-btn" onclick="gpSelecteerVak('sociaal',this)">Sociaal-emotioneel</button>
+        <button class="gp-vak-btn" onclick="gpSelecteerVak('werkhouding',this)">Werkhouding</button>
+      </div>
+    </div>
+    <div><div class="vlabel">NOTITIES</div><textarea id="gp-notities" rows="3" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical" placeholder="Algemene opmerkingen bij dit groepsplan..."></textarea></div>
+    <div style="display:flex;gap:8px">
+      <button class="genknop" onclick="gpOpslaan()" style="flex:1"><div class="spin" id="gp-spin" style="display:none"></div><span id="gp-ktekst">Opslaan</span></button>
+      <button onclick="gpExportPDF()" style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 16px;font-size:12px;cursor:pointer;font-family:inherit">PDF</button>
+    </div>
+  </div>
+  <div class="resultaat" id="gp-resultaat"><div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep en vakgebied</div></div></div>
+</div>
+</div><!-- einde tab-groepsplan -->
+
+<!-- ── School Tab ── -->
+<div class="sectie" id="tab-school">
+<div class="app">
+  <div class="invoer">
+    <div><div class="ptitel">School</div><div class="psub">Beheer je schoolaccount en collega's.</div></div>
+    <div id="school-geen-account" style="display:none">
+      <div class="vlabel">SCHOOLACCOUNT AANMAKEN</div>
+      <input type="text" id="school-naam-input" placeholder="Naam van de school" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
+      <input type="text" id="school-brin-input" placeholder="BRIN-nummer (optioneel)" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
+      <button class="genknop" onclick="schoolAanmaken()" style="width:100%">School aanmaken</button>
+      <div style="margin:16px 0;height:0.5px;background:var(--rand)"></div>
+      <div class="vlabel">DEELNEMEN AAN BESTAANDE SCHOOL</div>
+      <input type="text" id="school-token-input" placeholder="Uitnodigingstoken van de directeur" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
+      <button class="genknop" onclick="schoolDeelnemen()" style="width:100%">Deelnemen</button>
+    </div>
+    <div id="school-account" style="display:none">
+      <div class="vlabel">SCHOOLPROFIEL</div>
+      <div id="school-info" style="background:var(--warm);padding:12px;font-size:13px;line-height:1.8;margin-bottom:12px"></div>
+      <div id="school-directeur-acties" style="display:none">
+        <div class="vlabel">COLLEGA UITNODIGEN</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <select id="school-uitnodig-rol" style="border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
+            <option value="leerkracht">Leerkracht</option><option value="ib">IB-er</option><option value="directeur">Directeur</option>
+          </select>
+          <button class="genknop" onclick="schoolUitnodigGenereer()" style="flex:1">Genereer token</button>
+        </div>
+        <div id="school-uitnodig-resultaat" style="display:none;background:var(--gl);border:1px solid var(--gm);padding:10px 12px;font-size:12px;word-break:break-all;margin-top:8px"></div>
+      </div>
+      <div id="school-ib-acties" style="display:none;margin-top:16px">
+        <div class="vlabel">COLLEGAS</div>
+        <div id="school-collegas" style="font-size:13px;color:var(--tz)">Laden...</div>
+      </div>
+    </div>
+  </div>
+  <div class="resultaat" id="school-resultaat"><div class="leeg"><div class="leeg-c">&#x1F3EB;</div><div class="leeg-t">Schoolprofiel laden...</div></div></div>
+</div>
+</div><!-- einde tab-school -->
 
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- Aanwezigheidsregistratie tab                          -->
@@ -1856,7 +1967,8 @@ function downloadPDF() {
     <div class="lvs-tabs">
       <button class="lvs-tab actief" onclick="lvsToonTab('profiel',this)">Profiel</button>
       <button class="lvs-tab" onclick="lvsToonTab('tijdlijn',this)">Tijdlijn</button>
-      <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Observatie/cijfer toevoegen</button>
+      <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Observatie/toets toevoegen</button>
+      <button class="lvs-tab" onclick="lvsToonTab('toetsimport',this)">CSV importeren</button>
     </div>
 
     <div class="lvs-inhoud" id="lvs-tab-profiel">
@@ -1872,7 +1984,7 @@ function downloadPDF() {
     </div>
 
     <div class="lvs-inhoud" id="lvs-tab-notitie" style="display:none">
-      <div class="lvs-sectie-titel">NIEUWE NOTITIE</div>
+      <div class="lvs-sectie-titel">NIEUWE NOTITIE / TOETSRESULTAAT</div>
       <div class="lvs-notitie-form">
         <select id="lvs-notitie-type" style="background:#111;border:1px solid #111;border-radius:0;padding:7px 10px;font-size:12px;color:#f5f5f5;font-family:inherit;outline:none">
           <option value="observatie">Observatie</option>
@@ -1911,6 +2023,13 @@ function downloadPDF() {
           <button onclick="lvsSlaNotitieOp()" style="background:#000;color:#fff;border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
         </div>
       </div>
+    </div>
+
+    <div class="lvs-inhoud" id="lvs-tab-toetsimport" style="display:none">
+      <div class="lvs-sectie-titel">CSV IMPORTEREN</div>
+      <p style="font-size:12px;color:var(--tz);line-height:1.6;margin-bottom:12px">Plak een CSV met kolommen: leerlingnummer, vakgebied, score, niveau (opt.), datum (opt.)<br>Vakgebieden: lezen, rekenen, spelling, begrijpend, sociaal, werkhouding</p>
+      <textarea id="lvs-csv-invoer" rows="7" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:12px;font-family:monospace;outline:none;resize:vertical" placeholder="leerlingnummer,vakgebied,score,niveau,datum&#10;12345,lezen,72,III,2025-01-15"></textarea>
+      <button onclick="toetsImportCSV(document.getElementById('lvs-csv-invoer').value)" style="width:100%;margin-top:10px;background:#000;color:#fff;border:none;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Importeer toetsen</button>
     </div>
 
   </div>
@@ -2184,6 +2303,9 @@ function lvsToonTab(naam, knop) {
   });
   document.querySelectorAll('.lvs-tab').forEach(k => k.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
+  document.querySelectorAll('.lvs-inhoud').forEach(el => el.style.display = 'none');
+  const tabEl = document.getElementById('lvs-tab-' + naam);
+  if (tabEl) tabEl.style.display = 'block';
   if (naam === 'profiel') { lvsRenderDomeinen(); lvsRenderRadar(); }
 }
 
@@ -2546,6 +2668,245 @@ function registreerRapport() {
 }
 
 updateStatsBalk();
+
+// ══════════════════════════════════════════════════════════
+// TOETSREGISTRATIE — LVS uitbreiding
+// ══════════════════════════════════════════════════════════
+
+async function toetsRegistreer(leerlingId, vakgebied, score, niveau, bron) {
+  if (!huidigToken) return;
+  try {
+    const res = await fetch(API_BASE + '/toetsen', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leerling_id: leerlingId, vakgebied, score: parseInt(score), niveau: niveau || null, bron: bron || 'handmatig', afname_datum: new Date().toISOString().slice(0,10) })
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    return await res.json();
+  } catch(e) { console.error('Toets registreren mislukt:', e); return null; }
+}
+
+async function toetsImportCSV(csvTekst) {
+  if (!huidigToken || !csvTekst.trim()) return;
+  const regels = csvTekst.trim().split('\n').slice(1);
+  const toetsen = [];
+  const vakMap = { 'lezen':'lezen','rekenen':'rekenen','spelling':'spelling','begrijpend':'begrijpend','sociaal':'sociaal','werkhouding':'werkhouding' };
+  for (const regel of regels) {
+    const delen = regel.split(',').map(d => d.trim().replace(/^"|"$/g,''));
+    if (delen.length < 3) continue;
+    const [leerlingnummer, vakRaw, scoreRaw, niveauRaw, datumRaw] = delen;
+    const vak = vakMap[vakRaw.toLowerCase()];
+    const score = parseInt(scoreRaw);
+    if (!vak || isNaN(score)) continue;
+    const leerling = leerlingen.find(l => l.leerlingnummer === leerlingnummer || l.voornaam === leerlingnummer);
+    if (!leerling) continue;
+    toetsen.push({ leerling_id: leerling.id, vakgebied: vak, score, niveau: niveauRaw || null, afname_datum: datumRaw || null, bron: 'csv' });
+  }
+  if (!toetsen.length) { alert('Geen geldige rijen gevonden. Controleer het CSV-formaat.'); return; }
+  const res = await fetch(API_BASE + '/toetsen/batch', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ toetsen })
+  });
+  const data = await res.json();
+  alert(data.geimporteerd + ' toetsen geimporteerd.' + (data.fouten > 0 ? ' ' + data.fouten + ' fouten.' : ''));
+  if (lvsHuidig) lvsSelecteer(lvsHuidig.id);
+}
+
+// ══════════════════════════════════════════════════════════
+// GROEPSPLAN
+// ══════════════════════════════════════════════════════════
+
+let gpHuidigVak = 'lezen';
+let gpData = {};
+
+function gpSelecteerVak(vak, knop) {
+  gpHuidigVak = vak;
+  document.querySelectorAll('.gp-vak-btn').forEach(k => k.classList.remove('actief'));
+  if (knop) knop.classList.add('actief');
+  gpRenderTabel();
+}
+
+async function gpLaad() {
+  const groep = document.getElementById('gp-groep').value;
+  const schooljaar = document.getElementById('gp-schooljaar').value;
+  if (!groep || !huidigToken) return;
+  const res = await fetch(API_BASE + '/groepsplan?groep=' + groep + '&schooljaar=' + schooljaar, {
+    headers: { 'Authorization': 'Bearer ' + huidigToken }
+  });
+  const data = await res.json();
+  gpData = {};
+  (data.rijen || []).forEach(r => {
+    if (!gpData[r.leerling_id]) gpData[r.leerling_id] = {};
+    gpData[r.leerling_id][r.vakgebied] = r.instructieniveau;
+  });
+  document.getElementById('gp-notities').value = data.notities || '';
+  gpRenderTabel();
+}
+
+function gpRenderTabel() {
+  const groep = document.getElementById('gp-groep').value;
+  const el = document.getElementById('gp-resultaat');
+  if (!groep) { el.innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep</div></div>'; return; }
+  const klasLeerlingen = leerlingen.filter(l => l.groep === groep);
+  if (!klasLeerlingen.length) { el.innerHTML = '<div class="leeg"><div class="leeg-t">Geen leerlingen in groep ' + groep + '</div></div>'; return; }
+  const niveaus = ['onafhankelijk','basis','intensief','individueel'];
+  const niveauLabels = {'onafhankelijk':'Onafh.','basis':'Basis','intensief':'Intensief','individueel':'Individ.'};
+  let html = '<div style="padding:16px"><div style="font-size:11px;font-weight:700;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">' + gpHuidigVak.toUpperCase() + '</div>';
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div style="width:130px;font-size:10px;color:#888;font-weight:700;letter-spacing:.05em">LEERLING</div><div class="gp-niveaubalk" style="flex:1"><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">ONAFH.</div><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">BASIS</div><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">INTENSIEF</div><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">INDIVID.</div></div></div>';
+  klasLeerlingen.forEach(l => {
+    const huidig = (gpData[l.id] || {})[gpHuidigVak] || '';
+    html += '<div class="gp-leerling-rij"><div class="gp-leerling-naam">' + l.voornaam + '</div><div class="gp-niveaubalk" style="flex:1">';
+    niveaus.forEach(n => {
+      const actief = huidig === n ? ' actief ' + n : '';
+      html += '<button class="gp-niveau-knop ' + n + actief + '" onclick="gpStelNiveauIn('' + l.id + '','' + n + '',this)">' + niveauLabels[n] + '</button>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function gpStelNiveauIn(leerlingId, niveau, knop) {
+  if (!gpData[leerlingId]) gpData[leerlingId] = {};
+  gpData[leerlingId][gpHuidigVak] = niveau;
+  const rij = knop.closest('.gp-niveaubalk');
+  rij.querySelectorAll('.gp-niveau-knop').forEach(k => {
+    k.classList.remove('actief','onafhankelijk','basis','intensief','individueel');
+    k.className = 'gp-niveau-knop ' + k.classList[1];
+  });
+  knop.classList.add('actief');
+}
+
+async function gpOpslaan() {
+  const groep = document.getElementById('gp-groep').value;
+  const schooljaar = document.getElementById('gp-schooljaar').value;
+  if (!groep || !huidigToken) { alert('Kies eerst een groep.'); return; }
+  document.getElementById('gp-spin').style.display = 'block';
+  document.getElementById('gp-ktekst').textContent = 'Opslaan...';
+  const rijen = [];
+  Object.entries(gpData).forEach(([lid, vakken]) => {
+    Object.entries(vakken).forEach(([vak, niveau]) => {
+      if (niveau) rijen.push({ leerling_id: lid, vakgebied: vak, instructieniveau: niveau });
+    });
+  });
+  try {
+    const res = await fetch(API_BASE + '/groepsplan', {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groep, schooljaar, rijen, notities: document.getElementById('gp-notities').value })
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    document.getElementById('gp-ktekst').textContent = 'Opgeslagen!';
+    setTimeout(() => { document.getElementById('gp-ktekst').textContent = 'Opslaan'; }, 2000);
+  } catch(e) {
+    alert('Opslaan mislukt: ' + e.message);
+    document.getElementById('gp-ktekst').textContent = 'Opslaan';
+  } finally { document.getElementById('gp-spin').style.display = 'none'; }
+}
+
+function gpExportPDF() {
+  const groep = document.getElementById('gp-groep').value;
+  const schooljaar = document.getElementById('gp-schooljaar').value;
+  if (!groep) { alert('Kies eerst een groep.'); return; }
+  const vakken = ['lezen','rekenen','spelling','begrijpend','sociaal','werkhouding'];
+  const niveauKleur = {onafhankelijk:'#e8f5e9',basis:'#e3f2fd',intensief:'#fff3e0',individueel:'#fce4ec'};
+  const klasLeerlingen = leerlingen.filter(l => l.groep === groep);
+  let tabelHtml = '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:6px;border:1px solid #ccc">Leerling</th>';
+  vakken.forEach(v => { tabelHtml += '<th style="padding:6px;border:1px solid #ccc;text-align:center">' + v.charAt(0).toUpperCase() + v.slice(1) + '</th>'; });
+  tabelHtml += '</tr></thead><tbody>';
+  klasLeerlingen.forEach(l => {
+    tabelHtml += '<tr><td style="padding:6px;border:1px solid #ccc;font-weight:500">' + l.voornaam + '</td>';
+    vakken.forEach(v => {
+      const n = (gpData[l.id] || {})[v] || '';
+      const kleur = niveauKleur[n] || '#fff';
+      tabelHtml += '<td style="padding:6px;border:1px solid #ccc;text-align:center;background:' + kleur + '">' + (n ? n.charAt(0).toUpperCase() + n.slice(1) : '—') + '</td>';
+    });
+    tabelHtml += '</tr>';
+  });
+  tabelHtml += '</tbody></table>';
+  const html = '<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8"><title>Groepsplan groep ' + groep + '</title></head><body style="font-family:Arial,sans-serif;padding:24px"><h1 style="font-size:18px">Groepsplan groep ' + groep + ' &mdash; ' + schooljaar + '</h1><p style="font-size:12px;color:#666;margin-bottom:16px">Gegenereerd met School van Morgen</p>' + tabelHtml + (document.getElementById('gp-notities').value ? '<p style="margin-top:16px;font-size:12px"><strong>Notities:</strong> ' + document.getElementById('gp-notities').value + '</p>' : '') + '</body></html>';
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'groepsplan-groep-' + groep + '-' + schooljaar + '.html'; a.click();
+}
+
+// ══════════════════════════════════════════════════════════
+// SCHOOL & ROLLEN
+// ══════════════════════════════════════════════════════════
+
+async function schoolInit() {
+  if (!huidigToken) return;
+  try {
+    const res = await fetch(API_BASE + '/school/profiel', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    const data = await res.json();
+    if (!data.aangemeld) {
+      document.getElementById('school-geen-account').style.display = 'block';
+      document.getElementById('school-account').style.display = 'none';
+      document.getElementById('school-resultaat').innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F3EB;</div><div class="leeg-t">Nog geen schoolaccount gekoppeld</div></div>';
+    } else {
+      document.getElementById('school-geen-account').style.display = 'none';
+      document.getElementById('school-account').style.display = 'block';
+      document.getElementById('school-info').innerHTML = '<strong>' + (data.naam || 'Onbekende school') + '</strong><br>Jouw rol: <strong>' + data.rol + '</strong>' + (data.brin ? '<br>BRIN: ' + data.brin : '');
+      document.getElementById('school-resultaat').innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F3EB;</div><div class="leeg-t">' + (data.naam || 'School') + '</div></div>';
+      if (data.rol === 'directeur') {
+        document.getElementById('school-directeur-acties').style.display = 'block';
+      }
+      if (data.rol === 'ib' || data.rol === 'directeur') {
+        document.getElementById('school-ib-acties').style.display = 'block';
+        schoolLaadCollegas();
+      }
+    }
+  } catch(e) { console.error('School profiel laden mislukt:', e); }
+}
+
+async function schoolLaadCollegas() {
+  if (!huidigToken) return;
+  try {
+    const res = await fetch(API_BASE + '/school/collegas', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    const data = await res.json();
+    const el = document.getElementById('school-collegas');
+    if (!data.length) { el.textContent = 'Nog geen collega's gekoppeld.'; return; }
+    el.innerHTML = data.map(c => '<div style="padding:6px 0;border-bottom:0.5px solid var(--rand);display:flex;gap:8px"><span style="flex:1">' + (c.voornaam || c.email || 'Onbekend') + '</span><span style="color:var(--tz);font-size:11px">' + c.rol + '</span></div>').join('');
+  } catch(e) { document.getElementById('school-collegas').textContent = 'Laden mislukt.'; }
+}
+
+async function schoolAanmaken() {
+  const naam = document.getElementById('school-naam-input').value.trim();
+  const brin = document.getElementById('school-brin-input').value.trim();
+  if (!naam) { alert('Vul de naam van de school in.'); return; }
+  const res = await fetch(API_BASE + '/school/aanmaken', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ naam, brin, adres: '' })
+  });
+  if (res.ok) { alert('School aangemaakt! Herlaad de pagina om verder te gaan.'); location.reload(); }
+  else { const d = await res.json(); alert('Mislukt: ' + (d.detail || 'Onbekende fout')); }
+}
+
+async function schoolDeelnemen() {
+  const token = document.getElementById('school-token-input').value.trim();
+  if (!token) { alert('Vul het uitnodigingstoken in.'); return; }
+  const res = await fetch(API_BASE + '/school/deelnemen', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uitnodigingstoken: token })
+  });
+  if (res.ok) { alert('Gekoppeld aan school! Herlaad de pagina.'); location.reload(); }
+  else { const d = await res.json(); alert('Mislukt: ' + (d.detail || 'Onbekende fout')); }
+}
+
+async function schoolUitnodigGenereer() {
+  const rol = document.getElementById('school-uitnodig-rol').value;
+  const res = await fetch(API_BASE + '/school/uitnodigen', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rol })
+  });
+  if (res.ok) {
+    const data = await res.json();
+    const el = document.getElementById('school-uitnodig-resultaat');
+    el.style.display = 'block';
+    el.innerHTML = '<strong>Token voor ' + rol + ':</strong><br>' + data.uitnodigingstoken + '<br><span style="font-size:11px;color:var(--tz)">Geldig voor 7 dagen. Stuur dit token naar de collega.</span>';
+  } else { alert('Genereren mislukt.'); }
+}
 
 if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com' && !location.hostname.includes('v0.dev') && location.protocol !== 'file:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
