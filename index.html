@@ -363,6 +363,58 @@ let huidigGebruiker = null;
 let huidigToken = null;
 let leerlingen = [];
 
+// ── Centrale leerlingcontext — gedeeld door alle modules ──────
+// Alle tabs lezen uit huidigeLeerling in plaats van eigen velden.
+let huidigeLeerling = null;  // { id, voornaam, groep, ondersteuningsbehoeftes, notities }
+
+function stelLeerlingIn(leerling) {
+  huidigeLeerling = leerling;
+  window._huidigeLeerlingId = leerling ? leerling.id : null;
+
+  // Vul rapport-tab velden
+  if (leerling) {
+    document.getElementById('naam').value = leerling.voornaam || '';
+    document.getElementById('groep').value = leerling.groep || '';
+    if (leerling.notities) document.getElementById('notities').value = leerling.notities;
+    if (leerling.ondersteuningsbehoeftes) {
+      document.querySelectorAll('#od-checklijst input').forEach(cb => {
+        cb.checked = leerling.ondersteuningsbehoeftes.includes(cb.value);
+      });
+      if (typeof updateTags === 'function') updateTags();
+    }
+  }
+
+  // Vul OPP-velden
+  const oppNaam  = document.getElementById('opp-naam');
+  const oppGroep = document.getElementById('opp-groep');
+  if (oppNaam)  oppNaam.value  = leerling ? (leerling.voornaam || '') : '';
+  if (oppGroep) oppGroep.value = leerling ? (leerling.groep || '')    : '';
+
+  // Vul handelingsplan-velden
+  const hpNaam  = document.getElementById('hp-naam');
+  const hpGroep = document.getElementById('hp-groep');
+  if (hpNaam)  hpNaam.value  = leerling ? (leerling.voornaam || '') : '';
+  if (hpGroep) hpGroep.value = leerling ? (leerling.groep || '')    : '';
+
+  // Toon/verberg actieve-leerling banner in alle tabs
+  const naam   = leerling ? leerling.voornaam : '';
+  const groep  = leerling ? (leerling.groep ? ' · groep ' + leerling.groep : '') : '';
+  const tekst  = leerling ? naam + groep : '';
+  document.querySelectorAll('.actieve-leerling-banner').forEach(el => {
+    el.style.display = leerling ? 'flex' : 'none';
+    const span = el.querySelector('.alb-naam');
+    if (span) span.textContent = tekst;
+  });
+
+  // Sync LVS als leerling ook in LVS-lijst staat
+  if (leerling && typeof lvsSelecteer === 'function') {
+    const lvsMatch = lvsLeerlingen.find(l => l.id === leerling.id);
+    if (lvsMatch && (!lvsHuidig || lvsHuidig.id !== leerling.id)) {
+      lvsSelecteer(leerling.id);
+    }
+  }
+}
+
 async function initAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
@@ -491,17 +543,8 @@ async function verwijderLeerling(id) {
 function selecteerLeerling(id) {
   const l = leerlingen.find(x => x.id === id);
   if (!l) return;
-  document.getElementById('naam').value = l.voornaam;
-  document.getElementById('groep').value = l.groep || '';
-  if (l.ondersteuningsbehoeftes) {
-    document.querySelectorAll('#od-checklijst input').forEach(cb => {
-      cb.checked = l.ondersteuningsbehoeftes.includes(cb.value);
-    });
-    updateTags();
-  }
-  if (l.notities) document.getElementById('notities').value = l.notities;
   document.querySelectorAll('.leerling-item').forEach(el => el.classList.remove('actief'));
-  window._huidigeLeerlingId = id;
+  stelLeerlingIn(l);
   laadRapportgeschiedenis(id);
 }
 
@@ -913,6 +956,11 @@ function toonTab(tab, knop) {
     </div>
     <div>
       <div class="vlabel">LEERLING</div>
+      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:0;margin-bottom:6px;font-size:12px">
+        <span style="font-weight:600;color:var(--gm)">●</span>
+        <span class="alb-naam" style="font-weight:500;color:var(--donker)"></span>
+        <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer">Wisselen</button>
+      </div>
       <div class="rij2">
         <input type="text" id="opp-naam" placeholder="Naam kind">
         <select id="opp-groep">
@@ -965,6 +1013,11 @@ function toonTab(tab, knop) {
     </div>
     <div>
       <div class="vlabel">LEERLING</div>
+      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:0;margin-bottom:6px;font-size:12px">
+        <span style="font-weight:600;color:var(--gm)">●</span>
+        <span class="alb-naam" style="font-weight:500;color:var(--donker)"></span>
+        <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer">Wisselen</button>
+      </div>
       <div class="rij2">
         <input type="text" id="hp-naam" placeholder="Naam kind">
         <select id="hp-groep">
@@ -1793,6 +1846,11 @@ function downloadPDF() {
         <div class="lvs-profiel-naam" id="lvs-naam">Selecteer een leerling</div>
         <div class="lvs-profiel-meta" id="lvs-meta">—</div>
       </div>
+      <div id="lvs-acties" style="display:none;margin-left:auto;display:none;gap:6px;flex-wrap:wrap">
+        <button onclick="lvsNaarTab('rapport')" style="background:var(--gm);color:#fff;border:none;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Rapport</button>
+        <button onclick="lvsNaarTab('opp')" style="background:none;border:1px solid var(--gm);color:var(--gm);padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">OPP</button>
+        <button onclick="lvsNaarTab('handelingsplan')" style="background:none;border:1px solid var(--gm);color:var(--gm);padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Handelingsplan</button>
+      </div>
     </div>
 
     <div class="lvs-tabs">
@@ -1984,6 +2042,8 @@ async function lvsSelecteer(id) {
   };
   document.getElementById('lvs-naam').textContent = lvsHuidig.naam;
   document.getElementById('lvs-meta').textContent = 'Groep ' + (lvsHuidig.groep || '?') + ' · Schooljaar 2025–2026';
+  const acties = document.getElementById('lvs-acties');
+  if (acties) acties.style.display = 'flex';
   lvsRenderLijst(lvsLeerlingen);
   lvsRenderDomeinen();
   lvsRenderRadar();
@@ -2128,11 +2188,25 @@ function lvsToonTab(naam, knop) {
 }
 
 function lvsGenereer() {
+  lvsNaarTab('rapport');
+}
+
+function lvsNaarTab(tab) {
   if (!lvsHuidig) { alert('Selecteer eerst een leerling.'); return; }
-  document.getElementById('naam').value = lvsHuidig.naam;
-  document.getElementById('groep').value = lvsHuidig.groep || '';
-  toonTab('rapport', document.querySelectorAll('.tab')[0]);
-  document.querySelector('.tab').click();
+  // Sync de centrale context zodat alle tabs de juiste leerling kennen
+  const leerling = leerlingen.find(l => l.id === lvsHuidig.id)
+    || { id: lvsHuidig.id, voornaam: lvsHuidig.naam, groep: lvsHuidig.groep };
+  stelLeerlingIn(leerling);
+  // Navigeer naar de juiste tab
+  if (tab === 'rapport') {
+    const rapportTab = document.querySelector('.tab[onclick*="rapport"]');
+    toonTab('rapport', rapportTab);
+    if (rapportTab) rapportTab.click();
+  } else {
+    const tabEl = document.querySelector(`.tab[onclick*="${tab}"]`);
+    toonTab(tab, tabEl);
+    if (tabEl) tabEl.click();
+  }
 }
 
 async function lvsInit() {
