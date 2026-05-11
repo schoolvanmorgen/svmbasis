@@ -1646,12 +1646,10 @@ function downloadPDF() {
 
   <div class="lvs-hoofd">
     <div class="lvs-profiel">
-      <div class="lvs-profiel-av" id="lvs-av">FK</div>
-      <div>
+            <div>
         <div class="lvs-profiel-naam" id="lvs-naam">Selecteer een leerling</div>
         <div class="lvs-profiel-meta" id="lvs-meta">—</div>
       </div>
-      <button class="lvs-gen-knop" onclick="lvsGenereer()">Genereer rapport</button>
     </div>
 
     <div class="lvs-tabs">
@@ -1794,8 +1792,6 @@ function lvsFilter(zoek) {
 function lvsSelecteer(id) {
   lvsHuidig = lvsLeerlingen.find(l => l.id === id);
   if (!lvsHuidig) return;
-  document.getElementById('lvs-av').textContent = lvsHuidig.initialen;
-  document.getElementById('lvs-av').style.background = 'linear-gradient(135deg,' + lvsHuidig.kleur + ',' + lvsHuidig.kleur + '99)';
   document.getElementById('lvs-naam').textContent = lvsHuidig.naam;
   document.getElementById('lvs-meta').textContent = 'Groep ' + (lvsHuidig.groep || '?') + ' · Schooljaar 2025–2026';
   lvsRenderLijst(lvsLeerlingen);
