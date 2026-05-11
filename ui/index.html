@@ -574,13 +574,20 @@ function toonTab(tab, knop) {
     if (tabInhoud) tabInhoud.style.display = 'none';
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) { aawEl.style.display = 'block'; if (typeof aawInit === 'function') aawInit(); }
+  } else if (tab === 'oudergesprek') {
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.display = '';
+    document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
+    const ogEl = document.getElementById('tab-oudergesprek');
+    if (ogEl) { ogEl.style.display = 'grid'; }
+    if (typeof notitieRender === 'function') notitieRender();
   } else {
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
     if (tabInhoud) tabInhoud.style.display = '';
     const el = document.getElementById('tab-' + tab);
     if (el) el.classList.add('actief');
-    if (tab === 'oudergesprek' && typeof notitieRender === 'function') notitieRender();
   }
 }
 </script>
@@ -2020,7 +2027,7 @@ function mobieltoonTab(tab, knop) {
     if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
     document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
     const gesprek = document.getElementById('tab-oudergesprek');
-    if (gesprek) gesprek.classList.add('actief');
+    if (gesprek) gesprek.style.display = 'grid';
     if (typeof notitieRender === 'function') notitieRender();
   }
 
