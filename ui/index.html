@@ -577,7 +577,7 @@ async function voegKlasToe() {
   for (let i = 0; i < namen.length; i++) {
     if (voortgang) voortgang.textContent = (i+1) + ' / ' + namen.length + ' toegevoegd…';
     voortgang.style.display = 'block';
-    await fetch('/leerlingen', {
+    await fetch(API_BASE + '/leerlingen', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ voornaam: namen[i], groep: groep })
@@ -646,7 +646,7 @@ async function parnassysImporteer() {
   if (voortgang) voortgang.style.display = 'block';
   for (let i = 0; i < leerlingen.length; i++) {
     if (voortgang) voortgang.textContent = (i+1) + ' / ' + leerlingen.length + ' geïmporteerd…';
-    await fetch('/leerlingen', {
+    await fetch(API_BASE + '/leerlingen', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ voornaam: leerlingen[i].naam, groep: leerlingen[i].groep })
@@ -1885,7 +1885,7 @@ async function lvsHaalProfielOp(leerlingId) {
   if (lvsProfielCache[leerlingId]) return lvsProfielCache[leerlingId];
   if (!huidigToken) return null;
   try {
-    const res = await fetch('/lvs/' + leerlingId, {
+    const res = await fetch(API_BASE + '/lvs/' + leerlingId, {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
     if (!res.ok) return null;
@@ -1898,7 +1898,7 @@ async function lvsHaalProfielOp(leerlingId) {
 async function lvsSlaProfielOp(leerlingId, profiel) {
   if (!huidigToken) return;
   try {
-    await fetch('/lvs/' + leerlingId, {
+    await fetch(API_BASE + '/lvs/' + leerlingId, {
       method: 'PUT',
       headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
       body: JSON.stringify(profiel)
@@ -2106,7 +2106,7 @@ async function lvsInit() {
   // Laad leerlingen uit Supabase (zelfde lijst als rapport tab)
   if (!huidigToken) { lvsRenderLijst([]); return; }
   try {
-    const res = await fetch('/leerlingen', {
+    const res = await fetch(API_BASE + '/leerlingen', {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
     const data = await res.json();
@@ -2202,7 +2202,7 @@ async function aawInit() {
   if (!huidigToken) return;
   document.getElementById('aaw-datum-tekst').textContent = aawDatumTekst(aawDatum);
   try {
-    const res = await fetch('/leerlingen', {
+    const res = await fetch(API_BASE + '/leerlingen', {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
     const data = await res.json();
@@ -2245,7 +2245,7 @@ async function aawLaadDag(datum) {
   const sleutel = aawDatumSleutel(datum);
   if (aawRegistraties[sleutel]) return;
   try {
-    const res = await fetch('/aanwezigheid?datum=' + sleutel, {
+    const res = await fetch(API_BASE + '/aanwezigheid?datum=' + sleutel, {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
     const data = await res.json();
@@ -2335,7 +2335,7 @@ async function aawSlaOp() {
   const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
   await Promise.all(klasLeerlingen.map(function(l) {
     const d = dagData[l.id] || { status: 'onbekend', reden: '', opmerking: '' };
-    return fetch('/aanwezigheid', {
+    return fetch(API_BASE + '/aanwezigheid', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ leerling_id: l.id, datum: sleutel, status: d.status, reden: d.reden || '', opmerking: d.opmerking || '' })
