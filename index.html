@@ -545,8 +545,121 @@ function laadRapport(id) {
   // TODO: rapport terugzetten in resultaten
 }
 
+function leerlingTab(nr) {
+  [1,2,3].forEach(function(i) {
+    document.getElementById('ltab-inhoud-' + i).style.display = i === nr ? 'flex' : 'none';
+    const btn = document.getElementById('ltab-' + i);
+    if (btn) {
+      btn.style.background = i === nr ? '#000' : '#f8f8f8';
+      btn.style.color = i === nr ? '#fff' : '#888';
+      btn.style.fontWeight = i === nr ? '600' : '500';
+    }
+  });
+}
+
+function klasVoorbeeldTellen() {
+  const ta = document.getElementById('klas-namen');
+  const teller = document.getElementById('klas-teller');
+  if (!ta || !teller) return;
+  const namen = ta.value.split('\n').filter(function(n) { return n.trim().length > 0; });
+  teller.textContent = namen.length + ' namen';
+}
+
+async function voegKlasToe() {
+  const groep = document.getElementById('klas-groep').value;
+  const namenRaw = document.getElementById('klas-namen').value;
+  const namen = namenRaw.split('\n').map(function(n) { return n.trim(); }).filter(Boolean);
+  if (!groep) { alert('Kies een groep.'); return; }
+  if (!namen.length) { alert('Voer minimaal één naam in.'); return; }
+  const voortgang = document.getElementById('klas-voortgang');
+  const knop = document.getElementById('klas-knop');
+  knop.disabled = true;
+  for (let i = 0; i < namen.length; i++) {
+    if (voortgang) voortgang.textContent = (i+1) + ' / ' + namen.length + ' toegevoegd…';
+    voortgang.style.display = 'block';
+    await fetch('/leerlingen', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voornaam: namen[i], groep: groep })
+    });
+  }
+  await laadLeerlingen();
+  knop.disabled = false;
+  voortgang.textContent = namen.length + ' leerlingen toegevoegd.';
+  setTimeout(sluitLeerlingModal, 1200);
+}
+
+function parnassysLees(input) {
+  const bestand = input.files[0];
+  if (!bestand) return;
+  document.getElementById('parnassys-bestandsnaam').textContent = bestand.name;
+  const ext = bestand.name.split('.').pop().toLowerCase();
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = function(e) { parnassysVerwerk(e.target.result, 'csv'); };
+    reader.readAsText(bestand);
+  } else {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      parnassysVerwerk(csv, 'xlsx');
+    };
+    reader.readAsArrayBuffer(bestand);
+  }
+}
+
+function parnassysVerwerk(csv, type) {
+  const regels = csv.split('\n').filter(Boolean);
+  if (!regels.length) return;
+  const headers = regels[0].split(',').map(function(h) { return h.trim().replace(/"/g,'').toLowerCase(); });
+  const naamIdx = headers.findIndex(function(h) { return h.includes('roepnaam') || h.includes('voornaam'); });
+  const groepIdx = headers.findIndex(function(h) { return h.includes('groepsnaam') || h.includes('klas') || h.includes('groep'); });
+  const leerlingen = [];
+  for (let i = 1; i < regels.length; i++) {
+    const cols = regels[i].split(',').map(function(c) { return c.trim().replace(/"/g,''); });
+    const naam = naamIdx >= 0 ? cols[naamIdx] : '';
+    const groep = groepIdx >= 0 ? cols[groepIdx] : '';
+    if (naam) leerlingen.push({ naam: naam, groep: groep.replace(/[^0-9]/g,'') || '' });
+  }
+  window._parnassysLeerlingen = leerlingen;
+  const preview = document.getElementById('parnassys-preview');
+  const info = document.getElementById('parnassys-info');
+  const lijst = document.getElementById('parnassys-lijst');
+  const knop = document.getElementById('parnassys-knop');
+  if (preview) preview.style.display = 'flex';
+  if (info) info.textContent = leerlingen.length + ' leerlingen gevonden';
+  if (lijst) lijst.innerHTML = leerlingen.slice(0,8).map(function(l) {
+    return '<div style="padding:4px 8px;border-bottom:1px solid #eee">' + l.naam + (l.groep ? ' — groep ' + l.groep : '') + '</div>';
+  }).join('') + (leerlingen.length > 8 ? '<div style="padding:4px 8px;color:#888">en ' + (leerlingen.length-8) + ' meer…</div>' : '');
+  if (knop) { knop.disabled = false; knop.style.opacity = '1'; }
+}
+
+async function parnassysImporteer() {
+  const leerlingen = window._parnassysLeerlingen || [];
+  if (!leerlingen.length) return;
+  const knop = document.getElementById('parnassys-knop');
+  const voortgang = document.getElementById('parnassys-voortgang');
+  knop.disabled = true;
+  if (voortgang) voortgang.style.display = 'block';
+  for (let i = 0; i < leerlingen.length; i++) {
+    if (voortgang) voortgang.textContent = (i+1) + ' / ' + leerlingen.length + ' geïmporteerd…';
+    await fetch('/leerlingen', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voornaam: leerlingen[i].naam, groep: leerlingen[i].groep })
+    });
+  }
+  await laadLeerlingen();
+  if (voortgang) voortgang.textContent = leerlingen.length + ' leerlingen geïmporteerd.';
+  setTimeout(sluitLeerlingModal, 1200);
+}
+
 function openLeerlingModal() {
   document.getElementById('leerling-modal').style.display = 'flex';
+  leerlingTab(1);
 }
 function sluitLeerlingModal() {
   document.getElementById('leerling-modal').style.display = 'none';
