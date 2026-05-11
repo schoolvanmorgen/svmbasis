@@ -1172,7 +1172,10 @@ async function genereer() {
 
   try {
     const tekst = await roepAPIaanStream(prompt, (chunk) => {
-      streamDiv.textContent = chunk;
+      // Toon geen tussentijdse foutobjecten als rapporttekst
+      if (!chunk.trimStart().startsWith('{"error"')) {
+        streamDiv.textContent = chunk;
+      }
     });
     const schoon = tekst.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(schoon);
@@ -1532,6 +1535,16 @@ async function roepAPIaanStream(prompt, onChunk) {
     volledig += chunk;
     if (onChunk) onChunk(volledig);
   }
+  // Controleer of de server een foutobject heeft gestreamd als platte tekst
+  const trimmed = volledig.trim();
+  if (trimmed.startsWith('{') && trimmed.includes('"error"')) {
+    try {
+      const foutObj = JSON.parse(trimmed);
+      if (foutObj.error) throw new Error(foutObj.error);
+    } catch (e) {
+      if (e.message !== 'Unexpected token') throw e;
+    }
+  }
   return volledig;
 }
 
@@ -1563,6 +1576,16 @@ async function roepAPIaan(prompt) {
     const { done, value } = await reader.read();
     if (done) break;
     volledig += decoder.decode(value, { stream: true });
+  }
+  // Controleer of de server een foutobject heeft gestreamd als platte tekst
+  const trimmed = volledig.trim();
+  if (trimmed.startsWith('{') && trimmed.includes('"error"')) {
+    try {
+      const foutObj = JSON.parse(trimmed);
+      if (foutObj.error) throw new Error(foutObj.error);
+    } catch (e) {
+      if (e.message !== 'Unexpected token') throw e;
+    }
   }
   return volledig;
 }
