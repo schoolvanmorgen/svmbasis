@@ -469,52 +469,68 @@ def _ner_scan(tekst: str) -> str:
         _privacy_log.error(f"NER scan fout: {e}")
         return tekst
 
-# ── Laag 3: Patroon-blokker ───────────────────────────────────
+# ── Laag 3: Patroon-blokker (alleen als NER niet beschikbaar is) ──
+#
+# Strategie: zoek alleen naar woorden in een echte naam-context, niet
+# naar elk woord met een hoofdletter. Twee patronen:
+#
+#   A) Naam na een introducerend woord: "juf Jansen", "met haar vader Rob",
+#      "klasgenoot Piet", "meneer De Vries". Deze constructie is bijna
+#      altijd een persoonsnaam.
+#
+#   B) Initialen met punt: "J.", "M.H." — staan nooit zomaar in schooltekst
+#      zonder dat het een persoon betreft.
+#
+# Woorden die enkel met een hoofdletter beginnen (Gym, Snappet, Montessori)
+# worden NIET meer geblokkeerd — dat deed de oude laag 3 ten onrechte.
 
-# Patronen die op namen kunnen wijzen in Nederlandse schoolcontext
-_NAAM_PATRONEN = [
-    # Naam na "heet", "is", "van" etc gevolgd door hoofdletter woord
-    r'(?:heet|genaamd|leerling)\s+([A-Z][a-z]{2,})',
-    # Initialen met punt: J. of J.K.
-    r'[A-Z]\.[A-Z]?\.',
-    # Typische Nederlandse namen die niet vervangen zijn
-    # (Dit patroon vangt losse hoofdletter-woorden die geen zin starten)
-    r'(?<![.!?]\s)(?<![\n])\b([A-Z][a-z]{2,})\b(?!\s*:)',
-]
+# Introducerende woorden die vrijwel altijd gevolgd worden door een persoonsnaam
+_NAAM_INTRODUCERS = _re.compile(
+    r'(?i:\\b(?:juf|meester|meneer|mevrouw|dhr|mevr|vader|moeder|mama|papa|opa|oma|'
+    r'broer|zus|oom|tante|klasgenoot|klasgenote|vriend|vriendin|'
+    r'collega|begeleider|begeleidster|therapeut|logopedist|orthopedagoog|'
+    r'intern|extern|coach|assistent))\\s+([A-Z][a-z]+(?:\\s[A-Z][a-z]+)*)'
+)
 
-_TOEGESTANE_WOORDEN = {
-    # Woorden die met hoofdletter beginnen maar geen namen zijn
-    "CITO", "OPP", "IB", "RT", "Lezen", "Rekenen", "Spelling",
-    "Begrijpend", "Sociaal", "Werkhouding", "Groep", "School",
-    "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag",
-    "Januari", "Februari", "Maart", "April", "Mei", "Juni",
-    "Juli", "Augustus", "September", "Oktober", "November", "December",
-    "Nederland", "Nederlands", "Het", "De", "Een", "In", "Op", "Aan",
-    "Met", "Van", "Voor", "Naar", "Als", "Dit", "Dat", "Hij", "Zij",
-    "Ze", "We", "Wij", "Er", "Zijn", "Haar", "Hem", "Hun",
-    "LEERLING", "PERSOON",  # onze eigen placeholders
-}
+# Initialen met punt: J. of M.H. of A.B.C.
+_INITIALEN_PATROON = _re.compile(r'\b[A-Z](?:\.[A-Z])+\.?\b')
 
 def _patroon_check(tekst: str) -> tuple[str, list[str]]:
     """
-    Laag 3: Scan op verdachte patronen die op namen kunnen wijzen.
-    Geeft de (mogelijk aangepaste) tekst terug plus een lijst waarschuwingen.
+    Laag 3: Alleen actief als NER (laag 2) niet beschikbaar is.
+    Zoekt uitsluitend naar namen in een duidelijke naam-context:
+    - Namen na introducerende woorden (juf, meneer, vader, klasgenoot, ...)
+    - Initialen met punt (J., M.H.)
+    Gewone hoofdletterwoorden (Gym, Snappet, Montessori) worden niet geblokkeerd.
     """
+    # Als NER beschikbaar is, heeft laag 2 al het zware werk gedaan.
+    # Laag 3 voegt dan geen waarde toe en zou alleen valse alarmen geven.
+    if _NER_BESCHIKBAAR:
+        return tekst, []
+
     waarschuwingen = []
     schoon = tekst
 
-    # Controleer op niet-vervangen hoofdletter-woorden die op namen lijken
-    # (minimaal 3 tekens, niet in de toegestane lijst, niet na [)
-    verdachte = _re.findall(r'(?<!\[)\b([A-Z][a-z]{2,})\b', schoon)
-    for woord in verdachte:
-        if woord not in _TOEGESTANE_WOORDEN:
-            waarschuwingen.append(f"Verdacht woord gevonden: '{woord}'")
-            _privacy_log.warning(f"Patroon laag 3: verdacht woord '{woord}' in prompt")
-            # Vervang ook dit als voorzorgsmaatregel
-            schoon = _re.sub(r'\b' + _re.escape(woord) + r'\b', '[NAAM?]', schoon)
+    # Patroon A: naam na introducer — vervang stil (geen blokkering)
+    def vervang_introducer(m):
+        gevonden = m.group(1)
+        _privacy_log.warning(f"Laag 3 (fallback): naam na introducer vervangen: '{gevonden}'")
+        return m.group(0).replace(gevonden, "[PERSOON]")
+
+    schoon_a = _NAAM_INTRODUCERS.sub(vervang_introducer, schoon)
+    if schoon_a != schoon:
+        waarschuwingen.append("Laag 3: naam na introducer (juf/meneer/vader/...) vervangen door [PERSOON]")
+        schoon = schoon_a
+
+    # Patroon B: initialen — vervang stil
+    initialen = _INITIALEN_PATROON.findall(schoon)
+    if initialen:
+        for init in initialen:
+            _privacy_log.warning(f"Laag 3 (fallback): initialen vervangen: '{init}'")
+        schoon = _INITIALEN_PATROON.sub("[INITIALEN]", schoon)
+        waarschuwingen.append(f"Laag 3: initialen vervangen: {initialen[:3]}")
 
     return schoon, waarschuwingen
-
 # ── Laag 4: Extra naamscan — tweede NER pass ──────────────────
 
 def _extra_naamscan(tekst: str, originele_naam: str) -> str:
@@ -606,27 +622,8 @@ def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[st
     else:
         _privacy_log.info("Privacy audit: schoon — geen persoonsgegevens gedetecteerd")
 
-    # Laag 4: Automatische blokkering
-    if patroon_warnings:
-        verdachte_woorden = [
-            w.replace("Verdacht woord gevonden: ", "").strip("'")
-            for w in patroon_warnings
-        ]
-        foutmelding = (
-            f"Privacycheck geblokkeerd: mogelijk staan er nog namen in de notities "
-            f"die niet herkend zijn als de naam van de leerling. "
-            f"Controleer de volgende woorden: {', '.join(verdachte_woorden[:5])}. "
-            f"Verwijder namen van andere personen (klasgenoten, ouders) uit de notities "
-            f"en probeer opnieuw."
-        )
-        _privacy_log.error(
-            f"LAAG 4 GEBLOKKEERD: aanroep naar Anthropic geweigerd. "
-            f"Verdachte woorden: {verdachte_woorden}"
-        )
-        raise HTTPException(status_code=422, detail=foutmelding)
-
-
     # ── Laag 4: Extra naamscan — tweede pass op naamvarianten ──
+    # (Laag 3 vervangt nu stil; blokkering is verwijderd om valse alarmen te voorkomen.)
     stap4 = _extra_naamscan(stap3, naam)
     if stap3 != stap4:
         audit["waarschuwingen"].append("Laag 4: extra naamscan vond en verving naamvarianten")
