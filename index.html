@@ -663,10 +663,13 @@ function openLeerlingModal() {
 }
 function sluitLeerlingModal() {
   document.getElementById('leerling-modal').style.display = 'none';
-  // Als we vanuit LVS een leerling toevoegden, herlaad LVS
   if (window._lvsModalCallback) {
     window._lvsModalCallback = false;
     setTimeout(lvsInit, 500);
+  }
+  if (window._aawModalCallback) {
+    window._aawModalCallback = false;
+    setTimeout(aawInit, 500);
   }
 }
 
@@ -2180,8 +2183,8 @@ const AAW_REDENEN = ['Ziek', 'Dokter', 'Tandarts', 'Vakantie', 'Familieomstandig
 const AAW_KLEUREN = ['#000','#555','#555','#888','#555','#555','#555','#777'];
 
 let aawDatum = new Date();
-let aawLeerlingen = JSON.parse(localStorage.getItem('aaw_leerlingen') || '[]');
-let aawRegistraties = JSON.parse(localStorage.getItem('aaw_registraties') || '{}');
+let aawLeerlingen = [];
+let aawRegistraties = {};  // cache: datum -> {leerling_id -> {status,reden,opmerking}}
 
 function aawDatumSleutel(datum) {
   return datum.toISOString().slice(0, 10);
@@ -2196,26 +2199,58 @@ function aawVandaag() {
   aawRender();
 }
 
-function aawVorigeDag() {
+async function aawVorigeDag() {
   aawDatum.setDate(aawDatum.getDate() - 1);
+  await aawLaadDag(aawDatum);
   aawRender();
 }
 
-function aawVolgendeDag() {
+async function aawVolgendeDag() {
   aawDatum.setDate(aawDatum.getDate() + 1);
+  await aawLaadDag(aawDatum);
   aawRender();
 }
 
-function aawInit() {
-  // Haal leerlingen uit het LVS als die er zijn
-  if (lvsLeerlingen.length > 0 && aawLeerlingen.length === 0) {
-    aawLeerlingen = lvsLeerlingen.map(l => ({
-      id: l.id, naam: l.naam, groep: l.groep,
-      initialen: l.initialen, kleur: l.kleur
-    }));
-    localStorage.setItem('aaw_leerlingen', JSON.stringify(aawLeerlingen));
-  }
+async function aawInit() {
+  // Laad leerlingen uit Supabase
+  if (!huidigToken) { aawRender(); return; }
+  try {
+    const res = await fetch('/leerlingen', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    const data = await res.json();
+    aawLeerlingen = (Array.isArray(data) ? data : []).map(function(l, i) {
+      const kleuren = ['#000','#333','#555','#777','#444','#666','#222','#888'];
+      return {
+        id: l.id,
+        naam: l.voornaam,
+        groep: l.groep || '?',
+        initialen: l.voornaam.slice(0,2).toUpperCase(),
+        kleur: kleuren[i % kleuren.length]
+      };
+    });
+  } catch(e) { aawLeerlingen = []; }
+  // Laad registraties voor huidige datum
+  await aawLaadDag(aawDatum);
   aawRender();
+}
+
+async function aawLaadDag(datum) {
+  if (!huidigToken) return;
+  const sleutel = aawDatumSleutel(datum);
+  if (aawRegistraties[sleutel]) return; // al gecached
+  try {
+    const res = await fetch('/aanwezigheid?datum=' + sleutel, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    const data = await res.json();
+    aawRegistraties[sleutel] = {};
+    (Array.isArray(data) ? data : []).forEach(function(r) {
+      aawRegistraties[sleutel][r.leerling_id] = {
+        status: r.status, reden: r.reden || '', opmerking: r.opmerking || ''
+      };
+    });
+  } catch(e) {}
 }
 
 function aawHuidigeDagData() {
@@ -2358,14 +2393,32 @@ function aawAlleAanwezig() {
   aawRender();
 }
 
-function aawSlaOp() {
-  localStorage.setItem('aaw_registraties', JSON.stringify(aawRegistraties));
+async function aawSlaOp() {
+  if (!huidigToken) return;
+  const sleutel = aawDatumSleutel(aawDatum);
+  const dagData = aawRegistraties[sleutel] || {};
+  // Sla elke leerling op via Supabase
+  const promises = aawLeerlingen.map(function(l) {
+    const d = dagData[l.id] || { status: 'onbekend', reden: '', opmerking: '' };
+    return fetch('/aanwezigheid', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leerling_id: l.id,
+        datum: sleutel,
+        status: d.status,
+        reden: d.reden || '',
+        opmerking: d.opmerking || ''
+      })
+    });
+  });
+  await Promise.all(promises);
   const balk = document.getElementById('aaw-export-balk');
   const datumEl = document.getElementById('aaw-export-datum');
   if (balk && datumEl) {
     datumEl.textContent = aawDatumTekst(aawDatum);
     balk.classList.add('zichtbaar');
-    setTimeout(() => balk.classList.remove('zichtbaar'), 4000);
+    setTimeout(function() { balk.classList.remove('zichtbaar'); }, 4000);
   }
 }
 
@@ -2390,16 +2443,9 @@ function aawExporteer() {
 }
 
 function aawVoegLeerlingToe() {
-  if (lvsLeerlingen.length > 0) {
-    aawLeerlingen = lvsLeerlingen.map(l => ({
-      id: l.id, naam: l.naam, groep: l.groep,
-      initialen: l.initialen, kleur: l.kleur
-    }));
-    localStorage.setItem('aaw_leerlingen', JSON.stringify(aawLeerlingen));
-    aawRender();
-  } else {
-    alert('Voeg eerst leerlingen toe in het Leerlingvolgsysteem.');
-  }
+  // Open leerlingenmodal - na toevoegen herlaad aanwezigheid
+  openLeerlingModal();
+  window._aawModalCallback = true;
 }
 
 // ── Tijdsbesparing tracker ────────────────────────────────

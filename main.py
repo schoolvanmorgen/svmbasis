@@ -960,6 +960,51 @@ async def sla_lvs_profiel_op(leerling_id: str, profiel: LvsProfielUpdate, user=D
         result = await supabase_post("lvs_profielen", token, data_dict)
     return result[0] if result else {}
 
+# ── Aanwezigheid ────────────────────────────────────────────────
+
+class AanwezigheidItem(BaseModel):
+    leerling_id: str
+    datum: str
+    status: str = "onbekend"
+    reden: str = ""
+    opmerking: str = ""
+
+@app.get("/aanwezigheid")
+async def haal_aanwezigheid_op(datum: str, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    data = await supabase_get(
+        "aanwezigheid",
+        token,
+        {"datum": f"eq.{datum}", "leerkracht_id": f"eq.{user['id']}"}
+    )
+    return data
+
+@app.post("/aanwezigheid")
+async def sla_aanwezigheid_op(item: AanwezigheidItem, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    # Upsert via Supabase
+    async with httpx.AsyncClient() as client:
+        res = await client.post(
+            f"{SUPABASE_URL}/rest/v1/aanwezigheid",
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+                "Prefer": "resolution=merge-duplicates,return=representation"
+            },
+            json={
+                "leerkracht_id": user["id"],
+                "leerling_id": item.leerling_id,
+                "datum": item.datum,
+                "status": item.status,
+                "reden": item.reden,
+                "opmerking": item.opmerking,
+                "bijgewerkt_op": "now()"
+            }
+        )
+        res.raise_for_status()
+        return res.json()
+
 @app.post("/handelingsplan")
 async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user)):
     if not verzoek.ondersteuningsbehoefte:
