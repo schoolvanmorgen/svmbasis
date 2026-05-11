@@ -12,31 +12,33 @@
 <title>School van morgen — Basisschoolrapportage</title>
 <style>
 :root{
-  --g:#000;--gl:#f0f0f0;--gm:#000;
-  --b:#000;--bl:#f0f0f0;
-  --a:#333;--al:#f5f5f5;
-  --r:#000;--rl:#f0f0f0;
-  --grijs:#f8f8f8;--wit:#fff;
-  --t:#000;--tm:#333;--tz:#888;--rand:#ccc;
-  --warm:#f8f8f8;--warmrand:#ddd;
-  --oranje:#000;--donker:#000;
+  /* Mosgroen palet */
+  --g:#3a5a3a;--gl:#e8f0e8;--gm:#4a7a4a;
+  --b:#3a5a3a;--bl:#e8f0e8;
+  --a:#4a5a4a;--al:#eef3ee;
+  --r:#3a5a3a;--rl:#e8f0e8;
+  /* Grijs palet */
+  --grijs:#f4f6f4;--wit:#fff;
+  --t:#2a3a2a;--tm:#4a5a4a;--tz:#7a8a7a;--rand:#c4cfc4;
+  --warm:#eef3ee;--warmrand:#c4d4c4;
+  --oranje:#5a8a3a;--donker:#2a3a2a;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;min-width:0}
-html,body{overflow:hidden;height:100%}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#000;height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+html,body{overflow:hidden;height:100%}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#2a3a2a;height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-header{border-bottom:1px solid #000;padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:sticky;top:0;z-index:100}
-.logo{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#000;letter-spacing:.08em;text-transform:uppercase;position:absolute;left:50%;transform:translateX(-50%)}
+header{border-bottom:1px solid #4a7a4a;padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:sticky;top:0;z-index:100}
+.logo{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#2a3a2a;letter-spacing:.08em;text-transform:uppercase;position:absolute;left:50%;transform:translateX(-50%)}
 .logo em{color:var(--t);font-style:normal}
 .badge{font-size:10px;background:var(--gl);color:var(--g);padding:2px 10px;border-radius:0;font-weight:500;border:1px solid #e0e0e0}
 @media(min-width:768px){header{height:60px;padding:0 2rem}.logo{font-size:20px}}
 
 
-.leerlingen-sidebar{padding:0;border-right:1px solid #000;background:#fff;width:200px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
+.leerlingen-sidebar{padding:0;border-right:1px solid #c4cfc4;background:#fff;width:200px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
 .leerling-item{padding:9px 14px;border-radius:0;cursor:pointer;border-left:2px solid transparent;transition:all .12s}
 .leerling-item:hover{background:#f8f8f8}
-.leerling-item.actief{background:#f8f8f8;border-left-color:#000}
-.leerling-naam{font-size:12px;font-weight:500;color:#000;letter-spacing:.01em}
+.leerling-item.actief{background:#f8f8f8;border-left-color:#4a7a4a}
+.leerling-naam{font-size:12px;font-weight:500;color:#2a3a2a;letter-spacing:.01em}
 .leerling-meta{font-size:10px;color:var(--tz);margin-top:1px}
 .hist-item{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:0;cursor:pointer;font-size:11px;color:var(--t)}
 .hist-item:hover{background:var(--warm)}
@@ -55,26 +57,26 @@ header{border-bottom:1px solid #000;padding:0 1.5rem;height:48px;display:flex;al
 .vlabel{font-size:10px;font-weight:700;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 .rij2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .nwrap{position:relative}
-input[type=text]{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;border-radius:0;padding:10px 12px;font-size:13px;color:#000;background:#fff;outline:none;transition:border-color .15s}
-input:focus{border-color:#000;box-shadow:none}
+input[type=text]{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:#2a3a2a;background:#fff;outline:none;transition:border-color .15s}
+input:focus{border-color:#4a7a4a;box-shadow:none}
 input::placeholder{color:var(--tz)}
-select{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+select{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
 select:focus{border-color:var(--t);box-shadow:none}
-textarea{font-family:inherit;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;resize:vertical;min-height:140px;outline:none;line-height:1.7;transition:border-color .15s}
+textarea{font-family:inherit;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;resize:vertical;min-height:140px;outline:none;line-height:1.7;transition:border-color .15s}
 textarea:focus{border-color:var(--t);box-shadow:none}
 textarea::placeholder{color:var(--tz);font-size:12px}
 .teller{position:absolute;bottom:9px;right:11px;font-size:10px;color:var(--tz);pointer-events:none}
 .nwrap{position:relative}
 .mic-knop{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:0;border:none;background:var(--gm);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;transition:background .2s,transform .2s;z-index:2}
 .mic-knop:hover{background:var(--g);transform:scale(1.08)}
-.mic-knop.luistert{background:#000;animation:pulserood 1s infinite}
+.mic-knop.luistert{background:#4a7a4a;animation:pulserood 1s infinite}
 @keyframes pulserood{0%,100%{box-shadow:none}50%{box-shadow:none}}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{font-size:11px;padding:4px 10px;border-radius:0;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer;font-family:inherit;transition:all .12s;letter-spacing:.02em}
-.chip:hover{border-color:#000;color:#000;background:#f8f8f8}
+.chip:hover{border-color:#4a7a4a;color:#3a5a3a;background:#eef3ee}
 
-.genknop{width:100%;background:#000;color:#fff;border:none;border-radius:0;padding:14px;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.genknop{width:100%;background:#4a7a4a;color:#fff;border:none;border-radius:0;padding:14px;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;-webkit-tap-highlight-color:transparent}
 .genknop:hover:not(:disabled){background:#333}
 .genknop:disabled{background:#ccc;color:#888;cursor:not-allowed}
 .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:0;animation:rondjes .7s linear infinite;display:none}
@@ -84,9 +86,9 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .leeg-c{width:56px;height:56px;border:2px dashed var(--rand);border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px}
 .leeg-t{font-size:12px;color:var(--tz);max-width:180px;line-height:1.6}
 
-.naambalk{font-family:inherit;font-size:18px;font-weight:600;letter-spacing:-.01em;padding-bottom:12px;border-bottom:2px solid #000;color:#000;margin-bottom:4px}
+.naambalk{font-family:inherit;font-size:18px;font-weight:600;letter-spacing:-.01em;padding-bottom:12px;border-bottom:2px solid #4a7a4a;color:#2a3a2a;margin-bottom:4px}
 
-.kaart{border:1px solid #e0e0e0;border-top:2px solid #000;border-radius:0;overflow:hidden;background:#fff}
+.kaart{border:1px solid #e0e0e0;border-top:2px solid #4a7a4a;border-radius:0;overflow:hidden;background:#fff}
 .ktop{display:flex;align-items:center;gap:8px;padding:10px 15px;border-bottom:1px solid var(--warmrand)}
 .dot{width:7px;height:7px;border-radius:0;flex-shrink:0}
 .knaam{font-size:10px;font-weight:600;letter-spacing:.05em;flex:1}
@@ -155,7 +157,7 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 
 .tab{padding:12px 14px;font-size:12px;font-weight:500;letter-spacing:.04em;color:#888;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:inherit;text-transform:uppercase}
 .tab:hover{color:var(--tm)}
-.tab.actief{color:#000;border-bottom-color:#000}
+.tab.actief{color:#3a5a3a;border-bottom-color:#4a7a4a}
 .sectie{display:none}.sectie.actief{display:grid}#tab-notities.actief{display:flex;flex-direction:column;height:calc(100vh - 120px)}
 .sectie-vol{display:none}.sectie-vol.actief{display:flex}
 
@@ -175,17 +177,17 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .od-item .od-sub{font-size:10px;color:var(--tz);display:block;margin-top:1px}
 .tags-rij{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-height:0}
 .od-check-item{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12px;color:var(--t);cursor:pointer;border-radius:0}
-.od-check-item input{accent-color:#000;width:14px;height:14px;cursor:pointer}
-.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:0;background:#f5f5f5;color:#111;border:1px solid #e8e8e8}
+.od-check-item input{accent-color:#4a7a4a;width:14px;height:14px;cursor:pointer}
+.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:0;background:#f5f5f5;color:#4a5a4a;border:1px solid #c4cfc4}
 .od-tag-x{cursor:pointer;font-size:10px;opacity:.6}
 .od-tag-x:hover{opacity:1}
 
 .tijdsbalk{display:flex;align-items:center;gap:1.5rem;padding:5px 1.5rem;background:#f8f8f8;border-bottom:1px solid #e0e0e0;flex-shrink:0}
 .tijds-item{display:flex;align-items:center;gap:7px}
 .tijds-getal{font-size:18px;font-weight:500;color:var(--g);font-family:'Times New Roman',Times,serif}
-.tijds-label{font-size:11px;color:#111;line-height:1.3}
+.tijds-label{font-size:11px;color:#4a5a4a;line-height:1.3}
 .tijds-divider{width:.5px;height:28px;background:#e0e0e0}
-.tijds-tip{font-size:11px;color:#111;margin-left:auto;font-style:italic}
+.tijds-tip{font-size:11px;color:#4a5a4a;margin-left:auto;font-style:italic}
 
 /* ── Mobiele bottom nav ── */
 .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--warm);border-top:1px solid var(--warmrand);z-index:200;box-shadow:none}
@@ -222,12 +224,12 @@ body{padding-bottom:64px}
 #login-scherm > div:last-child{width:calc(100% - 32px);max-width:360px;border-radius:0;padding:24px}
 
 '
-    + 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 30px;color:#000;font-size:14px;line-height:1.7}'
-    + 'h1{font-size:22px;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:6px}'
+    + 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 30px;color:#2a3a2a;font-size:14px;line-height:1.7}'
+    + 'h1{font-size:22px;border-bottom:2px solid #4a7a4a;padding-bottom:10px;margin-bottom:6px}'
     + '.meta{font-size:12px;color:#888;margin-bottom:30px}'
     + '.sectie{margin-bottom:22px;page-break-inside:avoid}'
-    + '.sectie-titel{font-size:10px;font-weight:700;letter-spacing:.08em;color:#000;margin-bottom:6px;text-transform:uppercase}'
-    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#333;background:#f8f8f8;border-left:3px solid #000;padding:10px 14px;border-radius:0'
+    + '.sectie-titel{font-size:10px;font-weight:700;letter-spacing:.08em;color:#3a5a3a;margin-bottom:6px;text-transform:uppercase}'
+    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#333;background:#f8f8f8;border-left:3px solid #4a7a4a;padding:10px 14px;border-radius:0'
     + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}'
     + '
 
@@ -301,7 +303,7 @@ body{padding-bottom:64px}
 .lvs-profiel-meta{font-size:11px;color:var(--tz);margin-top:2px}
 .lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .gp-vak-btn{padding:6px 12px;font-size:12px;font-weight:500;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)}
-.gp-vak-btn.actief{background:#000;color:#fff;border-color:#000}
+.gp-vak-btn.actief{background:#4a7a4a;color:#fff;border-color:#4a7a4a}
 .gp-vak-btn:hover:not(.actief){background:var(--warm)}
 .gp-niveaubalk{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:4px 0}
 .gp-niveau-knop{padding:6px 4px;font-size:11px;font-weight:500;border:1px solid var(--rand);border-right:none;background:#fff;cursor:pointer;font-family:inherit;color:var(--tz);text-align:center}
@@ -348,9 +350,9 @@ body{padding-bottom:64px}
 .lvs-balk{height:5px;background:var(--grijs);border-radius:0;overflow:hidden}
 .lvs-balk-fill{height:100%;border-radius:0;transition:width .8s ease}
 .lvs-tag{display:inline-block;padding:2px 7px;border-radius:0;font-size:10px;font-weight:500;margin:2px}
-.lvs-tag-oranje{background:#f0f0f0;color:#000;border:1px solid #ccc}
+.lvs-tag-oranje{background:#eef3ee;color:#3a5a3a;border:1px solid #c4cfc4}
 .lvs-tag-groen{background:#f5f5f5;color:#222;border:1px solid rgba(29,158,117,.2)}
-.lvs-tag-blauw{background:#f0f0f0;color:#000;border:1px solid #ccc}
+.lvs-tag-blauw{background:#e8f0e8;color:#3a5a3a;border:1px solid #c4cfc4}
 .lvs-leeg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;opacity:.4;text-align:center;padding:40px}
 .lvs-leeg-icon{font-size:36px}
 .lvs-leeg-tekst{font-size:13px;color:var(--tz)}
@@ -905,7 +907,7 @@ function toonTab(tab, knop) {
   <div style="background:#fff;border:1px solid var(--rand);border-radius:0;padding:28px;width:320px;display:flex;flex-direction:column;gap:12px">
     <input id="login-email" type="email" placeholder="E-mailadres" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
     <input id="login-ww" type="password" placeholder="Wachtwoord" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')inloggen()">
-    <div id="login-fout" style="font-size:12px;color:#000;min-height:16px"></div>
+    <div id="login-fout" style="font-size:12px;color:#4a5a4a;min-height:16px"></div>
     <button onclick="inloggen()" style="background:var(--oranje);color:#fff;border:none;border-radius:0;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">Inloggen</button>
     <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
       <div style="flex:1;height:1px;background:var(--warmrand)"></div>
@@ -922,29 +924,29 @@ function toonTab(tab, knop) {
 
 <!-- Leerling modal -->
 <div id="leerling-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;padding:16px">
-  <div style="background:#fff;border:1px solid #000;width:100%;max-width:440px;display:flex;flex-direction:column;overflow:hidden">
+  <div style="background:#fff;border:1px solid #4a7a4a;width:100%;max-width:440px;display:flex;flex-direction:column;overflow:hidden">
     <div style="display:flex;border-bottom:1px solid #ddd">
-      <button id="ltab-1" onclick="leerlingTab(1)" style="flex:1;padding:11px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:none;background:#000;color:#fff;cursor:pointer;font-family:inherit">Één leerling</button>
+      <button id="ltab-1" onclick="leerlingTab(1)" style="flex:1;padding:11px 6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:none;background:#4a7a4a;color:#fff;cursor:pointer;font-family:inherit">Één leerling</button>
       <button id="ltab-2" onclick="leerlingTab(2)" style="flex:1;padding:11px 6px;font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;border:none;background:#f8f8f8;color:#888;cursor:pointer;font-family:inherit;border-left:1px solid #ddd">Hele klas</button>
       <button id="ltab-3" onclick="leerlingTab(3)" style="flex:1;padding:11px 6px;font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;border:none;background:#f8f8f8;color:#888;cursor:pointer;font-family:inherit;border-left:1px solid #ddd">Importeren</button>
     </div>
     <div id="ltab-inhoud-1" style="padding:20px;display:flex;flex-direction:column;gap:10px">
-      <input id="nieuwe-naam" type="text" placeholder="Voornaam" autocomplete="off" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box" onkeydown="if(event.key=&apos;Enter&apos;)voegLeerlingToe()">
-      <select id="nieuwe-groep" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none"><option value="">Groep…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+      <input id="nieuwe-naam" type="text" placeholder="Voornaam" autocomplete="off" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box" onkeydown="if(event.key=&apos;Enter&apos;)voegLeerlingToe()">
+      <select id="nieuwe-groep" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none"><option value="">Groep…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
       <div style="display:flex;gap:8px">
         <button onclick="sluitLeerlingModal()" style="flex:1;background:transparent;border:1px solid #ccc;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;color:#333">Annuleren</button>
-        <button onclick="voegLeerlingToe()" style="flex:1;background:#000;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Toevoegen</button>
+        <button onclick="voegLeerlingToe()" style="flex:1;background:#4a7a4a;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Toevoegen</button>
       </div>
     </div>
     <div id="ltab-inhoud-2" style="padding:20px;display:none;flex-direction:column;gap:10px">
       <div style="font-size:12px;color:#888;line-height:1.5">Plak of typ alle namen — één naam per regel.</div>
-      <select id="klas-groep" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none"><option value="">Groep kiezen…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
-      <textarea id="klas-namen" placeholder="Emma&#10;Liam&#10;Sophie&#10;Noah&#10;..." rows="7" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.7;box-sizing:border-box" oninput="klasVoorbeeldTellen()"></textarea>
+      <select id="klas-groep" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none"><option value="">Groep kiezen…</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+      <textarea id="klas-namen" placeholder="Emma&#10;Liam&#10;Sophie&#10;Noah&#10;..." rows="7" style="width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.7;box-sizing:border-box" oninput="klasVoorbeeldTellen()"></textarea>
       <div id="klas-teller" style="font-size:11px;color:#888">0 namen</div>
-      <div id="klas-voortgang" style="display:none;font-size:12px;color:#000;font-weight:500"></div>
+      <div id="klas-voortgang" style="display:none;font-size:12px;color:#3a5a3a;font-weight:500"></div>
       <div style="display:flex;gap:8px">
         <button onclick="sluitLeerlingModal()" style="flex:1;background:transparent;border:1px solid #ccc;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;color:#333">Annuleren</button>
-        <button onclick="voegKlasToe()" id="klas-knop" style="flex:1;background:#000;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Hele klas toevoegen</button>
+        <button onclick="voegKlasToe()" id="klas-knop" style="flex:1;background:#4a7a4a;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Hele klas toevoegen</button>
       </div>
     </div>
     <div id="ltab-inhoud-3" style="padding:20px;display:none;flex-direction:column;gap:10px">
@@ -957,7 +959,7 @@ function toonTab(tab, knop) {
       </div>
       <div style="display:flex;gap:8px">
         <button onclick="sluitLeerlingModal()" style="flex:1;background:transparent;border:1px solid #ccc;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;color:#333">Annuleren</button>
-        <button onclick="parnassysImporteer()" id="parnassys-knop" disabled style="flex:1;background:#000;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.4">Importeren</button>
+        <button onclick="parnassysImporteer()" id="parnassys-knop" disabled style="flex:1;background:#4a7a4a;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;opacity:.4">Importeren</button>
       </div>
     </div>
   </div>
@@ -989,7 +991,7 @@ function toonTab(tab, knop) {
     <div class="tijds-label">uur bespaard<br>dit schooljaar</div>
   </div>
   <div class="tijds-tip" id="t-tip">Elk rapport bespaart gemiddeld 25 minuten schrijftijd.</div>
-  <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #e0e0e0;background:transparent;color:#000;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
+  <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #c4cfc4;background:transparent;color:#4a5a4a;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
 </div>
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem">
   <button class="tab actief" onclick="toonTab('rapport',this)">Rapport</button>
@@ -1209,12 +1211,12 @@ function toonTab(tab, knop) {
     <div><div class="ptitel">Groepsplan</div><div class="psub">Deel leerlingen per vakgebied in op instructieniveau. Exporteer als PDF voor de IB-er of inspectie.</div></div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div class="vlabel" style="margin-bottom:0;width:100%">GROEP &amp; SCHOOLJAAR</div>
-      <select id="gp-groep" onchange="gpLaad()" style="border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff;flex:1">
+      <select id="gp-groep" onchange="gpLaad()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff;flex:1">
         <option value="">Kies groep...</option>
         <option>1</option><option>2</option><option>3</option><option>4</option>
         <option>5</option><option>6</option><option>7</option><option>8</option>
       </select>
-      <select id="gp-schooljaar" style="border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
+      <select id="gp-schooljaar" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
         <option value="2025-2026">2025-2026</option><option value="2024-2025">2024-2025</option>
       </select>
     </div>
@@ -1229,7 +1231,7 @@ function toonTab(tab, knop) {
         <button class="gp-vak-btn" onclick="gpSelecteerVak('werkhouding',this)">Werkhouding</button>
       </div>
     </div>
-    <div><div class="vlabel">NOTITIES</div><textarea id="gp-notities" rows="3" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical" placeholder="Algemene opmerkingen bij dit groepsplan..."></textarea></div>
+    <div><div class="vlabel">NOTITIES</div><textarea id="gp-notities" rows="3" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical" placeholder="Algemene opmerkingen bij dit groepsplan..."></textarea></div>
     <div style="display:flex;gap:8px">
       <button class="genknop" onclick="gpOpslaan()" style="flex:1"><div class="spin" id="gp-spin" style="display:none"></div><span id="gp-ktekst">Opslaan</span></button>
       <button onclick="gpExportPrint()" style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 16px;font-size:12px;cursor:pointer;font-family:inherit">&#x1F5A8; Afdrukken</button>
@@ -1246,12 +1248,12 @@ function toonTab(tab, knop) {
     <div><div class="ptitel">School</div><div class="psub">Beheer je schoolaccount en collega's.</div></div>
     <div id="school-geen-account" style="display:none">
       <div class="vlabel">SCHOOLACCOUNT AANMAKEN</div>
-      <input type="text" id="school-naam-input" placeholder="Naam van de school" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
-      <input type="text" id="school-brin-input" placeholder="BRIN-nummer (optioneel)" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
+      <input type="text" id="school-naam-input" placeholder="Naam van de school" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
+      <input type="text" id="school-brin-input" placeholder="BRIN-nummer (optioneel)" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
       <button class="genknop" onclick="schoolAanmaken()" style="width:100%">School aanmaken</button>
       <div style="margin:16px 0;height:0.5px;background:var(--rand)"></div>
       <div class="vlabel">DEELNEMEN AAN BESTAANDE SCHOOL</div>
-      <input type="text" id="school-token-input" placeholder="Uitnodigingstoken van de directeur" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
+      <input type="text" id="school-token-input" placeholder="Uitnodigingstoken van de directeur" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
       <button class="genknop" onclick="schoolDeelnemen()" style="width:100%">Deelnemen</button>
     </div>
     <div id="school-account" style="display:none">
@@ -1260,7 +1262,7 @@ function toonTab(tab, knop) {
       <div id="school-directeur-acties" style="display:none">
         <div class="vlabel">COLLEGA UITNODIGEN</div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <select id="school-uitnodig-rol" style="border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
+          <select id="school-uitnodig-rol" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
             <option value="leerkracht">Leerkracht</option><option value="ib">IB-er</option><option value="directeur">Directeur</option>
           </select>
           <button class="genknop" onclick="schoolUitnodigGenereer()" style="flex:1">Genereer token</button>
@@ -1299,8 +1301,8 @@ function toonTab(tab, knop) {
     <!-- Invoer onderaan -->
     <div style="flex-shrink:0;padding:1.2rem 1.8rem;background:var(--warm);display:flex;flex-direction:column;gap:10px">
       <div class="vlabel">NIEUWE NOTITIE</div>
-      <textarea id="notitie-tekst" rows="4" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf een notitie…"></textarea>
-      <button onclick="notitieOpslaan()" style="align-self:flex-end;background:#000;color:#fff;border:none;padding:9px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-family:inherit">Opslaan</button>
+      <textarea id="notitie-tekst" rows="4" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf een notitie…"></textarea>
+      <button onclick="notitieOpslaan()" style="align-self:flex-end;background:#4a7a4a;color:#fff;border:none;padding:9px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-family:inherit">Opslaan</button>
     </div>
 
   </div>
@@ -1534,8 +1536,8 @@ function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
     ? new Date().toLocaleDateString('nl-NL', {month:'long', year:'numeric'})
     : (tijdlijnItem?.datum || null);
 
-  const rand = isHuidig ? 'border:1.5px solid #000' : 'border:0.5px solid var(--warmrand)';
-  const subKleur = isHuidig ? 'color:#000;font-weight:500' : 'color:var(--tz)';
+  const rand = isHuidig ? 'border:1.5px solid #4a7a4a' : 'border:0.5px solid var(--warmrand)';
+  const subKleur = isHuidig ? 'color:#3a5a3a;font-weight:500' : 'color:var(--tz)';
 
   if (!scores && !isHuidig) {
     return `<div style="background:#fff;${rand};border-radius:0;padding:10px 12px;opacity:.5">
@@ -2135,7 +2137,7 @@ function downloadPDF() {
       </div>
       <div style="margin-left:auto;display:flex;gap:6px">
         <button onclick="aawAlleAanwezig()" style="background:none;border:1px solid var(--rand);padding:6px 12px;font-size:11px;cursor:pointer;font-family:inherit">✅ Iedereen aanwezig</button>
-        <button onclick="aawSlaOp()" style="background:#000;color:#fff;border:none;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.04em">Opslaan</button>
+        <button onclick="aawSlaOp()" style="background:#4a7a4a;color:#fff;border:none;padding:6px 14px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;letter-spacing:.04em">Opslaan</button>
         <button onclick="aawExporteer()" style="background:none;border:1px solid var(--rand);padding:6px 12px;font-size:11px;cursor:pointer;font-family:inherit">CSV</button>
       </div>
     </div>
@@ -2202,7 +2204,7 @@ function downloadPDF() {
     <div class="lvs-inhoud" id="lvs-tab-notitie" style="display:none">
       <div class="lvs-sectie-titel">NIEUWE NOTITIE / TOETSRESULTAAT</div>
       <div class="lvs-notitie-form">
-        <select id="lvs-notitie-type" style="background:#111;border:1px solid #111;border-radius:0;padding:7px 10px;font-size:12px;color:#f5f5f5;font-family:inherit;outline:none">
+        <select id="lvs-notitie-type" style="background:#3a5a3a;border:1px solid #3a5a3a;border-radius:0;padding:7px 10px;font-size:12px;color:#f5f5f5;font-family:inherit;outline:none">
           <option value="observatie">Observatie</option>
           <option value="gesprek">Gesprek met ouder</option>
           <option value="toets">Toetsresultaat</option>
@@ -2235,8 +2237,8 @@ function downloadPDF() {
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px">
-          <button onclick="lvsClearNotitie()" style="background:transparent;color:#888;border:1px solid #111;border-radius:0;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
-          <button onclick="lvsSlaNotitieOp()" style="background:#000;color:#fff;border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
+          <button onclick="lvsClearNotitie()" style="background:transparent;color:#888;border:1px solid #3a5a3a;border-radius:0;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit">Wissen</button>
+          <button onclick="lvsSlaNotitieOp()" style="background:#4a7a4a;color:#fff;border:none;border-radius:0;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
         </div>
       </div>
     </div>
@@ -2244,8 +2246,8 @@ function downloadPDF() {
     <div class="lvs-inhoud" id="lvs-tab-toetsimport" style="display:none">
       <div class="lvs-sectie-titel">CSV IMPORTEREN</div>
       <p style="font-size:12px;color:var(--tz);line-height:1.6;margin-bottom:12px">Plak een CSV met kolommen: leerlingnummer, vakgebied, score, niveau (opt.), datum (opt.)<br>Vakgebieden: lezen, rekenen, spelling, begrijpend, sociaal, werkhouding</p>
-      <textarea id="lvs-csv-invoer" rows="7" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:12px;font-family:monospace;outline:none;resize:vertical" placeholder="leerlingnummer,vakgebied,score,niveau,datum&#10;12345,lezen,72,III,2025-01-15"></textarea>
-      <button onclick="toetsImportCSV(document.getElementById('lvs-csv-invoer').value)" style="width:100%;margin-top:10px;background:#000;color:#fff;border:none;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Importeer toetsen</button>
+      <textarea id="lvs-csv-invoer" rows="7" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:12px;font-family:monospace;outline:none;resize:vertical" placeholder="leerlingnummer,vakgebied,score,niveau,datum&#10;12345,lezen,72,III,2025-01-15"></textarea>
+      <button onclick="toetsImportCSV(document.getElementById('lvs-csv-invoer').value)" style="width:100%;margin-top:10px;background:#4a7a4a;color:#fff;border:none;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Importeer toetsen</button>
     </div>
 
   </div>
@@ -2768,7 +2770,7 @@ function aawRender() {
       return '<button onclick="aawZetStatus(this.getAttribute(\'data-id\'),this.getAttribute(\'data-val\'))" data-id="' + l.id + '" data-val="' + val + '" style="padding:6px 14px;border:1px solid ' + (actief?'#000':'var(--rand)') + ';background:' + (actief?'#000':'#fff') + ';color:' + (actief?'#fff':'var(--tm)') + ';font-size:11px;cursor:pointer;font-family:inherit;font-weight:' + (actief?'600':'400') + '">' + lbl + '</button>';
     }
     return '<div id="aaw-item-' + l.id + '" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--warmrand);background:#fff;margin-bottom:4px">'
-      + '<div style="width:34px;height:34px;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">' + ini + '</div>'
+      + '<div style="width:34px;height:34px;background:#4a7a4a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">' + ini + '</div>'
       + '<div style="flex:1;font-size:13px;font-weight:500">' + l.voornaam + '</div>'
       + '<div style="display:flex;gap:4px">' + knop('Aanwezig','aanwezig') + knop('Te laat','laat') + knop('Afwezig','afwezig') + '</div>'
       + '</div>';
@@ -3356,7 +3358,7 @@ async function schoolLaadCollegas() {
     const res = await fetch(API_BASE + '/school/collegas', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
     const data = await res.json();
     const el = document.getElementById('school-collegas');
-    if (!data.length) { el.textContent = 'Nog geen collega's gekoppeld.'; return; }
+    if (!data.length) { el.textContent = 'Nog geen collega\u2019s gekoppeld.'; return; }
     el.innerHTML = data.map(c => '<div style="padding:6px 0;border-bottom:0.5px solid var(--rand);display:flex;gap:8px"><span style="flex:1">' + (c.voornaam || c.email || 'Onbekend') + '</span><span style="color:var(--tz);font-size:11px">' + c.rol + '</span></div>').join('');
   } catch(e) { document.getElementById('school-collegas').textContent = 'Laden mislukt.'; }
 }
@@ -3522,11 +3524,11 @@ function notitieRender() {
       : '';
     return '<div style="display:flex;gap:14px;padding-bottom:20px;position:relative">'
       + lijn
-      + '<div style="width:24px;height:24px;background:#000;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:#fff"></div></div>'
+      + '<div style="width:24px;height:24px;background:#4a7a4a;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:#fff"></div></div>'
       + '<div style="flex:1;min-width:0">'
       + '<div style="font-size:10px;color:var(--tz);letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">' + n.datum + ' &middot; ' + n.tijdstip + '</div>'
       + '<div id="notitie-preview-' + n.id + '" style="font-size:13px;color:var(--tm);line-height:1.7;cursor:pointer;border:1px solid var(--warmrand);padding:12px 14px;background:#fff;white-space:pre-wrap" onclick="notitieToggle(this.dataset.id)" data-id="' + n.id + '">' + kort + '</div>'
-      + '<div id="notitie-vol-' + n.id + '" style="display:none;font-size:13px;color:var(--tm);line-height:1.7;border:1px solid #000;padding:12px 14px;background:#fff;white-space:pre-wrap">' + n.tekst
+      + '<div id="notitie-vol-' + n.id + '" style="display:none;font-size:13px;color:var(--tm);line-height:1.7;border:1px solid #4a7a4a;padding:12px 14px;background:#fff;white-space:pre-wrap">' + n.tekst
       + '<div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--warmrand);padding-top:10px">'
       + '<button onclick="notitieKopieer(this.dataset.id)" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit">Kopieer</button>'
       + '<button onclick="notitieVerwijder(this.dataset.id)" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Verwijder</button>'
