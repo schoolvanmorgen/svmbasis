@@ -212,13 +212,45 @@ class LvsTijdlijnItem(BaseModel):
     leerling_id: str
     item: dict  # {type, datum, tekst}
 
+GELDIGE_VAKGEBIEDEN = {"lezen", "rekenen", "spelling", "begrijpend", "sociaal", "werkhouding"}
+GELDIGE_NIVEAUS     = {"I", "II", "III", "IV", "V", None}
+GELDIGE_BRONNEN     = {"handmatig", "csv", "cito"}
+
 class ToetsImport(BaseModel):
     leerling_id: str
-    vakgebied: str          # lezen | rekenen | spelling | begrijpend | sociaal | werkhouding
-    score: int              # 0-100
-    niveau: Optional[str] = None   # I | II | III | IV | V (CITO-niveau)
+    vakgebied: str
+    score: int
+    niveau: Optional[str] = None
     afname_datum: Optional[str] = None
-    bron: Optional[str] = "handmatig"  # handmatig | csv | cito
+    bron: Optional[str] = "handmatig"
+
+    @field_validator("vakgebied")
+    @classmethod
+    def valideer_vakgebied(cls, v):
+        if v not in GELDIGE_VAKGEBIEDEN:
+            raise ValueError(f"Ongeldig vakgebied '{v}'. Kies uit: {', '.join(sorted(GELDIGE_VAKGEBIEDEN))}")
+        return v
+
+    @field_validator("niveau")
+    @classmethod
+    def valideer_niveau(cls, v):
+        if v is not None and v not in GELDIGE_NIVEAUS:
+            raise ValueError(f"Ongeldig niveau '{v}'. Kies uit: I, II, III, IV, V")
+        return v
+
+    @field_validator("score")
+    @classmethod
+    def valideer_score(cls, v):
+        if not 0 <= v <= 100:
+            raise ValueError(f"Score {v} buiten bereik. Vul een waarde in tussen 0 en 100.")
+        return v
+
+    @field_validator("bron")
+    @classmethod
+    def valideer_bron(cls, v):
+        if v and v not in GELDIGE_BRONNEN:
+            return "handmatig"
+        return v or "handmatig" 
 
 class ToetsBatch(BaseModel):
     toetsen: List[ToetsImport]
@@ -1286,60 +1318,62 @@ async def neem_deel_aan_school(body: dict, user=Depends(get_user), credentials: 
 # TOETSREGISTRATIE
 # ══════════════════════════════════════════════════════════
 
-@app.post("/toetsen")
-async def sla_toets_op(item: ToetsImport, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    if not 0 <= item.score <= 100:
-        raise HTTPException(status_code=400, detail="Score moet tussen 0 en 100 liggen.")
+async def _verwerk_toets(item: ToetsImport, user_id: str, token: str) -> dict:
+    datum = item.afname_datum or datetime.now(timezone.utc).date().isoformat()
     data = {
-        "leerkracht_id": user["id"], "leerling_id": item.leerling_id,
+        "leerkracht_id": user_id, "leerling_id": item.leerling_id,
         "vakgebied": item.vakgebied, "score": item.score, "niveau": item.niveau,
-        "afname_datum": item.afname_datum or datetime.now(timezone.utc).date().isoformat(),
-        "bron": item.bron, "aangemaakt_op": datetime.now(timezone.utc).isoformat()
+        "afname_datum": datum, "bron": item.bron,
+        "aangemaakt_op": datetime.now(timezone.utc).isoformat()
     }
     result = await supabase_post("toetsresultaten", token, data)
     if not result:
-        raise HTTPException(status_code=500, detail="Toets opslaan mislukt.")
-    # Automatisch LVS bijwerken
-    profiel = await supabase_get("lvs_profielen", token, {"leerling_id": f"eq.{item.leerling_id}", "leerkracht_id": f"eq.{user['id']}"})
+        raise RuntimeError("Opslaan in toetsresultaten mislukt.")
+    profiel = await supabase_get("lvs_profielen", token,
+        {"leerling_id": f"eq.{item.leerling_id}", "leerkracht_id": f"eq.{user_id}"})
     if profiel:
-        huidig = profiel[0]
-        scores = huidig.get("scores", {})
-        vorige = huidig.get("vorige_scores", {})
+        huidig   = profiel[0]
+        scores   = huidig.get("scores", {})
+        vorige   = huidig.get("vorige_scores", {})
         tijdlijn = huidig.get("tijdlijn", [])
         vorige[item.vakgebied] = scores.get(item.vakgebied, 0)
         scores[item.vakgebied] = item.score
-        tijdlijn.insert(0, {
-            "type": "toets",
-            "datum": item.afname_datum or datetime.now(timezone.utc).date().isoformat(),
-            "tekst": f"{item.vakgebied.capitalize()} score {item.score}" + (f" niveau {item.niveau}" if item.niveau else "") + f" ({item.bron})"
-        })
-        await supabase_patch(f"lvs_profielen?leerling_id=eq.{item.leerling_id}&leerkracht_id=eq.{user['id']}", token,
-            {"scores": scores, "vorige_scores": vorige, "tijdlijn": tijdlijn})
+        tekst = f"{item.vakgebied.capitalize()} \u2014 score {item.score}"
+        if item.niveau: tekst += f" (niveau {item.niveau})"
+        if item.bron != "handmatig": tekst += f" via {item.bron}"
+        tijdlijn.insert(0, {"type": "toets", "datum": datum, "tekst": tekst})
+        await supabase_patch(
+            f"lvs_profielen?leerling_id=eq.{item.leerling_id}&leerkracht_id=eq.{user_id}",
+            token, {"scores": scores, "vorige_scores": vorige, "tijdlijn": tijdlijn})
     return result[0]
+
+
+@app.post("/toetsen")
+async def sla_toets_op(item: ToetsImport, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        return await _verwerk_toets(item, user["id"], token)
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/toetsen/batch")
 async def importeer_toetsen(batch: ToetsBatch, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    import asyncio
     token = credentials.credentials
     if len(batch.toetsen) > 500:
         raise HTTPException(status_code=400, detail="Maximaal 500 toetsen per import.")
     resultaten, fouten = [], []
-    for i, item in enumerate(batch.toetsen):
+    async def verwerk_een(i: int, item: ToetsImport):
         try:
-            if not 0 <= item.score <= 100:
-                fouten.append({"index": i, "fout": f"Score {item.score} buiten bereik"}); continue
-            data = {
-                "leerkracht_id": user["id"], "leerling_id": item.leerling_id,
-                "vakgebied": item.vakgebied, "score": item.score, "niveau": item.niveau,
-                "afname_datum": item.afname_datum or datetime.now(timezone.utc).date().isoformat(),
-                "bron": item.bron or "csv", "aangemaakt_op": datetime.now(timezone.utc).isoformat()
-            }
-            result = await supabase_post("toetsresultaten", token, data)
-            if result:
-                resultaten.append(result[0])
+            resultaten.append(await _verwerk_toets(item, user["id"], token))
         except Exception as e:
-            fouten.append({"index": i, "fout": str(e)})
-    return {"geimporteerd": len(resultaten), "fouten": len(fouten), "foutdetails": fouten[:10]}
+            fouten.append({"index": i, "leerling_id": item.leerling_id, "vakgebied": item.vakgebied, "fout": str(e)})
+    groepgrootte = 10
+    for start in range(0, len(batch.toetsen), groepgrootte):
+        groep = batch.toetsen[start:start + groepgrootte]
+        await asyncio.gather(*[verwerk_een(start + i, item) for i, item in enumerate(groep)])
+    return {"geimporteerd": len(resultaten), "fouten": len(fouten), "foutdetails": fouten[:20]}
 
 @app.get("/toetsen/{leerling_id}")
 async def haal_toetsen_op(leerling_id: str, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):

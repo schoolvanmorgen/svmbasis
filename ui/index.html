@@ -2276,13 +2276,27 @@ async function lvsSlaNotitieOp() {
   if (!tekst) { alert('Voer een notitie in.'); return; }
   const type = document.getElementById('lvs-notitie-type').value;
   const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'short',year:'numeric'});
+  const isoDate = new Date().toISOString().slice(0,10);
+
+  // Scores verwerken
+  const gewijzigdeVakken = [];
   LVS_DOMEINEN.forEach(d => {
     const val = document.getElementById('lvs-s-' + d.k)?.value;
-    if (val) {
+    if (val && val !== '') {
+      const score = Math.min(100, Math.max(0, parseInt(val)));
       lvsHuidig.vorige[d.k] = lvsHuidig.scores[d.k];
-      lvsHuidig.scores[d.k] = Math.min(100, Math.max(0, parseInt(val)));
+      lvsHuidig.scores[d.k] = score;
+      gewijzigdeVakken.push({ vakgebied: d.k, score });
     }
   });
+
+  // Als het type 'toets' is: ook opslaan in toetsresultaten tabel
+  if (type === 'toets' && gewijzigdeVakken.length > 0) {
+    await Promise.allSettled(gewijzigdeVakken.map(v =>
+      toetsRegistreer(lvsHuidig.id, v.vakgebied, v.score, null, 'handmatig')
+    ));
+  }
+
   lvsHuidig.tijdlijn.unshift({ type, datum, tekst });
   await lvsSla();
   lvsClearNotitie();
@@ -2297,10 +2311,8 @@ function lvsClearNotitie() {
 
 
 function lvsToonTab(naam, knop) {
-  ['profiel','tijdlijn','notitie'].forEach(t => {
-    const el = document.getElementById('lvs-tab-' + t);
-    if (el) el.style.display = t===naam ? 'block' : 'none';
-  });
+  // Verberg alle lvs-inhoud panels dynamisch — geen hardcoded lijst nodig bij nieuwe tabs
+  document.querySelectorAll('.lvs-inhoud').forEach(el => { el.style.display = 'none'; });
   document.querySelectorAll('.lvs-tab').forEach(k => k.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
   document.querySelectorAll('.lvs-inhoud').forEach(el => el.style.display = 'none');
@@ -2686,31 +2698,87 @@ async function toetsRegistreer(leerlingId, vakgebied, score, niveau, bron) {
   } catch(e) { console.error('Toets registreren mislukt:', e); return null; }
 }
 
-async function toetsImportCSV(csvTekst) {
-  if (!huidigToken || !csvTekst.trim()) return;
-  const regels = csvTekst.trim().split('\n').slice(1);
-  const toetsen = [];
-  const vakMap = { 'lezen':'lezen','rekenen':'rekenen','spelling':'spelling','begrijpend':'begrijpend','sociaal':'sociaal','werkhouding':'werkhouding' };
-  for (const regel of regels) {
-    const delen = regel.split(',').map(d => d.trim().replace(/^"|"$/g,''));
-    if (delen.length < 3) continue;
-    const [leerlingnummer, vakRaw, scoreRaw, niveauRaw, datumRaw] = delen;
-    const vak = vakMap[vakRaw.toLowerCase()];
-    const score = parseInt(scoreRaw);
-    if (!vak || isNaN(score)) continue;
-    const leerling = leerlingen.find(l => l.leerlingnummer === leerlingnummer || l.voornaam === leerlingnummer);
-    if (!leerling) continue;
-    toetsen.push({ leerling_id: leerling.id, vakgebied: vak, score, niveau: niveauRaw || null, afname_datum: datumRaw || null, bron: 'csv' });
+function csvDetecteerScheidingsteken(tekst) {
+  const eersteRegel = tekst.split('\n')[0];
+  if (eersteRegel.includes('\t')) return '\t';
+  if ((eersteRegel.match(/;/g) || []).length > (eersteRegel.match(/,/g) || []).length) return ';';
+  return ',';
+}
+
+function csvParseRegel(regel, scheiding) {
+  const delen = [];
+  let huidig = '', inAanhalingstekens = false;
+  for (let i = 0; i < regel.length; i++) {
+    const c = regel[i];
+    if (c === '"') { inAanhalingstekens = !inAanhalingstekens; }
+    else if (c === scheiding && !inAanhalingstekens) { delen.push(huidig.trim()); huidig = ''; }
+    else { huidig += c; }
   }
-  if (!toetsen.length) { alert('Geen geldige rijen gevonden. Controleer het CSV-formaat.'); return; }
-  const res = await fetch(API_BASE + '/toetsen/batch', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ toetsen })
-  });
-  const data = await res.json();
-  alert(data.geimporteerd + ' toetsen geimporteerd.' + (data.fouten > 0 ? ' ' + data.fouten + ' fouten.' : ''));
-  if (lvsHuidig) lvsSelecteer(lvsHuidig.id);
+  delen.push(huidig.trim());
+  return delen;
+}
+
+async function toetsImportCSV(csvTekst) {
+  if (!huidigToken || !csvTekst.trim()) { alert('Plak eerst CSV-inhoud in het veld.'); return; }
+  const scheiding = csvDetecteerScheidingsteken(csvTekst);
+  const regels = csvTekst.trim().split('\n');
+  const headerRegel = regels[0].toLowerCase();
+  // Sla header-rij over als die kolomnamen bevat
+  const startRij = (headerRegel.includes('vakgebied') || headerRegel.includes('leerling') || headerRegel.includes('score')) ? 1 : 0;
+  const vakMap = { 'lezen':'lezen','rekenen':'rekenen','spelling':'spelling',
+    'begrijpend':'begrijpend','begrijpend lezen':'begrijpend',
+    'sociaal':'sociaal','sociaal-emotioneel':'sociaal','werkhouding':'werkhouding' };
+  const toetsen = [];
+  const overgeslagen = [];
+
+  for (let i = startRij; i < regels.length; i++) {
+    const regel = regels[i].trim();
+    if (!regel) continue;
+    const delen = csvParseRegel(regel, scheiding);
+    if (delen.length < 3) { overgeslagen.push({ rij: i+1, reden: 'Te weinig kolommen' }); continue; }
+    const [leerlingnummer, vakRaw, scoreRaw, niveauRaw, datumRaw] = delen;
+    const vak = vakMap[vakRaw.toLowerCase().trim()];
+    const score = parseInt(scoreRaw);
+    if (!vak) { overgeslagen.push({ rij: i+1, reden: `Onbekend vakgebied '${vakRaw}'` }); continue; }
+    if (isNaN(score) || score < 0 || score > 100) { overgeslagen.push({ rij: i+1, reden: `Ongeldige score '${scoreRaw}'` }); continue; }
+    const leerling = leerlingen.find(l =>
+      l.leerlingnummer === leerlingnummer.trim() ||
+      l.voornaam?.toLowerCase() === leerlingnummer.toLowerCase().trim()
+    );
+    if (!leerling) { overgeslagen.push({ rij: i+1, reden: `Leerling '${leerlingnummer}' niet gevonden` }); continue; }
+    const geldigNiveau = ['I','II','III','IV','V'].includes((niveauRaw || '').trim().toUpperCase()) ? niveauRaw.trim().toUpperCase() : null;
+    toetsen.push({ leerling_id: leerling.id, vakgebied: vak, score, niveau: geldigNiveau, afname_datum: datumRaw?.trim() || null, bron: 'csv' });
+  }
+
+  if (!toetsen.length) {
+    const redenen = overgeslagen.slice(0,5).map(o => `Rij ${o.rij}: ${o.reden}`).join('\n');
+    alert('Geen geldige rijen gevonden.\n\n' + redenen + (overgeslagen.length > 5 ? '\n...' : ''));
+    return;
+  }
+
+  const knop = document.querySelector('#lvs-tab-toetsimport button');
+  const origTekst = knop ? knop.textContent : '';
+  if (knop) knop.textContent = 'Bezig met importeren (' + toetsen.length + ')...';
+
+  try {
+    const res = await fetch(API_BASE + '/toetsen/batch', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ toetsen })
+    });
+    if (!res.ok) throw new Error('Server fout: ' + res.status);
+    const data = await res.json();
+    let bericht = data.geimporteerd + ' toetsen succesvol geimporteerd.';
+    if (overgeslagen.length) bericht += '\n' + overgeslagen.length + ' rijen overgeslagen.';
+    if (data.fouten > 0) bericht += '\n' + data.fouten + ' serverfouten.';
+    alert(bericht);
+    document.getElementById('lvs-csv-invoer').value = '';
+    if (lvsHuidig) lvsSelecteer(lvsHuidig.id);
+  } catch(e) {
+    alert('Import mislukt: ' + e.message);
+  } finally {
+    if (knop) knop.textContent = origTekst;
+  }
 }
 
 // ══════════════════════════════════════════════════════════
