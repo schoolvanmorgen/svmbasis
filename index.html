@@ -2333,17 +2333,44 @@ async function aawSlaOp() {
   const sleutel = aawDatumSleutel(aawDatum);
   const dagData = aawRegistraties[sleutel] || {};
   const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
-  await Promise.all(klasLeerlingen.map(function(l) {
+
+  const resultaten = await Promise.allSettled(klasLeerlingen.map(function(l) {
     const d = dagData[l.id] || { status: 'onbekend', reden: '', opmerking: '' };
     return fetch(API_BASE + '/aanwezigheid', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ leerling_id: l.id, datum: sleutel, status: d.status, reden: d.reden || '', opmerking: d.opmerking || '' })
+    }).then(function(res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res;
     });
   }));
+
+  const mislukt = resultaten.filter(function(r) { return r.status === 'rejected'; });
   const balk = document.getElementById('aaw-export-balk');
   const datumEl = document.getElementById('aaw-export-datum');
-  if (balk) { balk.style.display = 'block'; datumEl.textContent = aawDatumTekst(aawDatum); setTimeout(function() { balk.style.display = 'none'; }, 3000); }
+
+  if (!balk) return;
+
+  if (mislukt.length === 0) {
+    // Alles opgeslagen — groene bevestiging
+    balk.style.background = 'var(--warm)';
+    balk.style.borderColor = 'var(--warmrand)';
+    balk.style.color = '';
+    balk.innerHTML = '\u2713 Opgeslagen voor <span id="aaw-export-datum">' + aawDatumTekst(aawDatum) + '</span>';
+  } else {
+    // Gedeeltelijk of volledig mislukt — rode melding
+    const gelukt = resultaten.length - mislukt.length;
+    balk.style.background = '#fef2f2';
+    balk.style.borderColor = '#fecaca';
+    balk.style.color = '#991b1b';
+    balk.innerHTML = '\u26a0 ' + mislukt.length + ' van de ' + resultaten.length + ' registraties niet opgeslagen. '
+      + (gelukt > 0 ? gelukt + ' wel opgeslagen. ' : '')
+      + 'Controleer je verbinding en probeer opnieuw.';
+  }
+
+  balk.style.display = 'block';
+  setTimeout(function() { balk.style.display = 'none'; }, mislukt.length > 0 ? 6000 : 3000);
 }
 
 function aawExporteer() {
