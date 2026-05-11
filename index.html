@@ -375,6 +375,9 @@ let huidigGebruiker = null;
 let huidigToken = null;
 let leerlingen = [];
 let schoolContext = { school_id: null, rol: "leerkracht", is_ib: false, is_directeur: false, heeft_school: false, naam: null };
+const LVS_KLEUREN = ['#000','#333','#555','#777','#444','#666'];
+let lvsLeerlingen = [];
+let lvsHuidig = null;
 
 // ── Centrale leerlingcontext — gedeeld door alle modules ──────
 // Alle tabs lezen uit huidigeLeerling in plaats van eigen velden.
@@ -2288,9 +2291,7 @@ const LVS_DOMEINEN = [
   { k:'werkhouding',l:'Werkhouding', kleur:'#000' },
 ];
 
-const LVS_KLEUREN = ['#000','#333','#555','#777','#444','#666'];
-let lvsLeerlingen = [];
-let lvsHuidig = null;
+// LVS_KLEUREN en lvsLeerlingen zijn verplaatst naar de globale staat bovenaan
 // Cache met TTL van 60 seconden — voorkomt verouderde data bij gebruik op meerdere apparaten
 const LVS_CACHE_TTL_MS = 60 * 1000;
 let lvsProfielCache = {}; // { [leerlingId]: { data: {...}, ts: Date.now() } }
@@ -3294,7 +3295,7 @@ ${tabelHtml}
 ${legenda}
 ${notities ? '<div class="notities"><strong>Notities:</strong> ' + notities + '</div>' : ''}
 <div class="footer">Dit document is vertrouwelijk. School van Morgen &mdash; Administratie voor basisscholen.</div>
-<script>window.onload = function() { window.print(); }<\/script>
+<scr\ipt>window.onload = function() { window.print(); }<\/scr\ipt>
 </body>
 </html>`;
 
