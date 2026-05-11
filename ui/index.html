@@ -331,8 +331,6 @@ body{padding-bottom:64px}
 .lvs-scores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 .lvs-score-input{background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 8px;font-size:12px;color:var(--t);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
 .lvs-score-input:focus{border-color:var(--t)}
-.lvs-ib-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lvs-ib-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
 .lvs-balk-wrap{margin-bottom:7px}
 .lvs-balk-label{display:flex;justify-content:space-between;font-size:11px;color:var(--tz);margin-bottom:3px}
 .lvs-balk{height:5px;background:var(--grijs);border-radius:0;overflow:hidden}
@@ -1656,7 +1654,6 @@ function downloadPDF() {
       <button class="lvs-tab actief" onclick="lvsToonTab('profiel',this)">Profiel</button>
       <button class="lvs-tab" onclick="lvsToonTab('tijdlijn',this)">Tijdlijn</button>
       <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Observatie/cijfer toevoegen</button>
-      <button class="lvs-tab" onclick="lvsToonTab('ib',this)">IB-dashboard</button>
     </div>
 
     <div class="lvs-inhoud" id="lvs-tab-profiel">
@@ -1713,10 +1710,6 @@ function downloadPDF() {
       </div>
     </div>
 
-    <div class="lvs-inhoud" id="lvs-tab-ib" style="display:none">
-      <div class="lvs-sectie-titel">IB-OVERZICHT</div>
-      <div class="lvs-ib-grid" id="lvs-ib"></div>
-    </div>
   </div>
 </div>
 </div>
@@ -1798,7 +1791,6 @@ function lvsSelecteer(id) {
   lvsRenderDomeinen();
   lvsRenderRadar();
   lvsRenderTijdlijn();
-  lvsRenderIB();
 }
 
 function lvsVoegToe() {
@@ -1941,29 +1933,9 @@ function lvsClearNotitie() {
   LVS_DOMEINEN.forEach(d => { const el = document.getElementById('lvs-s-' + d.k); if (el) el.value = ''; });
 }
 
-function lvsRenderIB() {
-  if (!lvsHuidig) return;
-  const l = lvsHuidig;
-  const gem = Math.round(Object.values(l.scores).reduce((a,b)=>a+b,0)/Object.values(l.scores).length);
-  const kleurGem = gem>=75?'#555':gem>=60?'#888':'#555';
-  document.getElementById('lvs-ib').innerHTML =
-    '<div class="lvs-ib-kaart"><div class="lvs-sectie-titel">VOORTGANG PER DOMEIN</div>'
-    + LVS_DOMEINEN.map(d =>
-      '<div class="lvs-balk-wrap"><div class="lvs-balk-label"><span>' + d.l + '</span><span style="color:' + d.kleur + '">' + l.scores[d.k] + '</span></div>'
-      + '<div class="lvs-balk"><div class="lvs-balk-fill" style="width:' + l.scores[d.k] + '%;background:' + d.kleur + '"></div></div></div>'
-    ).join('') + '</div>'
-    + '<div class="lvs-ib-kaart">'
-    + '<div class="lvs-sectie-titel">SAMENVATTING</div>'
-    + '<div style="font-size:36px;font-weight:700;color:' + kleurGem + ';margin-bottom:12px">' + gem + '</div>'
-    + '<div class="lvs-sectie-titel" style="margin-top:8px">STERKE PUNTEN</div>'
-    + '<div>' + (LVS_DOMEINEN.filter(d=>l.scores[d.k]>=75).map(d=>'<span class="lvs-tag lvs-tag-groen">'+d.l+'</span>').join('')||'<span style="font-size:11px;color:#444">—</span>') + '</div>'
-    + '<div class="lvs-sectie-titel" style="margin-top:12px">AANDACHTSPUNTEN</div>'
-    + '<div>' + (LVS_DOMEINEN.filter(d=>l.scores[d.k]<60).map(d=>'<span class="lvs-tag lvs-tag-blauw">'+d.l+'</span>').join('')||'<span style="font-size:11px;color:#444">Geen</span>') + '</div>'
-    + '</div>';
-}
 
 function lvsToonTab(naam, knop) {
-  ['profiel','tijdlijn','notitie','ib'].forEach(t => {
+  ['profiel','tijdlijn','notitie'].forEach(t => {
     const el = document.getElementById('lvs-tab-' + t);
     if (el) el.style.display = t===naam ? 'block' : 'none';
   });
