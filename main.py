@@ -38,9 +38,11 @@ MODEL             = "claude-sonnet-4-20250514"
 
 SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
-RESEND_API_KEY    = os.environ.get("RESEND_API_KEY", "")      # resend.com — gratis laag: 3000 e-mails/maand
-MAIL_FROM         = os.environ.get("MAIL_FROM", "noreply@schoolvanmorgen.nl")
-APP_URL           = os.environ.get("APP_URL", "http://localhost:8000")
+RESEND_API_KEY       = os.environ.get("RESEND_API_KEY", "")      # resend.com — gratis laag: 3000 e-mails/maand
+MAIL_FROM            = os.environ.get("MAIL_FROM", "noreply@schoolvanmorgen.nl")
+APP_URL              = os.environ.get("APP_URL", "http://localhost:8000")
+# Service role key — alleen voor user_metadata updates (nooit naar de browser sturen)
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 security = HTTPBearer(auto_error=False)
 
@@ -315,6 +317,66 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
         raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar.")
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
+
+# ══════════════════════════════════════════════════════════
+# SCHOOL CONTEXT HELPER
+# ══════════════════════════════════════════════════════════
+
+async def get_school_context(user: dict, token: str) -> dict:
+    """
+    Haal de school-context op voor een gebruiker.
+    Combineert user_metadata (snel, uit JWT) met leerkrachten_scholen (actueel).
+    Geeft altijd een dict terug met: school_id, rol, is_ib, is_directeur, heeft_school
+    """
+    # Eerst uit user_metadata (zit in de JWT — geen extra aanroep nodig)
+    meta = user.get("user_metadata", {})
+    school_id = meta.get("school_id")
+    rol = meta.get("rol", "leerkracht")
+
+    # Als user_metadata nog niet bijgewerkt is, val terug op de database
+    if not school_id:
+        koppeling = await supabase_get("leerkrachten_scholen", token,
+            {"leerkracht_id": f"eq.{user['id']}", "select": "school_id,rol"})
+        if koppeling:
+            school_id = koppeling[0].get("school_id")
+            rol = koppeling[0].get("rol", "leerkracht")
+
+    return {
+        "school_id":     school_id,
+        "rol":           rol,
+        "is_ib":         rol in ("ib", "directeur"),
+        "is_directeur":  rol == "directeur",
+        "heeft_school":  bool(school_id)
+    }
+
+
+async def update_user_metadata(user_id: str, metadata: dict):
+    """
+    Werk user_metadata bij via de Supabase Admin API.
+    Vereist SUPABASE_SERVICE_KEY — nooit naar de browser sturen.
+    """
+    if not SUPABASE_SERVICE_KEY:
+        logger.warning("SUPABASE_SERVICE_KEY niet ingesteld — user_metadata kan niet worden bijgewerkt.")
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            res = await client.put(
+                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                headers={
+                    "apikey": SUPABASE_SERVICE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={"user_metadata": metadata}
+            )
+            if res.status_code not in (200, 201):
+                logger.error(f"user_metadata update mislukt: {res.status_code} {res.text[:200]}")
+                return False
+            return True
+    except Exception as e:
+        logger.error(f"user_metadata update fout: {e}")
+        return False
+
 
 # ══════════════════════════════════════════════════════════
 # SUPABASE HELPERS
@@ -839,10 +901,32 @@ async def haal_leerlingen_op(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     token = credentials.credentials
-    return await supabase_get(
-        "leerlingen", token,
-        {"leerkracht_id": f"eq.{user['id']}", "order": "bijgewerkt_op.desc", "select": "*"}
-    )
+    ctx = await get_school_context(user, token)
+
+    if ctx["is_ib"] and ctx["school_id"]:
+        # IB-er en directeur zien alle leerlingen binnen de school
+        # Haal alle leerkracht-IDs op die aan deze school gekoppeld zijn
+        koppelingen = await supabase_get("leerkrachten_scholen", token,
+            {"school_id": f"eq.{ctx['school_id']}", "select": "leerkracht_id,voornaam,email"})
+        leerkracht_ids = [k["leerkracht_id"] for k in (koppelingen or [])]
+        if not leerkracht_ids:
+            return []
+        # Supabase "in" filter: leerkracht_id=in.(id1,id2,...)
+        ids_param = "(" + ",".join(leerkracht_ids) + ")"
+        leerlingen = await supabase_get("leerlingen", token,
+            {"leerkracht_id": f"in.{ids_param}", "order": "groep.asc,voornaam.asc", "select": "*"})
+        # Voeg leerkracht-naam toe per leerling zodat IB-er ziet van wie de leerling is
+        naam_map = {k["leerkracht_id"]: k.get("voornaam") or k.get("email", "Onbekend")
+                    for k in (koppelingen or [])}
+        for l in (leerlingen or []):
+            l["leerkracht_naam"] = naam_map.get(l.get("leerkracht_id"), "")
+        return leerlingen or []
+    else:
+        # Gewone leerkracht ziet alleen eigen leerlingen
+        return await supabase_get(
+            "leerlingen", token,
+            {"leerkracht_id": f"eq.{user['id']}", "order": "bijgewerkt_op.desc", "select": "*"}
+        )
 
 @app.post("/leerlingen")
 async def maak_leerling_aan(
@@ -853,6 +937,7 @@ async def maak_leerling_aan(
     if not leerling.voornaam or not leerling.voornaam.strip():
         raise HTTPException(status_code=400, detail="Voornaam is verplicht.")
     token = credentials.credentials
+    ctx = await get_school_context(user, token)
     record = {
         "leerkracht_id": user["id"],
         "voornaam": leerling.voornaam.strip(),
@@ -860,6 +945,8 @@ async def maak_leerling_aan(
         "ondersteuningsbehoeftes": leerling.ondersteuningsbehoeftes,
         "notities": leerling.notities,
     }
+    if ctx["school_id"]:
+        record["school_id"] = ctx["school_id"]
     if leerling.leerlingnummer:
         record["leerlingnummer"] = leerling.leerlingnummer.strip()
     if leerling.achternaam:
@@ -1446,7 +1533,9 @@ async def maak_school_aan(profiel: SchoolProfiel, user=Depends(get_user), creden
     await supabase_post("leerkrachten_scholen", token, {
         "leerkracht_id": user["id"], "school_id": school_id, "rol": "directeur", "email": user.get("email", "")
     })
-    return {"school_id": school_id, "naam": profiel.naam}
+    # Zet school_id en rol in user_metadata zodat JWT bij volgende login up-to-date is
+    await update_user_metadata(user["id"], {"school_id": school_id, "rol": "directeur"})
+    return {"school_id": school_id, "naam": profiel.naam, "rol": "directeur"}
 
 @app.post("/school/uitnodigen")
 async def nodig_collega_uit(body: dict, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -1482,6 +1571,8 @@ async def neem_deel_aan_school(body: dict, user=Depends(get_user), credentials: 
         "leerkracht_id": user["id"], "school_id": inv["school_id"], "rol": inv["rol"], "email": user.get("email", "")
     })
     await supabase_patch(f"school_uitnodigingen?token_hash=eq.{token_hash}", token, {"gebruikt": True})
+    # Zet school_id en rol in user_metadata
+    await update_user_metadata(user["id"], {"school_id": inv["school_id"], "rol": inv["rol"]})
     return {"school_id": inv["school_id"], "rol": inv["rol"]}
 
 

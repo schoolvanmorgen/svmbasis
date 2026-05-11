@@ -374,6 +374,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let huidigGebruiker = null;
 let huidigToken = null;
 let leerlingen = [];
+let schoolContext = { school_id: null, rol: "leerkracht", is_ib: false, is_directeur: false, heeft_school: false, naam: null };
 
 // ── Centrale leerlingcontext — gedeeld door alle modules ──────
 // Alle tabs lezen uit huidigeLeerling in plaats van eigen velden.
@@ -457,7 +458,45 @@ function toonLogin() {
 function toonApp() {
   document.getElementById('login-scherm').style.display = 'none';
   document.getElementById('app-scherm').style.display = 'flex';
-  laadLeerlingen();
+  laadSchoolContext().then(() => laadLeerlingen());
+}
+
+async function laadSchoolContext() {
+  if (!huidigToken) return;
+  try {
+    const res = await fetch(API_BASE + '/school/profiel', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    schoolContext = {
+      school_id:    data.school_id,
+      rol:          data.rol || 'leerkracht',
+      is_ib:        data.rol === 'ib' || data.rol === 'directeur',
+      is_directeur: data.rol === 'directeur',
+      heeft_school: data.aangemeld,
+      naam:         data.naam
+    };
+    toonRolBadge();
+  } catch(e) { console.error('School context laden mislukt:', e); }
+}
+
+function toonRolBadge() {
+  // Verwijder bestaande badge
+  document.querySelectorAll('.rol-badge').forEach(el => el.remove());
+  if (!schoolContext.heeft_school) return;
+  const rolLabels = { leerkracht: 'Leerkracht', ib: 'IB-er', directeur: 'Directeur' };
+  const label = rolLabels[schoolContext.rol] || schoolContext.rol;
+  const badge = document.createElement('div');
+  badge.className = 'rol-badge';
+  badge.style.cssText = 'font-size:10px;font-weight:600;color:var(--tz);letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--rand);margin-left:8px;cursor:default';
+  badge.title = schoolContext.naam || 'School';
+  badge.textContent = label + (schoolContext.naam ? ' · ' + schoolContext.naam : '');
+  // Voeg toe naast de uitlog-knop
+  const uitlogKnop = document.querySelector('button[onclick="uitloggen()"]');
+  if (uitlogKnop && uitlogKnop.parentNode) {
+    uitlogKnop.parentNode.insertBefore(badge, uitlogKnop);
+  }
 }
 
 async function inloggen() {
@@ -519,11 +558,34 @@ function toonLeerlingenLijst() {
     lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px 0">Nog geen leerlingen. Voeg er een toe.</div>';
     return;
   }
-  lijst.innerHTML = leerlingen.map(l => `
-    <div class="leerling-item" onclick="selecteerLeerling('${l.id}')">
-      <div class="leerling-naam">${l.voornaam}</div>
-      <div class="leerling-meta">Groep ${l.groep || '?'}</div>
-    </div>`).join('');
+
+  // IB/directeur: groepeer per leerkracht
+  if (schoolContext.is_ib && leerlingen.some(l => l.leerkracht_naam)) {
+    const perLeerkracht = {};
+    leerlingen.forEach(l => {
+      const naam = l.leerkracht_naam || 'Onbekend';
+      if (!perLeerkracht[naam]) perLeerkracht[naam] = [];
+      perLeerkracht[naam].push(l);
+    });
+    lijst.innerHTML = Object.entries(perLeerkracht).map(([leerkracht, lls]) =>
+      '<div style="margin-bottom:8px">'
+      + '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.08em;text-transform:uppercase;padding:4px 14px;background:var(--warm)">' + leerkracht + '</div>'
+      + lls.map(l =>
+          '<div class="leerling-item" onclick="selecteerLeerling('' + l.id + '')">'
+          + '<div class="leerling-naam">' + l.voornaam + '</div>'
+          + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
+          + '</div>'
+        ).join('')
+      + '</div>'
+    ).join('');
+  } else {
+    lijst.innerHTML = leerlingen.map(l =>
+      '<div class="leerling-item" onclick="selecteerLeerling('' + l.id + '')">'
+      + '<div class="leerling-naam">' + l.voornaam + '</div>'
+      + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
+      + '</div>'
+    ).join('');
+  }
 }
 
 async function voegLeerlingToe() {
@@ -3176,27 +3238,44 @@ ${notities ? '<div class="notities"><strong>Notities:</strong> ' + notities + '<
 
 async function schoolInit() {
   if (!huidigToken) return;
-  try {
-    const res = await fetch(API_BASE + '/school/profiel', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
-    const data = await res.json();
-    if (!data.aangemeld) {
-      document.getElementById('school-geen-account').style.display = 'block';
-      document.getElementById('school-account').style.display = 'none';
-      document.getElementById('school-resultaat').innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F3EB;</div><div class="leeg-t">Nog geen schoolaccount gekoppeld</div></div>';
-    } else {
-      document.getElementById('school-geen-account').style.display = 'none';
-      document.getElementById('school-account').style.display = 'block';
-      document.getElementById('school-info').innerHTML = '<strong>' + (data.naam || 'Onbekende school') + '</strong><br>Jouw rol: <strong>' + data.rol + '</strong>' + (data.brin ? '<br>BRIN: ' + data.brin : '');
-      document.getElementById('school-resultaat').innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F3EB;</div><div class="leeg-t">' + (data.naam || 'School') + '</div></div>';
-      if (data.rol === 'directeur') {
-        document.getElementById('school-directeur-acties').style.display = 'block';
-      }
-      if (data.rol === 'ib' || data.rol === 'directeur') {
-        document.getElementById('school-ib-acties').style.display = 'block';
-        schoolLaadCollegas();
-      }
-    }
-  } catch(e) { console.error('School profiel laden mislukt:', e); }
+  // Herlaad schoolContext voor de zekerheid
+  await laadSchoolContext();
+  const ctx = schoolContext;
+
+  if (!ctx.heeft_school) {
+    document.getElementById('school-geen-account').style.display = 'block';
+    document.getElementById('school-account').style.display = 'none';
+    document.getElementById('school-resultaat').innerHTML = (
+      '<div class="leeg"><div class="leeg-c">&#x1F3EB;</div>'
+      + '<div class="leeg-t">Nog geen schoolaccount gekoppeld</div></div>'
+    );
+    return;
+  }
+
+  document.getElementById('school-geen-account').style.display = 'none';
+  document.getElementById('school-account').style.display = 'block';
+
+  const rolLabels = { leerkracht: 'Leerkracht', ib: 'IB-er', directeur: 'Directeur' };
+  document.getElementById('school-info').innerHTML = (
+    '<strong>' + (ctx.naam || 'School') + '</strong>'
+    + '<br>Jouw rol: <strong>' + (rolLabels[ctx.rol] || ctx.rol) + '</strong>'
+  );
+
+  document.getElementById('school-resultaat').innerHTML = (
+    '<div style="padding:20px">'
+    + '<div style="font-size:13px;font-weight:500;margin-bottom:8px">' + (ctx.naam || 'School') + '</div>'
+    + '<div style="font-size:12px;color:var(--tz)">Rol: ' + (rolLabels[ctx.rol] || ctx.rol) + '</div>'
+    + (ctx.is_ib ? '<div style="font-size:12px;color:var(--tz);margin-top:4px">Je kunt alle leerlingen en groepsplannen van de school inzien.</div>' : '')
+    + '</div>'
+  );
+
+  if (ctx.is_directeur) {
+    document.getElementById('school-directeur-acties').style.display = 'block';
+  }
+  if (ctx.is_ib) {
+    document.getElementById('school-ib-acties').style.display = 'block';
+    schoolLaadCollegas();
+  }
 }
 
 async function schoolLaadCollegas() {
@@ -3218,8 +3297,18 @@ async function schoolAanmaken() {
     method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
     body: JSON.stringify({ naam, brin, adres: '' })
   });
-  if (res.ok) { alert('School aangemaakt! Herlaad de pagina om verder te gaan.'); location.reload(); }
-  else { const d = await res.json(); alert('Mislukt: ' + (d.detail || 'Onbekende fout')); }
+  if (res.ok) {
+    const data = await res.json();
+    // Herlaad de Supabase sessie zodat user_metadata up-to-date is
+    await sb.auth.refreshSession();
+    await laadSchoolContext();
+    toonRolBadge();
+    await schoolInit();
+    alert('School aangemaakt! Je bent nu directeur van ' + (data.naam || naam) + '.');
+  } else {
+    const d = await res.json();
+    alert('Mislukt: ' + (d.detail || 'Onbekende fout'));
+  }
 }
 
 async function schoolDeelnemen() {
@@ -3229,8 +3318,19 @@ async function schoolDeelnemen() {
     method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
     body: JSON.stringify({ uitnodigingstoken: token })
   });
-  if (res.ok) { alert('Gekoppeld aan school! Herlaad de pagina.'); location.reload(); }
-  else { const d = await res.json(); alert('Mislukt: ' + (d.detail || 'Onbekende fout')); }
+  if (res.ok) {
+    const data = await res.json();
+    const rolLabels = { leerkracht: 'Leerkracht', ib: 'IB-er', directeur: 'Directeur' };
+    await sb.auth.refreshSession();
+    await laadSchoolContext();
+    toonRolBadge();
+    await schoolInit();
+    await laadLeerlingen();
+    alert('Gekoppeld aan school als ' + (rolLabels[data.rol] || data.rol) + '.');
+  } else {
+    const d = await res.json();
+    alert('Mislukt: ' + (d.detail || 'Onbekende fout'));
+  }
 }
 
 async function schoolUitnodigGenereer() {
