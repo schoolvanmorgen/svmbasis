@@ -1126,7 +1126,7 @@ function toonTab(tab, knop) {
     <div><div class="vlabel">NOTITIES</div><textarea id="gp-notities" rows="3" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #000;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical" placeholder="Algemene opmerkingen bij dit groepsplan..."></textarea></div>
     <div style="display:flex;gap:8px">
       <button class="genknop" onclick="gpOpslaan()" style="flex:1"><div class="spin" id="gp-spin" style="display:none"></div><span id="gp-ktekst">Opslaan</span></button>
-      <button onclick="gpExportPDF()" style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 16px;font-size:12px;cursor:pointer;font-family:inherit">PDF</button>
+      <button onclick="gpExportPrint()" style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 16px;font-size:12px;cursor:pointer;font-family:inherit">&#x1F5A8; Afdrukken</button>
     </div>
   </div>
   <div class="resultaat" id="gp-resultaat"><div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep en vakgebied</div></div></div>
@@ -2720,6 +2720,13 @@ async function toetsImportCSV(csvTekst) {
 let gpHuidigVak = 'lezen';
 let gpData = {};
 
+// Niveau-kleuren en labels op één plek — geen herhaling meer door de code
+const GP_NIVEAUS = ['onafhankelijk','basis','intensief','individueel'];
+const GP_NIVEAU_LABELS = {onafhankelijk:'Onafh.',basis:'Basis',intensief:'Intensief',individueel:'Individ.'};
+const GP_NIVEAU_KLEUREN = {onafhankelijk:'#e8f5e9',basis:'#e3f2fd',intensief:'#fff3e0',individueel:'#fce4ec'};
+const GP_NIVEAU_TEKST = {onafhankelijk:'#2e7d32',basis:'#1565c0',intensief:'#e65100',individueel:'#880e4f'};
+let gpOpslaanBezig = false;
+
 function gpSelecteerVak(vak, knop) {
   gpHuidigVak = vak;
   document.querySelectorAll('.gp-vak-btn').forEach(k => k.classList.remove('actief'));
@@ -2731,57 +2738,149 @@ async function gpLaad() {
   const groep = document.getElementById('gp-groep').value;
   const schooljaar = document.getElementById('gp-schooljaar').value;
   if (!groep || !huidigToken) return;
-  const res = await fetch(API_BASE + '/groepsplan?groep=' + groep + '&schooljaar=' + schooljaar, {
-    headers: { 'Authorization': 'Bearer ' + huidigToken }
-  });
-  const data = await res.json();
-  gpData = {};
-  (data.rijen || []).forEach(r => {
-    if (!gpData[r.leerling_id]) gpData[r.leerling_id] = {};
-    gpData[r.leerling_id][r.vakgebied] = r.instructieniveau;
-  });
-  document.getElementById('gp-notities').value = data.notities || '';
-  gpRenderTabel();
+  const el = document.getElementById('gp-resultaat');
+  el.innerHTML = '<div class="leeg"><div class="leeg-t">Laden...</div></div>';
+  try {
+    const res = await fetch(API_BASE + '/groepsplan?groep=' + encodeURIComponent(groep) + '&schooljaar=' + encodeURIComponent(schooljaar), {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+    gpData = {};
+    (data.rijen || []).forEach(r => {
+      if (!gpData[r.leerling_id]) gpData[r.leerling_id] = {};
+      gpData[r.leerling_id][r.vakgebied] = r.instructieniveau;
+    });
+    document.getElementById('gp-notities').value = data.notities || '';
+    gpRenderTabel();
+  } catch(e) {
+    el.innerHTML = '<div class="leeg"><div class="leeg-t">Laden mislukt: ' + e.message + '</div></div>';
+  }
 }
 
 function gpRenderTabel() {
   const groep = document.getElementById('gp-groep').value;
   const el = document.getElementById('gp-resultaat');
-  if (!groep) { el.innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep</div></div>'; return; }
-  const klasLeerlingen = leerlingen.filter(l => l.groep === groep);
-  if (!klasLeerlingen.length) { el.innerHTML = '<div class="leeg"><div class="leeg-t">Geen leerlingen in groep ' + groep + '</div></div>'; return; }
-  const niveaus = ['onafhankelijk','basis','intensief','individueel'];
-  const niveauLabels = {'onafhankelijk':'Onafh.','basis':'Basis','intensief':'Intensief','individueel':'Individ.'};
-  let html = '<div style="padding:16px"><div style="font-size:11px;font-weight:700;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">' + gpHuidigVak.toUpperCase() + '</div>';
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div style="width:130px;font-size:10px;color:#888;font-weight:700;letter-spacing:.05em">LEERLING</div><div class="gp-niveaubalk" style="flex:1"><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">ONAFH.</div><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">BASIS</div><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">INTENSIEF</div><div style="font-size:10px;color:#888;text-align:center;padding:4px 2px;font-weight:700;letter-spacing:.04em">INDIVID.</div></div></div>';
+  if (!groep) {
+    el.innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep</div></div>';
+    return;
+  }
+  const klasLeerlingen = leerlingen.filter(l => l.groep === groep).sort((a,b) => a.voornaam.localeCompare(b.voornaam, 'nl'));
+  if (!klasLeerlingen.length) {
+    el.innerHTML = '<div class="leeg"><div class="leeg-t">Geen leerlingen gevonden in groep ' + groep + '</div></div>';
+    return;
+  }
+
+  // Voortgangstelling per niveau bovenaan
+  const telling = {onafhankelijk:0, basis:0, intensief:0, individueel:0, geen:0};
+  klasLeerlingen.forEach(l => {
+    const n = (gpData[l.id] || {})[gpHuidigVak];
+    if (n && telling[n] !== undefined) telling[n]++; else telling.geen++;
+  });
+  const totaal = klasLeerlingen.length;
+
+  let html = '<div style="padding:16px">';
+  // Samenvatting bovenaan
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
+  GP_NIVEAUS.forEach(n => {
+    const pct = totaal ? Math.round(telling[n] / totaal * 100) : 0;
+    html += '<div style="background:' + GP_NIVEAU_KLEUREN[n] + ';color:' + GP_NIVEAU_TEKST[n] + ';padding:4px 10px;font-size:11px;font-weight:500;border-radius:4px">'
+      + GP_NIVEAU_LABELS[n] + ': ' + telling[n] + ' (' + pct + '%)</div>';
+  });
+  if (telling.geen) html += '<div style="background:#f5f5f5;color:#888;padding:4px 10px;font-size:11px;border-radius:4px">Nog in te delen: ' + telling.geen + '</div>';
+  html += '</div>';
+
+  // Kolomkoppen
+  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--rand)">';
+  html += '<div style="width:140px;flex-shrink:0;font-size:10px;font-weight:700;color:#888;letter-spacing:.05em">LEERLING</div>';
+  html += '<div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:0">';
+  GP_NIVEAUS.forEach(n => {
+    html += '<div style="font-size:10px;color:#888;text-align:center;font-weight:700;letter-spacing:.04em">' + n.toUpperCase().slice(0,6) + '.</div>';
+  });
+  html += '</div></div>';
+
+  // Leerlingrijen — gebruik data-attributen i.p.v. inline onclick met id-strings
   klasLeerlingen.forEach(l => {
     const huidig = (gpData[l.id] || {})[gpHuidigVak] || '';
-    html += '<div class="gp-leerling-rij"><div class="gp-leerling-naam">' + l.voornaam + '</div><div class="gp-niveaubalk" style="flex:1">';
-    niveaus.forEach(n => {
-      const actief = huidig === n ? ' actief ' + n : '';
-      html += '<button class="gp-niveau-knop ' + n + actief + '" onclick="gpStelNiveauIn('' + l.id + '','' + n + '',this)">' + niveauLabels[n] + '</button>';
+    html += '<div class="gp-leerling-rij" data-leerling-id="' + l.id + '">';
+    html += '<div class="gp-leerling-naam">' + l.voornaam + '</div>';
+    html += '<div class="gp-niveaubalk" style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:0">';
+    GP_NIVEAUS.forEach(n => {
+      const isActief = huidig === n;
+      const achtergrond = isActief ? GP_NIVEAU_KLEUREN[n] : '';
+      const kleur = isActief ? GP_NIVEAU_TEKST[n] : '';
+      const rand = isActief ? '2px solid ' + GP_NIVEAU_TEKST[n] : '1px solid var(--rand)';
+      html += '<button class="gp-niveau-knop" data-niveau="' + n + '" style="padding:7px 2px;font-size:11px;font-weight:' + (isActief ? '600' : '400') + ';border:' + rand + ';border-right:none;background:' + achtergrond + ';color:' + (kleur || 'var(--tz)') + ';cursor:pointer;font-family:inherit;text-align:center">'
+        + GP_NIVEAU_LABELS[n] + '</button>';
     });
     html += '</div></div>';
   });
+
   html += '</div>';
   el.innerHTML = html;
+
+  // Event delegation — één listener op de container i.p.v. per-knop onclick
+  el.onclick = function(e) {
+    const knop = e.target.closest('.gp-niveau-knop');
+    if (!knop) return;
+    const rij = knop.closest('.gp-leerling-rij');
+    const leerlingId = rij.dataset.leerlingId;
+    const niveau = knop.dataset.niveau;
+    gpStelNiveauIn(leerlingId, niveau, knop);
+  };
 }
 
 function gpStelNiveauIn(leerlingId, niveau, knop) {
   if (!gpData[leerlingId]) gpData[leerlingId] = {};
-  gpData[leerlingId][gpHuidigVak] = niveau;
-  const rij = knop.closest('.gp-niveaubalk');
-  rij.querySelectorAll('.gp-niveau-knop').forEach(k => {
-    k.classList.remove('actief','onafhankelijk','basis','intensief','individueel');
-    k.className = 'gp-niveau-knop ' + k.classList[1];
+  // Toggle: klik op actief niveau verwijdert de indeling
+  if (gpData[leerlingId][gpHuidigVak] === niveau) {
+    gpData[leerlingId][gpHuidigVak] = '';
+  } else {
+    gpData[leerlingId][gpHuidigVak] = niveau;
+  }
+  // Herrender alleen de knoppen van deze rij — niet de hele tabel
+  const balk = knop.closest('.gp-niveaubalk');
+  const huidig = gpData[leerlingId][gpHuidigVak];
+  balk.querySelectorAll('.gp-niveau-knop').forEach(k => {
+    const n = k.dataset.niveau;
+    const isActief = huidig === n;
+    k.style.background = isActief ? GP_NIVEAU_KLEUREN[n] : '';
+    k.style.color = isActief ? GP_NIVEAU_TEKST[n] : 'var(--tz)';
+    k.style.border = isActief ? '2px solid ' + GP_NIVEAU_TEKST[n] : '1px solid var(--rand)';
+    k.style.borderRight = 'none';
+    k.style.fontWeight = isActief ? '600' : '400';
   });
-  knop.classList.add('actief');
+  // Werk de samenvatting bij zonder herrender
+  gpWerkSamenvattingBij(leerlingId);
+}
+
+function gpWerkSamenvattingBij() {
+  const groep = document.getElementById('gp-groep').value;
+  const klasLeerlingen = leerlingen.filter(l => l.groep === groep);
+  const totaal = klasLeerlingen.length;
+  const telling = {onafhankelijk:0,basis:0,intensief:0,individueel:0,geen:0};
+  klasLeerlingen.forEach(l => {
+    const n = (gpData[l.id] || {})[gpHuidigVak];
+    if (n && telling[n] !== undefined) telling[n]++; else telling.geen++;
+  });
+  const samenvatting = document.querySelector('#gp-resultaat > div > div:first-child');
+  if (!samenvatting) return;
+  let html = '';
+  GP_NIVEAUS.forEach(n => {
+    const pct = totaal ? Math.round(telling[n] / totaal * 100) : 0;
+    html += '<div style="background:' + GP_NIVEAU_KLEUREN[n] + ';color:' + GP_NIVEAU_TEKST[n] + ';padding:4px 10px;font-size:11px;font-weight:500;border-radius:4px">'
+      + GP_NIVEAU_LABELS[n] + ': ' + telling[n] + ' (' + pct + '%)</div>';
+  });
+  if (telling.geen) html += '<div style="background:#f5f5f5;color:#888;padding:4px 10px;font-size:11px;border-radius:4px">Nog in te delen: ' + telling.geen + '</div>';
+  samenvatting.innerHTML = html;
 }
 
 async function gpOpslaan() {
+  if (gpOpslaanBezig) return;  // Voorkom dubbel opslaan
   const groep = document.getElementById('gp-groep').value;
   const schooljaar = document.getElementById('gp-schooljaar').value;
   if (!groep || !huidigToken) { alert('Kies eerst een groep.'); return; }
+  gpOpslaanBezig = true;
   document.getElementById('gp-spin').style.display = 'block';
   document.getElementById('gp-ktekst').textContent = 'Opslaan...';
   const rijen = [];
@@ -2796,39 +2895,101 @@ async function gpOpslaan() {
       headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
       body: JSON.stringify({ groep, schooljaar, rijen, notities: document.getElementById('gp-notities').value })
     });
-    if (!res.ok) throw new Error('Status ' + res.status);
-    document.getElementById('gp-ktekst').textContent = 'Opgeslagen!';
-    setTimeout(() => { document.getElementById('gp-ktekst').textContent = 'Opslaan'; }, 2000);
+    if (!res.ok) {
+      const fout = await res.json().catch(() => ({}));
+      throw new Error(fout.detail || 'Status ' + res.status);
+    }
+    document.getElementById('gp-ktekst').textContent = '✓ Opgeslagen';
+    setTimeout(() => { document.getElementById('gp-ktekst').textContent = 'Opslaan'; }, 2500);
   } catch(e) {
-    alert('Opslaan mislukt: ' + e.message);
-    document.getElementById('gp-ktekst').textContent = 'Opslaan';
-  } finally { document.getElementById('gp-spin').style.display = 'none'; }
+    document.getElementById('gp-ktekst').textContent = 'Mislukt — probeer opnieuw';
+    setTimeout(() => { document.getElementById('gp-ktekst').textContent = 'Opslaan'; }, 3000);
+    console.error('Groepsplan opslaan:', e);
+  } finally {
+    document.getElementById('gp-spin').style.display = 'none';
+    gpOpslaanBezig = false;
+  }
 }
 
-function gpExportPDF() {
+function gpExportPrint() {
   const groep = document.getElementById('gp-groep').value;
   const schooljaar = document.getElementById('gp-schooljaar').value;
   if (!groep) { alert('Kies eerst een groep.'); return; }
   const vakken = ['lezen','rekenen','spelling','begrijpend','sociaal','werkhouding'];
-  const niveauKleur = {onafhankelijk:'#e8f5e9',basis:'#e3f2fd',intensief:'#fff3e0',individueel:'#fce4ec'};
-  const klasLeerlingen = leerlingen.filter(l => l.groep === groep);
-  let tabelHtml = '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:6px;border:1px solid #ccc">Leerling</th>';
-  vakken.forEach(v => { tabelHtml += '<th style="padding:6px;border:1px solid #ccc;text-align:center">' + v.charAt(0).toUpperCase() + v.slice(1) + '</th>'; });
+  const klasLeerlingen = leerlingen.filter(l => l.groep === groep).sort((a,b) => a.voornaam.localeCompare(b.voornaam,'nl'));
+  if (!klasLeerlingen.length) { alert('Geen leerlingen gevonden in deze groep.'); return; }
+  const notities = document.getElementById('gp-notities').value;
+  const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'long',year:'numeric'});
+
+  let tabelHtml = '<table><thead><tr><th>Leerling</th>';
+  vakken.forEach(v => { tabelHtml += '<th>' + v.charAt(0).toUpperCase() + v.slice(1) + '</th>'; });
   tabelHtml += '</tr></thead><tbody>';
-  klasLeerlingen.forEach(l => {
-    tabelHtml += '<tr><td style="padding:6px;border:1px solid #ccc;font-weight:500">' + l.voornaam + '</td>';
+  klasLeerlingen.forEach((l,i) => {
+    tabelHtml += '<tr' + (i % 2 === 0 ? '' : ' class="alt"') + '><td class="naam">' + l.voornaam + '</td>';
     vakken.forEach(v => {
       const n = (gpData[l.id] || {})[v] || '';
-      const kleur = niveauKleur[n] || '#fff';
-      tabelHtml += '<td style="padding:6px;border:1px solid #ccc;text-align:center;background:' + kleur + '">' + (n ? n.charAt(0).toUpperCase() + n.slice(1) : '—') + '</td>';
+      tabelHtml += '<td class="niveau ' + n + '">' + (n ? n.charAt(0).toUpperCase() + n.slice(1) : '') + '</td>';
     });
     tabelHtml += '</tr>';
   });
   tabelHtml += '</tbody></table>';
-  const html = '<!DOCTYPE html><html lang="nl"><head><meta charset="UTF-8"><title>Groepsplan groep ' + groep + '</title></head><body style="font-family:Arial,sans-serif;padding:24px"><h1 style="font-size:18px">Groepsplan groep ' + groep + ' &mdash; ' + schooljaar + '</h1><p style="font-size:12px;color:#666;margin-bottom:16px">Gegenereerd met School van Morgen</p>' + tabelHtml + (document.getElementById('gp-notities').value ? '<p style="margin-top:16px;font-size:12px"><strong>Notities:</strong> ' + document.getElementById('gp-notities').value + '</p>' : '') + '</body></html>';
-  const blob = new Blob([html], {type:'text/html'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-  a.download = 'groepsplan-groep-' + groep + '-' + schooljaar + '.html'; a.click();
+
+  // Legenda
+  let legenda = '<div class="legenda"><strong>Instructieniveaus:</strong>';
+  GP_NIVEAUS.forEach(n => {
+    legenda += '<span class="legenda-item ' + n + '">' + n.charAt(0).toUpperCase() + n.slice(1) + '</span>';
+  });
+  legenda += '</div>';
+
+  const html = `<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Groepsplan groep ${groep} — ${schooljaar}</title>
+<style>
+  @media print { @page { margin: 1.5cm; } }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 0; margin: 0; }
+  .header { margin-bottom: 16px; border-bottom: 2px solid #111; padding-bottom: 8px; }
+  .header h1 { font-size: 16px; margin: 0 0 4px; }
+  .header p { margin: 0; color: #666; font-size: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  th { background: #111; color: #fff; padding: 6px 8px; text-align: center; font-size: 10px; letter-spacing: .05em; }
+  th:first-child { text-align: left; }
+  td { padding: 5px 8px; border-bottom: 0.5px solid #ddd; vertical-align: middle; }
+  td.naam { font-weight: 600; }
+  tr.alt td { background: #fafafa; }
+  td.onafhankelijk { background: #e8f5e9; color: #2e7d32; font-weight: 500; text-align: center; }
+  td.basis { background: #e3f2fd; color: #1565c0; font-weight: 500; text-align: center; }
+  td.intensief { background: #fff3e0; color: #e65100; font-weight: 500; text-align: center; }
+  td.individueel { background: #fce4ec; color: #880e4f; font-weight: 500; text-align: center; }
+  td.niveau:empty { color: #ccc; text-align: center; }
+  td.niveau:empty::before { content: "—"; }
+  .legenda { display: flex; gap: 12px; align-items: center; margin-top: 8px; font-size: 10px; flex-wrap: wrap; }
+  .legenda-item { padding: 3px 8px; border-radius: 3px; font-weight: 500; }
+  .legenda-item.onafhankelijk { background: #e8f5e9; color: #2e7d32; }
+  .legenda-item.basis { background: #e3f2fd; color: #1565c0; }
+  .legenda-item.intensief { background: #fff3e0; color: #e65100; }
+  .legenda-item.individueel { background: #fce4ec; color: #880e4f; }
+  .notities { margin-top: 12px; font-size: 10px; color: #444; }
+  .footer { margin-top: 16px; font-size: 9px; color: #aaa; border-top: 0.5px solid #ddd; padding-top: 6px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Groepsplan groep ${groep} &mdash; ${schooljaar}</h1>
+  <p>Gegenereerd op ${datum} &middot; School van Morgen</p>
+</div>
+${tabelHtml}
+${legenda}
+${notities ? '<div class="notities"><strong>Notities:</strong> ' + notities + '</div>' : ''}
+<div class="footer">Dit document is vertrouwelijk. School van Morgen &mdash; Administratie voor basisscholen.</div>
+<script>window.onload = function() { window.print(); }<\/script>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+  else { alert('Sta pop-ups toe om het groepsplan af te drukken.'); }
 }
 
 // ══════════════════════════════════════════════════════════
