@@ -897,35 +897,48 @@ async def analyseer(
 
 @app.get("/leerlingen")
 async def haal_leerlingen_op(
+    limit:  int = 200,
+    offset: int = 0,
     user=Depends(get_user),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     token = credentials.credentials
     ctx = await get_school_context(user, token)
 
+    # Begrens limit zodat niemand per ongeluk de hele database opvraagt
+    limit = min(limit, 200)
+
     if ctx["is_ib"] and ctx["school_id"]:
         # IB-er en directeur zien alle leerlingen binnen de school
-        # Haal alle leerkracht-IDs op die aan deze school gekoppeld zijn
         koppelingen = await supabase_get("leerkrachten_scholen", token,
             {"school_id": f"eq.{ctx['school_id']}", "select": "leerkracht_id,voornaam,email"})
         leerkracht_ids = [k["leerkracht_id"] for k in (koppelingen or [])]
         if not leerkracht_ids:
             return []
-        # Supabase "in" filter: leerkracht_id=in.(id1,id2,...)
         ids_param = "(" + ",".join(leerkracht_ids) + ")"
-        leerlingen = await supabase_get("leerlingen", token,
-            {"leerkracht_id": f"in.{ids_param}", "order": "groep.asc,voornaam.asc", "select": "*"})
-        # Voeg leerkracht-naam toe per leerling zodat IB-er ziet van wie de leerling is
+        params = {
+            "leerkracht_id": f"in.{ids_param}",
+            "order":         "groep.asc,voornaam.asc",
+            "select":        "*",
+            "limit":         str(limit),
+            "offset":        str(offset)
+        }
+        leerlingen = await supabase_get("leerlingen", token, params)
         naam_map = {k["leerkracht_id"]: k.get("voornaam") or k.get("email", "Onbekend")
                     for k in (koppelingen or [])}
         for l in (leerlingen or []):
             l["leerkracht_naam"] = naam_map.get(l.get("leerkracht_id"), "")
         return leerlingen or []
     else:
-        # Gewone leerkracht ziet alleen eigen leerlingen
         return await supabase_get(
             "leerlingen", token,
-            {"leerkracht_id": f"eq.{user['id']}", "order": "bijgewerkt_op.desc", "select": "*"}
+            {
+                "leerkracht_id": f"eq.{user['id']}",
+                "order":         "bijgewerkt_op.desc",
+                "select":        "*",
+                "limit":         str(limit),
+                "offset":        str(offset)
+            }
         )
 
 @app.post("/leerlingen")

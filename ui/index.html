@@ -543,12 +543,53 @@ async function uitloggen() {
 async function laadLeerlingen() {
   if (!huidigToken) return;
   try {
-    const res = await fetch(API_BASE + '/leerlingen', {
+    // Laad eerste 50 direct — toon meteen, laad de rest op achtergrond
+    const res = await fetch(API_BASE + '/leerlingen?limit=50&offset=0', {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
+    if (!res.ok) return;
     leerlingen = await res.json();
     toonLeerlingenLijst();
+
+    // Als er precies 50 terugkwamen kunnen er meer zijn — laad de rest stil
+    if (leerlingen.length === 50) {
+      laadLeerlingenRest(50);
+    }
   } catch(e) { console.error(e); }
+}
+
+async function laadLeerlingenRest(offset) {
+  const BATCH = 100;
+  try {
+    const res = await fetch(API_BASE + '/leerlingen?limit=' + BATCH + '&offset=' + offset, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) return;
+    const batch = await res.json();
+    if (!batch.length) return;
+    leerlingen = leerlingen.concat(batch);
+    toonLeerlingenLijst();
+    // Houd lvsLeerlingen ook in sync als het LVS open is
+    if (lvsLeerlingen.length > 0) {
+      const nieuweIds = new Set(lvsLeerlingen.map(l => l.id));
+      const nieuweKleuren = lvsLeerlingen.length;
+      batch.forEach((l, i) => {
+        if (!nieuweIds.has(l.id)) {
+          lvsLeerlingen.push({
+            id: l.id, naam: l.voornaam, groep: l.groep || '?',
+            initialen: l.voornaam.slice(0,2).toUpperCase(),
+            kleur: LVS_KLEUREN[(nieuweKleuren + i) % LVS_KLEUREN.length],
+            leerkracht_naam: l.leerkracht_naam || null,
+            scores: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+            vorige: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+            tijdlijn: []
+          });
+        }
+      });
+      lvsRenderLijst(lvsLeerlingen);
+    }
+    if (batch.length === BATCH) laadLeerlingenRest(offset + BATCH);
+  } catch(e) { /* stil falen — eerste batch is al zichtbaar */ }
 }
 
 function toonLeerlingenLijst() {
@@ -2323,14 +2364,17 @@ function lvsFilter(zoek) {
 async function lvsSelecteer(id) {
   const basis = lvsLeerlingen.find(l => l.id === id);
   if (!basis) return;
-  // Laad profiel uit Supabase
-  const profiel = await lvsHaalProfielOp(id);
+
+  // Stap 1: render direct met wat we al hebben (cache of lege defaults)
+  // Gebruiker ziet meteen naam, groep en knoppen — geen witte lege UI
+  const gecached = _lvsCacheGeldig(id) ? lvsProfielCache[id].data : null;
   lvsHuidig = {
     ...basis,
-    scores: profiel?.scores || { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
-    vorige: profiel?.vorige || { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
-    tijdlijn: profiel?.tijdlijn || []
+    scores:   gecached?.scores   || { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+    vorige:   gecached?.vorige   || { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+    tijdlijn: gecached?.tijdlijn || []
   };
+
   document.getElementById('lvs-naam').textContent = lvsHuidig.naam;
   document.getElementById('lvs-meta').textContent = 'Groep ' + (lvsHuidig.groep || '?') + ' · Schooljaar 2025–2026';
   const acties = document.getElementById('lvs-acties');
@@ -2339,6 +2383,22 @@ async function lvsSelecteer(id) {
   lvsRenderDomeinen();
   lvsRenderRadar();
   lvsRenderTijdlijn();
+
+  // Stap 2: laad profiel op de achtergrond als het niet in cache zit
+  // Zodra het binnenkomt update de UI stil — gebruiker merkt geen wachttijd
+  if (!gecached) {
+    lvsHaalProfielOp(id).then(profiel => {
+      // Controleer of de gebruiker ondertussen niet van leerling is gewisseld
+      if (!lvsHuidig || lvsHuidig.id !== id) return;
+      if (!profiel) return;
+      lvsHuidig.scores   = profiel.scores   || lvsHuidig.scores;
+      lvsHuidig.vorige   = profiel.vorige   || lvsHuidig.vorige;
+      lvsHuidig.tijdlijn = profiel.tijdlijn || lvsHuidig.tijdlijn;
+      lvsRenderDomeinen();
+      lvsRenderRadar();
+      lvsRenderTijdlijn();
+    });
+  }
 }
 
 function lvsVoegToe() {
@@ -2515,29 +2575,40 @@ function lvsNaarTab(tab) {
   }
 }
 
+function lvsInitVanuitLeerlingen() {
+  // Hergebruik de al geladen leerlingenlijst — geen extra Supabase-aanroep nodig
+  lvsLeerlingen = leerlingen.map((l, i) => ({
+    id: l.id,
+    naam: l.voornaam,
+    groep: l.groep || '?',
+    initialen: l.voornaam.slice(0,2).toUpperCase(),
+    kleur: LVS_KLEUREN[i % LVS_KLEUREN.length],
+    leerkracht_naam: l.leerkracht_naam || null,
+    scores: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+    vorige: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+    tijdlijn: []
+  }));
+}
+
 async function lvsInit() {
-  // Laad leerlingen uit Supabase (zelfde lijst als rapport tab)
   if (!huidigToken) { lvsRenderLijst([]); return; }
-  try {
-    const res = await fetch(API_BASE + '/leerlingen', {
-      headers: { 'Authorization': 'Bearer ' + huidigToken }
-    });
-    const data = await res.json();
-    lvsLeerlingen = (Array.isArray(data) ? data : []).map((l, i) => ({
-      id: l.id,
-      naam: l.voornaam,
-      groep: l.groep || '?',
-      initialen: l.voornaam.slice(0,2).toUpperCase(),
-      kleur: LVS_KLEUREN[i % LVS_KLEUREN.length],
-      scores: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
-      vorige: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
-      tijdlijn: []
-    }));
-    lvsRenderLijst(lvsLeerlingen);
-    if (lvsLeerlingen.length > 0) lvsSelecteer(lvsLeerlingen[0].id);
-  } catch(e) {
-    lvsRenderLijst([]);
+
+  // Gebruik de bestaande leerlingenlijst als die er al is, anders wacht op laadLeerlingen
+  if (leerlingen.length > 0) {
+    lvsInitVanuitLeerlingen();
+  } else {
+    await laadLeerlingen();
+    lvsInitVanuitLeerlingen();
   }
+
+  lvsRenderLijst(lvsLeerlingen);
+
+  // Selecteer de leerling die al actief is (vanuit rapport-tab), anders de eerste
+  const actieveId = window._huidigeLeerlingId;
+  const startId = (actieveId && lvsLeerlingen.find(l => l.id === actieveId))
+    ? actieveId
+    : (lvsLeerlingen.length > 0 ? lvsLeerlingen[0].id : null);
+  if (startId) lvsSelecteer(startId);
 }
 
 
