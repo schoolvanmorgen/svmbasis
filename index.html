@@ -561,7 +561,7 @@ function toonTab(tab, knop) {
   if (knop) knop.classList.add('actief');
   document.querySelectorAll('.sectie, .sectie-vol').forEach(s => {
     s.classList.remove('actief');
-    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid') s.style.display = '';
+    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid' && s.id !== 'tab-notities') s.style.display = '';
   });
   const tabInhoud = document.getElementById('tab-inhoud');
   const lvsEl = document.getElementById('tab-lvs');
@@ -574,13 +574,21 @@ function toonTab(tab, knop) {
     if (tabInhoud) tabInhoud.style.display = 'none';
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) { aawEl.style.display = 'block'; if (typeof aawInit === 'function') aawInit(); }
+  } else if (tab === 'notities') {
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.display = 'none';
+    const notEl = document.getElementById('tab-notities');
+    if (notEl) notEl.classList.add('actief');
+    if (typeof notitieRender === 'function') notitieRender();
   } else {
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
+    const notEl2 = document.getElementById('tab-notities');
+    if (notEl2) notEl2.classList.remove('actief');
     if (tabInhoud) tabInhoud.style.display = '';
     const el = document.getElementById('tab-' + tab);
     if (el) el.classList.add('actief');
-    if (tab === 'notities' && typeof notitieRender === 'function') notitieRender();
   }
 }
 </script>
@@ -880,6 +888,14 @@ function toonTab(tab, knop) {
 </div>
 </div><!-- einde tab-handelingsplan -->
 
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- Aanwezigheidsregistratie tab                          -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+
+
+</div><!-- einde tab-inhoud -->
+
 <div class="sectie" id="tab-notities" style="height:calc(100vh - 120px)">
   <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
 
@@ -900,13 +916,7 @@ function toonTab(tab, knop) {
 
   </div>
 </div><!-- einde tab-notities -->
-<!-- ══════════════════════════════════════════════════════ -->
-<!-- Aanwezigheidsregistratie tab                          -->
-<!-- ══════════════════════════════════════════════════════ -->
 
-
-
-</div><!-- einde tab-inhoud -->
 
 
 
