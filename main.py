@@ -920,6 +920,46 @@ async def opp(verzoek: OppVerzoek, user=Depends(get_user)):
 # HANDELINGSPLAN
 # ══════════════════════════════════════════════════════════
 
+# ── LVS profielen ───────────────────────────────────────────────
+
+class LvsProfielUpdate(BaseModel):
+    scores: dict
+    vorige: dict
+    tijdlijn: list
+
+@app.get("/lvs/{leerling_id}")
+async def haal_lvs_profiel_op(leerling_id: str, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    data = await supabase_get(
+        "lvs_profielen",
+        token,
+        {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}"}
+    )
+    if not data:
+        return {"scores": {"lezen":0,"rekenen":0,"spelling":0,"begrijpend":0,"sociaal":0,"werkhouding":0},
+                "vorige": {"lezen":0,"rekenen":0,"spelling":0,"begrijpend":0,"sociaal":0,"werkhouding":0},
+                "tijdlijn": []}
+    return data[0]
+
+@app.put("/lvs/{leerling_id}")
+async def sla_lvs_profiel_op(leerling_id: str, profiel: LvsProfielUpdate, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    # Check if exists
+    bestaand = await supabase_get("lvs_profielen", token, {"leerling_id": f"eq.{leerling_id}"})
+    data_dict = {
+        "leerling_id": leerling_id,
+        "leerkracht_id": user["id"],
+        "scores": profiel.scores,
+        "vorige_scores": profiel.vorige,
+        "tijdlijn": profiel.tijdlijn,
+        "bijgewerkt_op": "now()"
+    }
+    if bestaand:
+        result = await supabase_patch(f"lvs_profielen?leerling_id=eq.{leerling_id}&leerkracht_id=eq.{user['id']}", token, data_dict)
+    else:
+        result = await supabase_post("lvs_profielen", token, data_dict)
+    return result[0] if result else {}
+
 @app.post("/handelingsplan")
 async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user)):
     if not verzoek.ondersteuningsbehoefte:

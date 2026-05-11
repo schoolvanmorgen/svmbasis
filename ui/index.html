@@ -550,6 +550,11 @@ function openLeerlingModal() {
 }
 function sluitLeerlingModal() {
   document.getElementById('leerling-modal').style.display = 'none';
+  // Als we vanuit LVS een leerling toevoegden, herlaad LVS
+  if (window._lvsModalCallback) {
+    window._lvsModalCallback = false;
+    setTimeout(lvsInit, 500);
+  }
 }
 
 window.addEventListener('DOMContentLoaded', initAuth);
@@ -1063,9 +1068,7 @@ async function genereer() {
     if (lvsHuidig && lvsHuidig.naam === naam) {
       const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'short',year:'numeric'});
       lvsHuidig.tijdlijn.unshift({ type: 'rapport', datum, tekst: 'Rapport gegenereerd.' + (parsed.rapportcommentaar ? ' ' + parsed.rapportcommentaar.slice(0,80) + '…' : '') });
-      const idx = lvsLeerlingen.findIndex(l => l.id === lvsHuidig.id);
-      if (idx >= 0) lvsLeerlingen[idx] = lvsHuidig;
-      lvsSla();
+      await lvsSla();
     }
   } catch (err) {
     if (r) r.innerHTML = '<div class="fout">' + err.message + '</div>';
@@ -1753,12 +1756,45 @@ const LVS_DOMEINEN = [
   { k:'werkhouding',l:'Werkhouding', kleur:'#000' },
 ];
 
-const LVS_KLEUREN = ['#000','#555','#555','#888','#555','#555'];
-let lvsLeerlingen = JSON.parse(localStorage.getItem('lvs_leerlingen') || '[]');
+const LVS_KLEUREN = ['#000','#333','#555','#777','#444','#666'];
+let lvsLeerlingen = [];
 let lvsHuidig = null;
+let lvsProfielCache = {};
 
-function lvsSla() {
-  localStorage.setItem('lvs_leerlingen', JSON.stringify(lvsLeerlingen));
+// ── Supabase helpers voor LVS ────────────────────────────
+async function lvsHaalProfielOp(leerlingId) {
+  if (lvsProfielCache[leerlingId]) return lvsProfielCache[leerlingId];
+  if (!huidigToken) return null;
+  try {
+    const res = await fetch('/lvs/' + leerlingId, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    lvsProfielCache[leerlingId] = data;
+    return data;
+  } catch(e) { return null; }
+}
+
+async function lvsSlaProfielOp(leerlingId, profiel) {
+  if (!huidigToken) return;
+  try {
+    await fetch('/lvs/' + leerlingId, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(profiel)
+    });
+    lvsProfielCache[leerlingId] = profiel;
+  } catch(e) { console.error('LVS opslaan mislukt:', e); }
+}
+
+async function lvsSla() {
+  if (!lvsHuidig) return;
+  await lvsSlaProfielOp(lvsHuidig.id, {
+    scores: lvsHuidig.scores,
+    vorige: lvsHuidig.vorige,
+    tijdlijn: lvsHuidig.tijdlijn
+  });
 }
 
 function lvsRenderLijst(lijst) {
@@ -1782,9 +1818,17 @@ function lvsFilter(zoek) {
   lvsRenderLijst(gefilterd);
 }
 
-function lvsSelecteer(id) {
-  lvsHuidig = lvsLeerlingen.find(l => l.id === id);
-  if (!lvsHuidig) return;
+async function lvsSelecteer(id) {
+  const basis = lvsLeerlingen.find(l => l.id === id);
+  if (!basis) return;
+  // Laad profiel uit Supabase
+  const profiel = await lvsHaalProfielOp(id);
+  lvsHuidig = {
+    ...basis,
+    scores: profiel?.scores || { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+    vorige: profiel?.vorige || { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+    tijdlijn: profiel?.tijdlijn || []
+  };
   document.getElementById('lvs-naam').textContent = lvsHuidig.naam;
   document.getElementById('lvs-meta').textContent = 'Groep ' + (lvsHuidig.groep || '?') + ' · Schooljaar 2025–2026';
   lvsRenderLijst(lvsLeerlingen);
@@ -1794,23 +1838,11 @@ function lvsSelecteer(id) {
 }
 
 function lvsVoegToe() {
-  const naam = prompt('Voornaam van de leerling:');
-  if (!naam) return;
-  const groep = prompt('Groep (1-8):') || '4';
-  const initialen = naam.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
-  const kleur = LVS_KLEUREN[lvsLeerlingen.length % LVS_KLEUREN.length];
-  const nieuw = {
-    id: Date.now().toString(),
-    naam, groep, initialen, kleur,
-    behoeftes: [],
-    scores: { lezen:70, rekenen:70, spelling:70, begrijpend:70, sociaal:70, werkhouding:70 },
-    vorige: { lezen:70, rekenen:70, spelling:70, begrijpend:70, sociaal:70, werkhouding:70 },
-    tijdlijn: []
-  };
-  lvsLeerlingen.push(nieuw);
-  lvsSla();
-  lvsRenderLijst(lvsLeerlingen);
-  lvsSelecteer(nieuw.id);
+  // Open de bestaande leerling modal - na toevoegen herlaadt lvsInit
+  openLeerlingModal();
+  // Na sluiten modal: herlaad LVS lijst
+  const origSluit = sluitLeerlingModal;
+  window._lvsModalCallback = true;
 }
 
 function lvsRenderDomeinen() {
@@ -1906,7 +1938,7 @@ function lvsRenderTijdlijn() {
   ).join('');
 }
 
-function lvsSlaNotitieOp() {
+async function lvsSlaNotitieOp() {
   if (!lvsHuidig) { alert('Selecteer eerst een leerling.'); return; }
   const tekst = document.getElementById('lvs-notitie-tekst').value.trim();
   if (!tekst) { alert('Voer een notitie in.'); return; }
@@ -1920,9 +1952,8 @@ function lvsSlaNotitieOp() {
     }
   });
   lvsHuidig.tijdlijn.unshift({ type, datum, tekst });
-  const idx = lvsLeerlingen.findIndex(l => l.id === lvsHuidig.id);
-  if (idx >= 0) lvsLeerlingen[idx] = lvsHuidig;
-  lvsSla();
+  await lvsSla();
+  lvsProfielCache[lvsHuidig.id] = { scores: lvsHuidig.scores, vorige: lvsHuidig.vorige, tijdlijn: lvsHuidig.tijdlijn };
   lvsClearNotitie();
   lvsRenderDomeinen(); lvsRenderRadar(); lvsRenderTijdlijn();
   lvsToonTab('tijdlijn', document.querySelectorAll('.lvs-tab')[1]);
@@ -1952,12 +1983,28 @@ function lvsGenereer() {
   document.querySelector('.tab').click();
 }
 
-function lvsInit() {
-  if (lvsLeerlingen.length === 0) {
-    lvsRenderLijst([]);
-  } else {
+async function lvsInit() {
+  // Laad leerlingen uit Supabase (zelfde lijst als rapport tab)
+  if (!huidigToken) { lvsRenderLijst([]); return; }
+  try {
+    const res = await fetch('/leerlingen', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    const data = await res.json();
+    lvsLeerlingen = (Array.isArray(data) ? data : []).map((l, i) => ({
+      id: l.id,
+      naam: l.voornaam,
+      groep: l.groep || '?',
+      initialen: l.voornaam.slice(0,2).toUpperCase(),
+      kleur: LVS_KLEUREN[i % LVS_KLEUREN.length],
+      scores: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+      vorige: { lezen:0, rekenen:0, spelling:0, begrijpend:0, sociaal:0, werkhouding:0 },
+      tijdlijn: []
+    }));
     lvsRenderLijst(lvsLeerlingen);
-    lvsSelecteer(lvsLeerlingen[0].id);
+    if (lvsLeerlingen.length > 0) lvsSelecteer(lvsLeerlingen[0].id);
+  } catch(e) {
+    lvsRenderLijst([]);
   }
 }
 
