@@ -38,6 +38,9 @@ MODEL             = "claude-sonnet-4-20250514"
 
 SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+RESEND_API_KEY    = os.environ.get("RESEND_API_KEY", "")      # resend.com — gratis laag: 3000 e-mails/maand
+MAIL_FROM         = os.environ.get("MAIL_FROM", "noreply@schoolvanmorgen.nl")
+APP_URL           = os.environ.get("APP_URL", "http://localhost:8000")
 
 security = HTTPBearer(auto_error=False)
 
@@ -56,6 +59,9 @@ async def startup():
             f"Verplichte omgevingsvariabelen niet ingesteld: {', '.join(ontbrekend)}. "
             f"Voeg ze toe aan je .env bestand en herstart de server."
         )
+    if not RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY niet ingesteld — e-mail versturen is uitgeschakeld. "
+                       "Registreer gratis op resend.com en voeg de sleutel toe aan .env.")
     logger.info(f"Opstartcontrole geslaagd. CORS toegestaan voor: {ALLOWED_ORIGINS}")
 
 # ══════════════════════════════════════════════════════════
@@ -270,6 +276,18 @@ class SchoolProfiel(BaseModel):
     naam: str
     brin: Optional[str] = ""
     adres: Optional[str] = ""
+
+class OuderBerichtVersturen(BaseModel):
+    leerling_id: str
+    ouder_email: str
+    onderwerp: str
+    inhoud_html: str       # volledig HTML rapport of bericht
+    inhoud_tekst: str      # platte tekst fallback
+    bericht_type: Optional[str] = "rapport"  # rapport | handelingsplan | opp | algemeen
+
+class OuderBerichtReactie(BaseModel):
+    bericht_id: str
+    reactie_tekst: str
 
 # ══════════════════════════════════════════════════════════
 # AUTH HELPER
@@ -1235,6 +1253,159 @@ async def haal_alle_lvs_profielen_op(
 # ══════════════════════════════════════════════════════════
 # GLOBALE ERROR HANDLER
 # ══════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════
+# E-MAIL HELPER (Resend)
+# ══════════════════════════════════════════════════════════
+
+async def verstuur_email(naar: str, onderwerp: str, html: str, tekst: str) -> dict:
+    """Verstuur een e-mail via Resend. Geeft {"ok": True} of {"ok": False, "fout": ...} terug."""
+    if not RESEND_API_KEY:
+        raise HTTPException(status_code=503,
+            detail="E-mail versturen is niet geconfigureerd. Voeg RESEND_API_KEY toe aan .env.")
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            res = await client.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": MAIL_FROM,
+                    "to": [naar],
+                    "subject": onderwerp,
+                    "html": html,
+                    "text": tekst
+                }
+            )
+            if res.status_code not in (200, 201):
+                logger.error(f"Resend fout {res.status_code}: {res.text[:200]}")
+                raise HTTPException(status_code=502,
+                    detail=f"E-mail versturen mislukt (Resend {res.status_code}).")
+            return {"ok": True, "resend_id": res.json().get("id")}
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=503, detail="E-mailserver niet bereikbaar (timeout).")
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"Verbindingsfout e-mail: {str(e)}")
+
+
+def bouw_rapport_email_html(naam: str, groep: str, rapport_html: str, leerkracht_naam: str, school_naam: str) -> str:
+    """Bouw een nette HTML-e-mail rondom de rapporttekst."""
+    groep_tekst = f" (groep {groep})" if groep else ""
+    return f"""<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {{ font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 24px; }}
+  .wrapper {{ max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #e0e0e0; }}
+  .header {{ background: #111; color: #fff; padding: 20px 24px; }}
+  .header h1 {{ margin: 0; font-size: 18px; font-weight: 500; }}
+  .header p {{ margin: 4px 0 0; font-size: 12px; color: #aaa; }}
+  .body {{ padding: 24px; color: #222; line-height: 1.7; font-size: 14px; }}
+  .rapport {{ background: #f9f9f9; border-left: 3px solid #111; padding: 16px 20px; margin: 16px 0; }}
+  .footer {{ padding: 16px 24px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #888; }}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="header">
+    <h1>Rapport van {naam}{groep_tekst}</h1>
+    <p>{school_naam}</p>
+  </div>
+  <div class="body">
+    <p>Geachte ouder(s)/verzorger(s),</p>
+    <p>Hierbij ontvangt u het rapport van <strong>{naam}</strong>{groep_tekst}.</p>
+    <div class="rapport">{rapport_html}</div>
+    <p>Met vriendelijke groet,<br><strong>{leerkracht_naam}</strong><br>{school_naam}</p>
+  </div>
+  <div class="footer">
+    Dit bericht is verstuurd via School van Morgen. Heeft u vragen? Neem contact op met de school.
+  </div>
+</div>
+</body>
+</html>"""
+
+
+# ══════════════════════════════════════════════════════════
+# OUDERCOMMUNICATIE
+# ══════════════════════════════════════════════════════════
+
+@app.post("/ouder/verstuur")
+async def verstuur_ouder_bericht(
+    verzoek: OuderBerichtVersturen,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Verstuur een bericht naar ouders en sla het op in de communicatiegeschiedenis."""
+    token = credentials.credentials
+
+    # Controleer of leerling bij deze leerkracht hoort
+    leerling = await supabase_get("leerlingen", token,
+        {"id": f"eq.{verzoek.leerling_id}", "leerkracht_id": f"eq.{user['id']}"})
+    if not leerling:
+        raise HTTPException(status_code=404, detail="Leerling niet gevonden.")
+
+    # Verstuur via Resend
+    resend_result = await verstuur_email(
+        naar=verzoek.ouder_email,
+        onderwerp=verzoek.onderwerp,
+        html=verzoek.inhoud_html,
+        tekst=verzoek.inhoud_tekst
+    )
+
+    # Sla op in communicatiegeschiedenis
+    bericht_data = {
+        "leerkracht_id": user["id"],
+        "leerling_id":   verzoek.leerling_id,
+        "ouder_email":   verzoek.ouder_email,
+        "onderwerp":     verzoek.onderwerp,
+        "inhoud_tekst":  verzoek.inhoud_tekst[:2000],  # bewaar platte tekst voor overzicht
+        "bericht_type":  verzoek.bericht_type,
+        "resend_id":     resend_result.get("resend_id"),
+        "verstuurd_op":  datetime.now(timezone.utc).isoformat(),
+        "status":        "verstuurd"
+    }
+    opgeslagen = await supabase_post("ouder_berichten", token, bericht_data)
+    return {"verstuurd": True, "bericht_id": opgeslagen[0]["id"] if opgeslagen else None}
+
+
+@app.get("/ouder/berichten/{leerling_id}")
+async def haal_ouder_berichten_op(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Haal de communicatiegeschiedenis op voor een leerling."""
+    token = credentials.credentials
+    data = await supabase_get("ouder_berichten", token, {
+        "leerling_id":  f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "order":        "verstuurd_op.desc",
+        "select":       "*"
+    })
+    return data or []
+
+
+@app.delete("/ouder/berichten/{bericht_id}")
+async def verwijder_ouder_bericht(
+    bericht_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Verwijder een bericht uit de geschiedenis (alleen van eigen leerlingen)."""
+    token = credentials.credentials
+    bestaand = await supabase_get("ouder_berichten", token,
+        {"id": f"eq.{bericht_id}", "leerkracht_id": f"eq.{user['id']}"})
+    if not bestaand:
+        raise HTTPException(status_code=404, detail="Bericht niet gevonden.")
+    await supabase_delete(f"ouder_berichten?id=eq.{bericht_id}", token)
+    return {"verwijderd": True}
+
 
 # ══════════════════════════════════════════════════════════
 # SCHOOL & ROLLEN

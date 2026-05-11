@@ -1589,13 +1589,17 @@ function toonResultaten(data, naam, groep) {
       <span class="oudertitel">DELEN MET OUDERS</span>
     </div>
     <div class="ouderbody">
-      <div style="font-size:11px;color:var(--tz);line-height:1.5">Het rapport wordt per e-mail verstuurd — ouders hoeven niet in ParnasSys te kijken.</div>
+      <div style="font-size:11px;color:var(--tz);line-height:1.5">Het rapport wordt direct per e-mail verstuurd en opgeslagen in de communicatiegeschiedenis.</div>
       <div class="emailrij">
-        <input type="text" id="oudermail" placeholder="e-mailadres ouder(s)">
+        <input type="text" id="oudermail" placeholder="e-mailadres ouder(s)" class="oudermail-invoer">
         <button class="deelknop" onclick="deelMetOuders(this)">Verstuur</button>
       </div>
-      <div class="deelok" id="deelok">Rapport verstuurd!</div>
-    </div>`;
+      <div class="deelok" id="deelok"></div>
+      <div style="margin-top:10px">
+        <button onclick="ouderGeschiedenisToggle(this)" style="background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer;padding:0;text-decoration:underline">Communicatiegeschiedenis tonen</button>
+        <div id="ouder-geschiedenis-container" style="display:none;margin-top:8px"></div>
+      </div>
+    </div>\`;
   r.appendChild(ouder);
 
   // Feedback
@@ -1762,19 +1766,125 @@ function toggleOudermail(veldId, checkbox) {
   if (checkbox.checked) setTimeout(() => veld.focus(), 50);
 }
 
-// ── Delen met ouders (lokaal via mailto) ─────────────────────
+// ── Delen met ouders via server (Resend) ─────────────────────
 async function deelMetOuders(knop) {
-  const email = document.getElementById('oudermail').value.trim();
-  if (!email || !email.includes('@')) { document.getElementById('oudermail').style.borderColor = '#555'; return; }
-  const naam = document.getElementById('naam').value.trim();
-  const rapportTekst = document.getElementById('resultaat')?.innerText || '';
-  const onderwerp = encodeURIComponent(`Rapport ${naam || 'leerling'}`);
-  const body = encodeURIComponent(`Beste ouder(s),\n\nHierbij het rapport van ${naam || 'uw kind'}.\n\n${rapportTekst}\n\nMet vriendelijke groet`);
-  window.location.href = `mailto:${email}?subject=${onderwerp}&body=${body}`;
-  const ok = document.getElementById('deelok');
-  ok.textContent = `E-mailprogramma geopend voor ${email}`;
-  ok.style.display = 'block';
-  knop.textContent = 'Verstuurd';
+  const emailEl = document.getElementById('oudermail');
+  const email = emailEl.value.trim();
+  if (!email || !email.includes('@')) {
+    emailEl.style.borderColor = '#c00';
+    emailEl.focus();
+    return;
+  }
+  emailEl.style.borderColor = '';
+
+  const naam  = document.getElementById('naam').value.trim();
+  const groep = document.getElementById('groep').value;
+  const leerlingId = window._huidigeLeerlingId;
+  if (!leerlingId) { alert('Selecteer eerst een leerling.'); return; }
+
+  // Bouw HTML en platte tekst uit het rapportresultaat
+  const resultaatEl = document.getElementById('resultaat');
+  const rapportHtml = resultaatEl ? resultaatEl.innerHTML : '';
+  const rapportTekst = resultaatEl ? resultaatEl.innerText : '';
+
+  const origTekst = knop.textContent;
+  knop.textContent = 'Versturen...';
+  knop.disabled = true;
+
+  try {
+    const res = await fetch(API_BASE + '/ouder/verstuur', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leerling_id: leerlingId,
+        ouder_email: email,
+        onderwerp: `Rapport ${naam || 'uw kind'}${groep ? ' (groep ' + groep + ')' : ''}`,
+        inhoud_html: rapportHtml,
+        inhoud_tekst: rapportTekst,
+        bericht_type: 'rapport'
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Versturen mislukt');
+
+    const ok = document.getElementById('deelok');
+    ok.textContent = '✓ Rapport verstuurd naar ' + email;
+    ok.style.display = 'block';
+    ok.style.color = 'var(--gm)';
+    knop.textContent = 'Verstuurd ✓';
+
+    // Ververs de communicatiegeschiedenis als die open is
+    if (typeof ouderBerichtenVervers === 'function') ouderBerichtenVervers(leerlingId);
+
+  } catch(e) {
+    const ok = document.getElementById('deelok');
+    ok.textContent = '✗ ' + e.message;
+    ok.style.display = 'block';
+    ok.style.color = '#c00';
+    knop.textContent = origTekst;
+    knop.disabled = false;
+  }
+}
+
+// ── Communicatiegeschiedenis per leerling ─────────────────────
+let ouderBerichtenCache = {};
+
+async function ouderBerichtenLaad(leerlingId) {
+  if (!huidigToken || !leerlingId) return [];
+  try {
+    const res = await fetch(API_BASE + '/ouder/berichten/' + leerlingId, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    ouderBerichtenCache[leerlingId] = data;
+    return data;
+  } catch(e) { return []; }
+}
+
+async function ouderBerichtenVervers(leerlingId) {
+  const data = await ouderBerichtenLaad(leerlingId);
+  const container = document.getElementById('ouder-geschiedenis-' + leerlingId);
+  if (!container) return;
+  ouderBerichtenRender(container, data);
+}
+
+function ouderBerichtenRender(container, berichten) {
+  if (!berichten.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--tz);padding:8px 0">Nog geen berichten verstuurd.</div>';
+    return;
+  }
+  container.innerHTML = berichten.map(b => {
+    const datum = new Date(b.verstuurd_op).toLocaleDateString('nl-NL', {day:'numeric',month:'short',year:'numeric'});
+    const typeIcoon = { rapport:'📄', handelingsplan:'📋', opp:'📝', algemeen:'✉️' }[b.bericht_type] || '✉️';
+    return '<div style="padding:8px 0;border-bottom:0.5px solid var(--rand);font-size:12px">'
+      + '<div style="display:flex;align-items:center;gap:6px">'
+      + '<span>' + typeIcoon + '</span>'
+      + '<span style="font-weight:500;flex:1">' + (b.onderwerp || 'Bericht') + '</span>'
+      + '<span style="color:var(--tz);font-size:11px">' + datum + '</span>'
+      + '</div>'
+      + '<div style="color:var(--tz);margin-top:2px">Naar: ' + b.ouder_email + '</div>'
+      + '<div style="color:var(--tz);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (b.inhoud_tekst || '').slice(0, 80) + '…</div>'
+      + '</div>';
+  }).join('');
+}
+
+function ouderGeschiedenisToggle(knop) {
+  const container = document.getElementById('ouder-geschiedenis-container');
+  if (!container) return;
+  const zichtbaar = container.style.display !== 'none';
+  container.style.display = zichtbaar ? 'none' : 'block';
+  knop.textContent = zichtbaar ? 'Communicatiegeschiedenis tonen' : 'Communicatiegeschiedenis verbergen';
+  if (!zichtbaar && window._huidigeLeerlingId) {
+    ouderGeschiedenisToon(window._huidigeLeerlingId, container);
+  }
+}
+
+async function ouderGeschiedenisToon(leerlingId, container) {
+  container.innerHTML = '<div style="font-size:12px;color:var(--tz)">Laden...</div>';
+  const data = await ouderBerichtenLaad(leerlingId);
+  ouderBerichtenRender(container, data);
 }
 
 function selecteerDuim(waarde, knop) {
