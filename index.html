@@ -57,17 +57,17 @@ header{border-bottom:1px solid #4a7a4a;padding:0 1.5rem;height:48px;display:flex
 .psub{font-size:12px;color:var(--tz);margin-top:4px;line-height:1.5}
 .vlabel{font-size:10px;font-weight:700;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 .rij2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.nwrap{position:relative}
+.nwrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
 input[type=text]{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:#2a3a2a;background:#fff;outline:none;transition:border-color .15s}
 input:focus{border-color:#4a7a4a;box-shadow:none}
 input::placeholder{color:var(--tz)}
 select{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
 select:focus{border-color:var(--t);box-shadow:none}
-textarea{font-family:inherit;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;resize:vertical;min-height:140px;outline:none;line-height:1.7;transition:border-color .15s}
+textarea{font-family:inherit;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;resize:none;min-height:60px;outline:none;line-height:1.7;transition:border-color .15s}
 textarea:focus{border-color:var(--t);box-shadow:none}
 textarea::placeholder{color:var(--tz);font-size:12px}
 .teller{position:absolute;bottom:9px;right:11px;font-size:10px;color:var(--tz);pointer-events:none}
-.nwrap{position:relative}
+.nwrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
 .mic-knop{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:0;border:none;background:var(--gm);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;transition:background .2s,transform .2s;z-index:2}
 .mic-knop:hover{background:var(--g);transform:scale(1.08)}
 .mic-knop.luistert{background:#4a7a4a;animation:pulserood 1s infinite}
@@ -1161,70 +1161,83 @@ function toonTab(tab, knop) {
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0;height:100%">
 <div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
-  <div class="invoer" style="height:100%;overflow-y:auto;box-sizing:border-box">
-    <div>
-      <div class="vlabel">LEERLING</div>
-      <div class="rij2">
-        <div><input type="text" id="naam" placeholder="Naam kind"></div>
+  <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0">
+
+    <!-- Scrollbare inhoud — vult beschikbare ruimte -->
+    <div style="flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:10px;min-height:0">
+
+      <!-- Leerling: naam + groep naast elkaar -->
+      <div style="display:grid;grid-template-columns:1fr 100px;gap:8px">
         <div>
+          <div class="vlabel">LEERLING</div>
+          <input type="text" id="naam" placeholder="Naam kind">
+        </div>
+        <div>
+          <div class="vlabel">GROEP</div>
           <select id="groep">
-            <option value="">Groep...</option>
+            <option value="">—</option>
             <option>1</option><option>2</option><option>3</option>
             <option>4</option><option>5</option><option>6</option>
             <option>7</option><option>8</option>
           </select>
         </div>
       </div>
-    </div>
 
-    <div>
-      <div class="vlabel">ONDERSTEUNINGSBEHOEFTES <span style="font-weight:400;color:var(--tz)">— optioneel, voor interventies in het rapport</span></div>
-      <div id="od-wrap">
-        <div id="od-checklijst" style="background:#fff;border:1.5px solid var(--rand);border-radius:0;padding:6px 4px;display:flex;flex-direction:column;gap:2px">
-          <label class="od-check-item"><input type="checkbox" value="Dyslexie" onchange="updateTags()"> Dyslexie</label>
-          <label class="od-check-item"><input type="checkbox" value="Dyscalculie" onchange="updateTags()"> Dyscalculie</label>
-          <label class="od-check-item"><input type="checkbox" value="Hoogbegaafdheid" onchange="updateTags()"> Hoogbegaafdheid</label>
-          <label class="od-check-item"><input type="checkbox" value="ADHD / concentratieproblemen" onchange="updateTags()"> ADHD / concentratieproblemen</label>
-          <label class="od-check-item"><input type="checkbox" value="Autisme (ASS)" onchange="updateTags()"> Autisme (ASS)</label>
-          <label class="od-check-item"><input type="checkbox" value="Sociaal-emotionele problematiek" onchange="updateTags()"> Sociaal-emotionele problematiek</label>
-          <label class="od-check-item"><input type="checkbox" value="Taalontwikkelingsachterstand" onchange="updateTags()"> Taalontwikkelingsachterstand</label>
-          <label class="od-check-item"><input type="checkbox" value="Motorische problematiek" onchange="updateTags()"> Motorische problematiek</label>
+      <!-- Ondersteuningsbehoeftes: 2-koloms grid -->
+      <div>
+        <div class="vlabel">ONDERSTEUNINGSBEHOEFTES <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
+        <div id="od-wrap">
+          <div id="od-checklijst" style="background:#fff;border:1px solid var(--rand);padding:6px 8px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px">
+            <label class="od-check-item"><input type="checkbox" value="Dyslexie" onchange="updateTags()"> Dyslexie</label>
+            <label class="od-check-item"><input type="checkbox" value="Dyscalculie" onchange="updateTags()"> Dyscalculie</label>
+            <label class="od-check-item"><input type="checkbox" value="Hoogbegaafdheid" onchange="updateTags()"> Hoogbegaafdheid</label>
+            <label class="od-check-item"><input type="checkbox" value="ADHD / concentratieproblemen" onchange="updateTags()"> ADHD</label>
+            <label class="od-check-item"><input type="checkbox" value="Autisme (ASS)" onchange="updateTags()"> Autisme (ASS)</label>
+            <label class="od-check-item"><input type="checkbox" value="Sociaal-emotionele problematiek" onchange="updateTags()"> Soc.-emotioneel</label>
+            <label class="od-check-item"><input type="checkbox" value="Taalontwikkelingsachterstand" onchange="updateTags()"> Taalontwikkeling</label>
+            <label class="od-check-item"><input type="checkbox" value="Motorische problematiek" onchange="updateTags()"> Motoriek</label>
+          </div>
+          <div class="tags-rij" id="od-tags"></div>
         </div>
-        <div class="tags-rij" id="od-tags"></div>
       </div>
 
-      <div class="vlabel" style="margin-top:10px">NOTITIES</div>
-      <div class="nwrap">
-        <textarea id="notities" placeholder="Typ of plak je notities vrij in. Bijv: Emma is een vrolijk meisje in groep 4. Ze leest goed (CITO niveau II) maar heeft nog moeite met vermenigvuldigen. Ze werkt graag samen maar is soms snel afgeleid..." maxlength="2000"></textarea>
-        <span class="teller" id="teller" style="right:52px">0 / 2000</span>
-        <button class="mic-knop" onclick="toggleMic('notities',this)" title="Spraak naar tekst">🎤</button>
+      <!-- Notities: flex:1 zodat het de resterende ruimte vult -->
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div class="vlabel">NOTITIES</div>
+        <div class="nwrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
+          <textarea id="notities" maxlength="2000"
+            style="flex:1;min-height:80px;resize:none;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
+            placeholder="Typ of plak je notities vrij in…"></textarea>
+          <span class="teller" id="teller" style="right:52px">0 / 2000</span>
+          <button class="mic-knop" onclick="toggleMic('notities',this)" title="Spraak naar tekst">🎤</button>
+        </div>
       </div>
+
+      <!-- Extra opties: compact horizontaal -->
+      <div>
+        <div class="vlabel" style="margin-bottom:5px">EXTRA GENEREREN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-opp" onclick="toggleExtraOptie('opp')">
+            <input type="checkbox" id="cb-opp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
+            <span style="font-size:12px;color:var(--t);font-weight:500">OPP</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-hp" onclick="toggleExtraOptie('hp')">
+            <input type="checkbox" id="cb-hp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
+            <span style="font-size:12px;color:var(--t);font-weight:500">Handelingsplan</span>
+          </label>
+        </div>
+      </div>
+
     </div>
 
-
-    <div>
-      <div class="vlabel" style="margin-bottom:7px">EXTRA GENEREREN <span style="font-weight:400;color:var(--tz)">— optioneel, op basis van dezelfde notities</span></div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--rand);border-radius:0;cursor:pointer;background:#fff" id="eo-opp" onclick="toggleExtraOptie('opp')">
-          <input type="checkbox" id="cb-opp" style="width:15px;height:15px;accent-color:var(--t);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="event.stopPropagation()">
-          <div>
-            <div style="font-size:13px;color:var(--t);font-weight:500">Ontwikkelingsperspectief <span style="font-size:10px;background:#f5f5f5;color:#222;padding:1px 7px;border-radius:0;font-weight:500;margin-left:4px">OPP</span></div>
-            <div style="font-size:11px;color:var(--tz);margin-top:2px;line-height:1.5">Wettelijk compleet OPP — uitstroombestemming, bevorderende en belemmerende factoren, SMART-doelen en hoorrecht.</div>
-          </div>
-        </label>
-        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--rand);border-radius:0;cursor:pointer;background:#fff" id="eo-hp" onclick="toggleExtraOptie('hp')">
-          <input type="checkbox" id="cb-hp" style="width:15px;height:15px;accent-color:var(--t);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="event.stopPropagation()">
-          <div>
-            <div style="font-size:13px;color:var(--t);font-weight:500">Handelingsplan</div>
-            <div style="font-size:11px;color:var(--tz);margin-top:2px;line-height:1.5">Concrete doelen en aanpak per ondersteuningsbehoefte, gebaseerd op bewezen interventies.</div>
-          </div>
-        </label>
-      </div>
+    <!-- Genereerknop: altijd onderaan vastgezet -->
+    <div style="flex-shrink:0;padding:10px 1.6rem;background:var(--warm);border-top:1px solid var(--warmrand)">
+      <button class="genknop" id="gknop" onclick="genereer()">
+        <div class="spin" id="spin"></div>
+        <span id="ktekst">Genereer ParnasSys-rapport</span>
+      </button>
     </div>
-    <button class="genknop" id="gknop" onclick="genereer()">
-      <div class="spin" id="spin"></div>
-      <span id="ktekst">Genereer ParnasSys-rapport</span>
-    </button>
+
   </div>
 
   <div class="resultaat" id="resultaat" style="height:100%;min-height:0">
