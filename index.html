@@ -158,7 +158,7 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .tab{padding:12px 14px;font-size:12px;font-weight:500;letter-spacing:.04em;color:#888;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:inherit;text-transform:uppercase}
 .tab:hover{color:var(--tm)}
 .tab.actief{color:#3a5a3a;border-bottom-color:#4a7a4a}
-.sectie{display:none}.sectie.actief{display:grid}#tab-notities.actief{display:flex;flex-direction:column;height:calc(100vh - 120px)}
+.sectie{display:none}.sectie.actief{display:grid}#tab-notities.actief{display:flex;flex-direction:column;height:calc(100vh - 120px)}#tab-groepsplan.actief{display:flex!important;flex-direction:column;height:calc(100vh - 120px);overflow-y:auto}#tab-school.actief{display:flex!important;flex-direction:column;height:calc(100vh - 120px);overflow-y:auto}
 .sectie-vol{display:none}.sectie-vol.actief{display:flex}
 
 
@@ -222,6 +222,16 @@ body{padding-bottom:64px}
 
 /* ── Login scherm verbetering ── */
 #login-scherm > div:last-child{width:calc(100% - 32px);max-width:360px;border-radius:0;padding:24px}
+
+'
+    + 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 30px;color:#2a3a2a;font-size:14px;line-height:1.7}'
+    + 'h1{font-size:22px;border-bottom:2px solid #4a7a4a;padding-bottom:10px;margin-bottom:6px}'
+    + '.meta{font-size:12px;color:#888;margin-bottom:30px}'
+    + '.sectie{margin-bottom:22px;page-break-inside:avoid}'
+    + '.sectie-titel{font-size:10px;font-weight:700;letter-spacing:.08em;color:#3a5a3a;margin-bottom:6px;text-transform:uppercase}'
+    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#333;background:#f8f8f8;border-left:3px solid #4a7a4a;padding:10px 14px;border-radius:0'
+    + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}'
+    + '
 
 .aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem;width:100%;flex:1;overflow-y:auto}
 .aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
@@ -362,13 +372,7 @@ const SUPABASE_URL = 'https://ruaorbvprxcnnaltyvpi.supabase.co';
 // Voor de .exe / externe server: 'https://app.jouwdomein.nl'
 const API_BASE = window.__API_BASE__ || '';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1YW9yYnZwcnhjbm5hbHR5dnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMzgxMjEsImV4cCI6MjA5MzcxNDEyMX0.LPHqXtYQj3-qo8x5BUFLcOvWAPuBc1NkpWe1AyNKElk';
-let sb;
-try {
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-} catch(e) {
-  document.getElementById('login-fout').textContent = 'Fout bij laden: Supabase kon niet worden geïnitialiseerd. Controleer je internetverbinding en herlaad de pagina.';
-  throw e;
-}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 let huidigGebruiker = null;
 let huidigToken = null;
 let leerlingen = [];
@@ -430,17 +434,12 @@ function stelLeerlingIn(leerling) {
 }
 
 async function initAuth() {
-  try {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-      huidigGebruiker = session.user;
-      huidigToken = session.access_token;
-      toonApp();
-    } else {
-      toonLogin();
-    }
-  } catch(e) {
-    console.error('Auth fout:', e);
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    huidigGebruiker = session.user;
+    huidigToken = session.access_token;
+    toonApp();
+  } else {
     toonLogin();
   }
   sb.auth.onAuthStateChange((event, session) => {
@@ -618,7 +617,7 @@ function toonLeerlingenLijst() {
       '<div style="margin-bottom:8px">'
       + '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.08em;text-transform:uppercase;padding:4px 14px;background:var(--warm)">' + leerkracht + '</div>'
       + lls.map(l =>
-          '<div class="leerling-item" onclick="selecteerLeerling(\'' + l.id + '\')">'
+          '<div class="leerling-item" onclick="selecteerLeerling('' + l.id + '')">'
           + '<div class="leerling-naam">' + l.voornaam + '</div>'
           + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
           + '</div>'
@@ -627,7 +626,7 @@ function toonLeerlingenLijst() {
     ).join('');
   } else {
     lijst.innerHTML = leerlingen.map(l =>
-      '<div class="leerling-item" onclick="selecteerLeerling(\'' + l.id + '\')">'
+      '<div class="leerling-item" onclick="selecteerLeerling('' + l.id + '')">'
       + '<div class="leerling-naam">' + l.voornaam + '</div>'
       + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
       + '</div>'
@@ -844,7 +843,7 @@ function toonTab(tab, knop) {
   if (knop) knop.classList.add('actief');
   document.querySelectorAll('.sectie, .sectie-vol').forEach(s => {
     s.classList.remove('actief');
-    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid' && s.id !== 'tab-notities') s.style.display = '';
+    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid' && s.id !== 'tab-notities' && s.id !== 'tab-groepsplan' && s.id !== 'tab-school') s.style.display = '';
   });
   const tabInhoud = document.getElementById('tab-inhoud');
   const lvsEl = document.getElementById('tab-lvs');
@@ -900,7 +899,7 @@ function toonTab(tab, knop) {
 </head>
 <body>
 
-<div id="login-scherm" style="display:flex;position:fixed;inset:0;background:var(--warm);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+<div id="login-scherm" style="display:none;position:fixed;inset:0;background:var(--warm);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:20px">
   <div style="text-align:center;margin-bottom:10px">
     <div style="font-family:Georgia,serif;font-size:28px;color:var(--donker)">School van <span style="color:var(--oranje)">morgen</span></div>
     <div style="font-size:13px;color:var(--tz);margin-top:4px">Administratie voor basisscholen</div>
@@ -1708,7 +1707,7 @@ function toonResultaten(data, naam, groep) {
         <button onclick="ouderGeschiedenisToggle(this)" style="background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer;padding:0;text-decoration:underline">Communicatiegeschiedenis tonen</button>
         <div id="ouder-geschiedenis-container" style="display:none;margin-top:8px"></div>
       </div>
-    </div>`;
+    </div>\`;
   r.appendChild(ouder);
 
   // Feedback
