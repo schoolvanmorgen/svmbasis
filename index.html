@@ -605,7 +605,18 @@ function toonLeerlingenLijst() {
     return;
   }
 
-  // IB/directeur: groepeer per leerkracht
+  lijst.innerHTML = '';
+
+  function maakLeerlingEl(l) {
+    const div = document.createElement('div');
+    div.className = 'leerling-item';
+    div.dataset.id = l.id;
+    div.innerHTML = '<div class="leerling-naam">' + l.voornaam + '</div>'
+      + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>';
+    div.addEventListener('click', function() { selecteerLeerling(l.id); });
+    return div;
+  }
+
   if (schoolContext.is_ib && leerlingen.some(l => l.leerkracht_naam)) {
     const perLeerkracht = {};
     leerlingen.forEach(l => {
@@ -613,24 +624,18 @@ function toonLeerlingenLijst() {
       if (!perLeerkracht[naam]) perLeerkracht[naam] = [];
       perLeerkracht[naam].push(l);
     });
-    lijst.innerHTML = Object.entries(perLeerkracht).map(([leerkracht, lls]) =>
-      '<div style="margin-bottom:8px">'
-      + '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.08em;text-transform:uppercase;padding:4px 14px;background:var(--warm)">' + leerkracht + '</div>'
-      + lls.map(l =>
-          '<div class="leerling-item" onclick="selecteerLeerling(\'' + l.id + '\')">'
-          + '<div class="leerling-naam">' + l.voornaam + '</div>'
-          + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
-          + '</div>'
-        ).join('')
-      + '</div>'
-    ).join('');
+    Object.entries(perLeerkracht).forEach(function([leerkracht, lls]) {
+      const groepDiv = document.createElement('div');
+      groepDiv.style.marginBottom = '8px';
+      const kop = document.createElement('div');
+      kop.style.cssText = 'font-size:10px;font-weight:700;color:#888;letter-spacing:.08em;text-transform:uppercase;padding:4px 14px;background:var(--warm)';
+      kop.textContent = leerkracht;
+      groepDiv.appendChild(kop);
+      lls.forEach(l => groepDiv.appendChild(maakLeerlingEl(l)));
+      lijst.appendChild(groepDiv);
+    });
   } else {
-    lijst.innerHTML = leerlingen.map(l =>
-      '<div class="leerling-item" onclick="selecteerLeerling(\'' + l.id + '\')">'
-      + '<div class="leerling-naam">' + l.voornaam + '</div>'
-      + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
-      + '</div>'
-    ).join('');
+    leerlingen.forEach(l => lijst.appendChild(maakLeerlingEl(l)));
   }
 }
 
@@ -1707,23 +1712,43 @@ function toonResultaten(data, naam, groep) {
         <button onclick="ouderGeschiedenisToggle(this)" style="background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer;padding:0;text-decoration:underline">Communicatiegeschiedenis tonen</button>
         <div id="ouder-geschiedenis-container" style="display:none;margin-top:8px"></div>
       </div>
-    </div>\`;
+    </div>`;
   r.appendChild(ouder);
 
   // Feedback
   const fb = document.createElement('div');
   fb.className = 'feedblok';
   fb.style.display = 'block';
-  fb.innerHTML = `
-    <div class="feedtop"><span class="feedtitel">WAS DIT RAPPORT BRUIKBAAR?</span></div>
-    <div class="feedbody">
-      <div class="feedduimen">
-        <button class="dknop" onclick="selecteerDuim('goed',this)">👍 Ja</button>
-        <button class="dknop" onclick="selecteerDuim('matig',this)">👎 Nog niet</button>
-      </div>
-      <textarea style="height:65px;font-size:11px;border:1px solid var(--rand);border-radius:0;padding:8px 10px;width:100%;outline:none" id="feedtekst" placeholder="Wat kan er beter? (optioneel)"></textarea>
-      <button class="feedverstuur" onclick="verstuurFeedback()">Feedback versturen</button>
-    </div>`;
+  const feedTop = document.createElement('div');
+  feedTop.className = 'feedtop';
+  feedTop.innerHTML = '<span class="feedtitel">WAS DIT RAPPORT BRUIKBAAR?</span>';
+  const feedBody = document.createElement('div');
+  feedBody.className = 'feedbody';
+  const duimen = document.createElement('div');
+  duimen.className = 'feedduimen';
+  const btnGoed = document.createElement('button');
+  btnGoed.className = 'dknop';
+  btnGoed.textContent = '👍 Ja';
+  btnGoed.addEventListener('click', function() { selecteerDuim('goed', this); });
+  const btnMatig = document.createElement('button');
+  btnMatig.className = 'dknop';
+  btnMatig.textContent = '👎 Nog niet';
+  btnMatig.addEventListener('click', function() { selecteerDuim('matig', this); });
+  duimen.appendChild(btnGoed);
+  duimen.appendChild(btnMatig);
+  const feedTxt = document.createElement('textarea');
+  feedTxt.style.cssText = 'height:65px;font-size:11px;border:1px solid var(--rand);border-radius:0;padding:8px 10px;width:100%;outline:none';
+  feedTxt.id = 'feedtekst';
+  feedTxt.placeholder = 'Wat kan er beter? (optioneel)';
+  const feedVerstuur = document.createElement('button');
+  feedVerstuur.className = 'feedverstuur';
+  feedVerstuur.textContent = 'Feedback versturen';
+  feedVerstuur.addEventListener('click', verstuurFeedback);
+  feedBody.appendChild(duimen);
+  feedBody.appendChild(feedTxt);
+  feedBody.appendChild(feedVerstuur);
+  fb.appendChild(feedTop);
+  fb.appendChild(feedBody);
   r.appendChild(fb);
 }
 
