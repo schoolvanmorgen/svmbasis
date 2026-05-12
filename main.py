@@ -1179,6 +1179,131 @@ async def haal_rapport_op(
         raise HTTPException(status_code=404, detail="Rapport niet gevonden.")
     return data[0]
 
+@app.get("/rapporten/{leerling_id}/trend")
+async def analyseer_rapport_trend(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Vergelijkt de twee meest recente rapporten van een leerling en detecteert
+    ontwikkelingstrends. Geeft een gestructureerde samenvatting terug die in
+    de frontend getoond kan worden en in de LVS-tijdlijn opgeslagen wordt.
+
+    Detecteert trends in: leerresultaten, werkhouding, sociaal-emotioneel,
+    aandachtspunten (terugkerende patronen), doelen (behaald?).
+    """
+    token = credentials.credentials
+
+    # Haal de laatste 3 rapporten op (we vergelijken de twee meest recente)
+    rapporten = await supabase_get("rapporten", token, {
+        "leerling_id":   f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "order":         "aangemaakt_op.desc",
+        "limit":         "3",
+        "select":        "id,aangemaakt_op,rapport_data"
+    })
+
+    if not rapporten or len(rapporten) < 2:
+        return {
+            "beschikbaar": False,
+            "reden": "Minimaal 2 rapporten nodig voor trendanalyse.",
+            "trend": None
+        }
+
+    huidig  = rapporten[0]
+    vorig   = rapporten[1]
+    h_data  = huidig.get("rapport_data", {}) or {}
+    v_data  = vorig.get("rapport_data",  {}) or {}
+
+    # Bouw prompt voor Claude — geef beide rapportteksten mee
+    def haal_tekst(data: dict, sleutel: str) -> str:
+        val = data.get(sleutel, "")
+        if isinstance(val, list):
+            return "; ".join(
+                str(item.get("praktijk", item.get("behoefte", "")))
+                for item in val if isinstance(item, dict)
+            )
+        return str(val) if val else ""
+
+    secties = ["leerresultaten", "werkhouding", "sociaal_emotioneel",
+               "aandachtspunten", "doelen", "positieve_punten"]
+
+    vorig_tekst   = "\n".join(f"{s}: {haal_tekst(v_data, s)}" for s in secties if haal_tekst(v_data, s))
+    huidig_tekst  = "\n".join(f"{s}: {haal_tekst(h_data, s)}" for s in secties if haal_tekst(h_data, s))
+    vorig_datum   = vorig.get("aangemaakt_op", "")[:10]
+    huidig_datum  = huidig.get("aangemaakt_op", "")[:10]
+
+    if not vorig_tekst or not huidig_tekst:
+        return {"beschikbaar": False, "reden": "Rapporten bevatten onvoldoende tekst.", "trend": None}
+
+    TREND_PROMPT = """Je analyseert twee rapporten van dezelfde leerling en detecteert ontwikkelingstrends.
+
+Retourneer ALLEEN een JSON-object met deze structuur:
+{
+  "samenvatting": "2-3 zinnen over de algehele ontwikkeling tussen beide rapporten",
+  "positief": ["concrete positieve ontwikkeling 1", "positieve ontwikkeling 2"],
+  "aandacht": ["aandachtspunt dat terugkeert of verergert"],
+  "doelen_behaald": true/false/null,
+  "sentiment": "groei" | "stabiel" | "achteruitgang" | "gemengd",
+  "kern": "maximaal 15 woorden die de trend samenvatten"
+}
+
+Wees concreet en feitelijk. Vermijd naam van het kind. Geen algemene loftuitingen.
+Vergelijk alleen wat expliciet in beide rapporten staat."""
+
+    prompt_tekst = f"""Vorig rapport ({vorig_datum}):
+{vorig_tekst}
+
+Huidig rapport ({huidig_datum}):
+{huidig_tekst}"""
+
+    try:
+        import anthropic as _ac
+        client = _ac.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        response = await client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=400,
+            system=TREND_PROMPT,
+            messages=[{"role": "user", "content": prompt_tekst}]
+        )
+        raw  = response.content[0].text.strip()
+        trend = _veilig_json_parse(raw)
+    except Exception as e:
+        logger.warning(f"Trendanalyse mislukt: {e}")
+        return {"beschikbaar": False, "reden": "Analyse mislukt.", "trend": None}
+
+    if not trend:
+        return {"beschikbaar": False, "reden": "Resultaat kon niet worden verwerkt.", "trend": None}
+
+    # Sla de trend op in de LVS-tijdlijn als nieuwe tijdlijnregel
+    try:
+        datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+        sentiment_map = {"groei": "positief", "stabiel": "neutraal",
+                         "achteruitgang": "aandacht", "gemengd": "neutraal"}
+        await _voeg_tijdlijn_toe(
+            leerling_id=leerling_id,
+            leerkracht_id=user["id"],
+            token=token,
+            item={
+                "type":      "rapport",
+                "datum":     datum_nl,
+                "tekst":     f"Trend: {trend.get('kern', trend.get('samenvatting', '')[:80])}",
+                "sentiment": sentiment_map.get(trend.get("sentiment", ""), "neutraal"),
+                "bron":      "trendanalyse"
+            }
+        )
+    except Exception as e:
+        logger.warning(f"Trend->LVS cascade mislukt (stil): {e}")
+
+    return {
+        "beschikbaar": True,
+        "vorig_datum":  vorig_datum,
+        "huidig_datum": huidig_datum,
+        "trend":        trend
+    }
+
+
 @app.post("/rapporten")
 async def sla_rapport_op(
     verzoek: RapportOpslaan,
@@ -1252,20 +1377,44 @@ async def opp(verzoek: OppVerzoek, user=Depends(get_user), credentials: HTTPAuth
         logger.warning(f"OPP JSON parse mislukt: {tekst[:100]}")
         return {"data": None, "tekst": tekst}
 
-    # Cascade: voeg OPP toe aan LVS-tijdlijn
+    # Cascade: voeg OPP toe aan LVS-tijdlijn EN sla uitstroom op als gestructureerd veld
     if verzoek.leerling_id:
         try:
             datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
-            uitstroom = (parsed.get("uitstroombestemming") or parsed.get("uitstroom") or "")[:60]
+            uitstroom = (parsed.get("uitstroombestemming") or parsed.get("uitstroom") or "")[:120]
             tijdlijn_tekst = "OPP gegenereerd." + (f" Uitstroom: {uitstroom}…" if uitstroom else "")
+            token_str = credentials.credentials if hasattr(credentials, "credentials") else ""
+
+            # Tijdlijn
             await _voeg_tijdlijn_toe(
                 leerling_id=verzoek.leerling_id,
                 leerkracht_id=user["id"],
-                token=credentials.credentials if hasattr(credentials, "credentials") else "",
-                item={"type": "opp", "datum": datum_nl, "tekst": tijdlijn_tekst}
+                token=token_str,
+                item={
+                    "type":      "opp",
+                    "datum":     datum_nl,
+                    "tekst":     tijdlijn_tekst,
+                    "sentiment": "neutraal",
+                    "bron":      "opp"
+                }
             )
+
+            # Sla uitstroombestemming op als gestructureerd veld op de leerling
+            # zodat IB/directeur het kan opvragen zonder het OPP-document te openen
+            if uitstroom:
+                opp_meta = {
+                    "uitstroombestemming": uitstroom,
+                    "opp_datum":           datum_nl,
+                    "doelen":              (parsed.get("doelen") or "")[:500],
+                    "evaluatie":           (parsed.get("evaluatie") or "")[:200],
+                }
+                await supabase_patch(
+                    f"leerlingen?id=eq.{verzoek.leerling_id}&leerkracht_id=eq.{user['id']}",
+                    token_str,
+                    {"opp_meta": opp_meta, "bijgewerkt_op": datetime.now(timezone.utc).isoformat()}
+                )
         except Exception as _e:
-            logger.warning(f"Cascade OPP->LVS mislukt (stil): {_e}")
+            logger.warning(f"Cascade OPP->LVS/leerling mislukt (stil): {_e}")
     return {"data": parsed, "tekst": tekst}
 
 # ══════════════════════════════════════════════════════════
@@ -1325,6 +1474,253 @@ async def sla_aanwezigheid_op(item: AanwezigheidItem, user=Depends(get_user), cr
         raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout). Probeer opnieuw.")
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
+
+# ══════════════════════════════════════════════════════════
+# AANWEZIGHEID PATROONDETECTIE
+# ══════════════════════════════════════════════════════════
+
+def _analyseer_aanwezigheidspatroon(registraties: list, leerling_id: str) -> dict | None:
+    """
+    Analyseert de aanwezigheidsregistraties van een leerling over de afgelopen periode.
+    Retourneert een signaalbeschrijving als er een patroon wordt gevonden, anders None.
+
+    Patronen die we detecteren:
+    - Frequent afwezig: 3+ keer afwezig in de laatste 15 schooldagen
+    - Aaneengesloten afwezigheid: 3+ opeenvolgende dagen afwezig
+    - Structureel te laat: 3+ keer te laat in de laatste 15 schooldagen
+    - Gemengd patroon: combinatie van afwezig + te laat
+    """
+    if not registraties:
+        return None
+
+    # Sorteer op datum, nieuwste eerst
+    gesorteerd = sorted(registraties, key=lambda r: r.get("datum", ""), reverse=True)
+
+    # Neem de laatste 20 registraties (≈ 4 weken)
+    recent = gesorteerd[:20]
+    alle = gesorteerd  # voor aaneengesloten detectie
+
+    # Tel per status
+    afwezig_recent  = [r for r in recent if r.get("status") == "afwezig"]
+    te_laat_recent  = [r for r in recent if r.get("status") == "laat"]
+    aanwezig_recent = [r for r in recent if r.get("status") == "aanwezig"]
+
+    n_afwezig  = len(afwezig_recent)
+    n_te_laat  = len(te_laat_recent)
+    n_recent   = len(recent)
+
+    if n_recent == 0:
+        return None
+
+    # ── Patroon 1: Aaneengesloten afwezigheid (3+ dagen op rij) ──
+    max_streak = 0
+    streak      = 0
+    streak_start = None
+    for r in gesorteerd:
+        if r.get("status") == "afwezig":
+            streak += 1
+            if streak_start is None:
+                streak_start = r.get("datum")
+            max_streak = max(max_streak, streak)
+        else:
+            streak = 0
+            streak_start = None
+
+    if max_streak >= 3:
+        return {
+            "type":      "aaneengesloten_afwezig",
+            "ernst":     "aandacht" if max_streak < 5 else "zorg",
+            "kern":      f"{max_streak} opeenvolgende dagen afwezig",
+            "details":   f"Aaneengesloten afwezigheid van {max_streak} dagen gedetecteerd.",
+            "domein":    "algemeen"
+        }
+
+    # ── Patroon 2: Frequent afwezig (3+ van laatste 15 dagen) ──
+    laatste_15 = [r for r in gesorteerd[:15]]
+    afwezig_15 = sum(1 for r in laatste_15 if r.get("status") == "afwezig")
+    if afwezig_15 >= 3:
+        pct = round(afwezig_15 / max(len(laatste_15), 1) * 100)
+        return {
+            "type":    "frequent_afwezig",
+            "ernst":   "aandacht" if afwezig_15 < 5 else "zorg",
+            "kern":    f"{afwezig_15}x afwezig in de laatste {len(laatste_15)} schooldagen ({pct}%)",
+            "details": f"Leerling was {afwezig_15} van de laatste {len(laatste_15)} geregistreerde schooldagen afwezig.",
+            "domein":  "algemeen"
+        }
+
+    # ── Patroon 3: Structureel te laat (3+ van laatste 15 dagen) ──
+    te_laat_15 = sum(1 for r in laatste_15 if r.get("status") == "laat")
+    if te_laat_15 >= 3:
+        return {
+            "type":    "structureel_te_laat",
+            "ernst":   "aandacht",
+            "kern":    f"{te_laat_15}x te laat in de laatste {len(laatste_15)} schooldagen",
+            "details": f"Leerling kwam {te_laat_15} van de laatste {len(laatste_15)} geregistreerde schooldagen te laat.",
+            "domein":  "werkhouding"
+        }
+
+    # ── Patroon 4: Gemengd patroon (afwezig + te laat samen ≥ 4 van 15) ──
+    gemengd_15 = afwezig_15 + te_laat_15
+    if gemengd_15 >= 4:
+        return {
+            "type":    "gemengd_verzuim",
+            "ernst":   "aandacht",
+            "kern":    f"{gemengd_15}x niet volledig aanwezig in de laatste {len(laatste_15)} schooldagen",
+            "details": f"Combinatie: {afwezig_15}x afwezig, {te_laat_15}x te laat in de laatste {len(laatste_15)} dagen.",
+            "domein":  "werkhouding"
+        }
+
+    return None  # Geen patroon gevonden
+
+
+@app.post("/aanwezigheid/analyseer/{leerling_id}")
+async def analyseer_aanwezigheid_leerling(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Analyseert aanwezigheidspatroon van één leerling en slaat een signaal
+    op in de LVS-tijdlijn als er een patroon wordt gevonden.
+    Retourneert het signaal of null.
+    """
+    token = credentials.credentials
+
+    # Haal de laatste 30 registraties op
+    data = await supabase_get("aanwezigheid", token, {
+        "leerling_id":  f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "order":        "datum.desc",
+        "limit":        "30",
+        "select":       "datum,status,reden,opmerking"
+    })
+
+    if not data:
+        return {"signaal": None}
+
+    signaal = _analyseer_aanwezigheidspatroon(data, leerling_id)
+
+    if signaal:
+        # Controleer of we dit signaal al recent hebben toegevoegd
+        # (maximaal 1x per 7 dagen hetzelfde type signaal)
+        lvs_profiel = await supabase_get("lvs_profielen", token, {
+            "leerling_id":  f"eq.{leerling_id}",
+            "leerkracht_id": f"eq.{user['id']}",
+            "select":       "tijdlijn"
+        })
+
+        if lvs_profiel:
+            tijdlijn = lvs_profiel[0].get("tijdlijn") or []
+            from datetime import date, timedelta
+            zeven_dagen_geleden = (date.today() - timedelta(days=7)).strftime("%-d %b %Y")
+
+            # Check of hetzelfde type signaal de afgelopen 7 dagen al staat
+            al_recent = any(
+                item.get("bron") == "aanwezigheid" and
+                item.get("type") == signaal["domein"] and
+                item.get("datum", "") >= zeven_dagen_geleden
+                for item in tijdlijn
+            )
+
+            if not al_recent:
+                datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+                await _voeg_tijdlijn_toe(
+                    leerling_id=leerling_id,
+                    leerkracht_id=user["id"],
+                    token=token,
+                    item={
+                        "type":      signaal["domein"],
+                        "datum":     datum_nl,
+                        "tekst":     signaal["kern"],
+                        "sentiment": signaal["ernst"],
+                        "bron":      "aanwezigheid"
+                    }
+                )
+
+    return {"signaal": signaal}
+
+
+@app.post("/aanwezigheid/analyseer_groep/{groep}")
+async def analyseer_aanwezigheid_groep(
+    groep: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Analyseert aanwezigheid voor alle leerlingen in een groep tegelijk.
+    Retourneert een lijst van signalen per leerling.
+    Wordt aangeroepen na het opslaan van een dag's registraties.
+    """
+    import asyncio
+    token = credentials.credentials
+
+    # Haal alle leerlingen in de groep op
+    leerlingen_data = await supabase_get("leerlingen", token, {
+        "groep":         f"eq.{groep}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "select":        "id,voornaam"
+    })
+
+    if not leerlingen_data:
+        return {"signalen": []}
+
+    signalen = []
+
+    async def analyseer_een(leerling: dict):
+        try:
+            data = await supabase_get("aanwezigheid", token, {
+                "leerling_id":  f"eq.{leerling['id']}",
+                "leerkracht_id": f"eq.{user['id']}",
+                "order":        "datum.desc",
+                "limit":        "30",
+                "select":       "datum,status"
+            })
+            signaal = _analyseer_aanwezigheidspatroon(data or [], leerling["id"])
+            if signaal:
+                # Voeg toe aan LVS-tijdlijn (deduplicatie zit in de helper)
+                lvs_profiel = await supabase_get("lvs_profielen", token, {
+                    "leerling_id":  f"eq.{leerling['id']}",
+                    "leerkracht_id": f"eq.{user['id']}",
+                    "select":       "tijdlijn"
+                })
+                if lvs_profiel:
+                    tijdlijn = lvs_profiel[0].get("tijdlijn") or []
+                    from datetime import date, timedelta
+                    grens = (date.today() - timedelta(days=7)).strftime("%-d %b %Y")
+                    al_recent = any(
+                        item.get("bron") == "aanwezigheid" and
+                        item.get("datum", "") >= grens
+                        for item in tijdlijn
+                    )
+                    if not al_recent:
+                        datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+                        await _voeg_tijdlijn_toe(
+                            leerling_id=leerling["id"],
+                            leerkracht_id=user["id"],
+                            token=token,
+                            item={
+                                "type":      signaal["domein"],
+                                "datum":     datum_nl,
+                                "tekst":     signaal["kern"],
+                                "sentiment": signaal["ernst"],
+                                "bron":      "aanwezigheid"
+                            }
+                        )
+                signalen.append({
+                    "leerling_id":   leerling["id"],
+                    "voornaam":      leerling["voornaam"],
+                    "signaal":       signaal
+                })
+        except Exception as e:
+            logger.warning(f"Patroonanalyse voor {leerling['id']} mislukt: {e}")
+
+    # Analyseer alle leerlingen parallel (max 8 tegelijk)
+    groepjes = [leerlingen_data[i:i+8] for i in range(0, len(leerlingen_data), 8)]
+    for groepje in groepjes:
+        await asyncio.gather(*[analyseer_een(l) for l in groepje])
+
+    return {"signalen": [s for s in signalen if s["signaal"]]}
+
 
 @app.post("/handelingsplan")
 async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -1991,6 +2387,134 @@ async def haal_volledig_profiel_op(
 
 
 # ══════════════════════════════════════════════════════════
+# PROACTIEVE SIGNALERING — stilte-alerts
+# ══════════════════════════════════════════════════════════
+
+@app.get("/signalen/groep/{groep}")
+async def haal_groep_signalen_op(
+    groep: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Scant alle leerlingen in een groep op stilte-signalen:
+    1. Geen notitie in de laatste 21 dagen
+    2. Geen rapport in de laatste 90 dagen
+    3. Toetsresultaten ouder dan 120 dagen
+    """
+    import asyncio
+    from datetime import date as _date, timedelta
+
+    token   = credentials.credentials
+    vandaag = _date.today()
+
+    NOTITIE_DAGEN = 21
+    RAPPORT_DAGEN = 90
+    TOETS_DAGEN   = 120
+
+    leerlingen_data = await supabase_get("leerlingen", token, {
+        "groep":         f"eq.{groep}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "select":        "id,voornaam,groep"
+    })
+    if not leerlingen_data:
+        return {"signalen": [], "groep": groep, "totaal": 0}
+
+    signalen = []
+
+    async def analyseer_leerling(leerling: dict):
+        lid  = leerling["id"]
+        naam = leerling["voornaam"]
+        leerling_signalen = []
+
+        notitie_taak = supabase_get("leerling_notities", token, {
+            "leerling_id": f"eq.{lid}", "leerkracht_id": f"eq.{user['id']}",
+            "order": "aangemaakt_op.desc", "limit": "1", "select": "aangemaakt_op"
+        })
+        rapport_taak = supabase_get("rapporten", token, {
+            "leerling_id": f"eq.{lid}", "leerkracht_id": f"eq.{user['id']}",
+            "order": "aangemaakt_op.desc", "limit": "1", "select": "aangemaakt_op"
+        })
+        toets_taak = supabase_get("toetsresultaten", token, {
+            "leerling_id": f"eq.{lid}", "leerkracht_id": f"eq.{user['id']}",
+            "order": "afname_datum.desc", "limit": "1", "select": "afname_datum"
+        })
+
+        n_data, r_data, t_data = await asyncio.gather(
+            notitie_taak, rapport_taak, toets_taak, return_exceptions=True
+        )
+
+        # Signaal 1: geen notitie
+        laatste_notitie = None
+        if isinstance(n_data, list) and n_data:
+            try: laatste_notitie = _date.fromisoformat(n_data[0]["aangemaakt_op"][:10])
+            except (ValueError, KeyError): pass
+        if laatste_notitie:
+            dagen = (vandaag - laatste_notitie).days
+            if dagen >= NOTITIE_DAGEN:
+                leerling_signalen.append({
+                    "type": "stilte_notitie",
+                    "urgentie": "hoog" if dagen >= 42 else "medium",
+                    "dagen": dagen,
+                    "tekst": f"Geen notitie in {dagen} dagen"
+                })
+        else:
+            leerling_signalen.append({
+                "type": "stilte_notitie", "urgentie": "medium",
+                "dagen": 999, "tekst": "Nog geen notities geregistreerd"
+            })
+
+        # Signaal 2: geen rapport
+        laatste_rapport = None
+        if isinstance(r_data, list) and r_data:
+            try: laatste_rapport = _date.fromisoformat(r_data[0]["aangemaakt_op"][:10])
+            except (ValueError, KeyError): pass
+        if laatste_rapport:
+            dagen = (vandaag - laatste_rapport).days
+            if dagen >= RAPPORT_DAGEN:
+                leerling_signalen.append({
+                    "type": "stilte_rapport",
+                    "urgentie": "hoog" if dagen >= 180 else "medium",
+                    "dagen": dagen,
+                    "tekst": f"Geen rapport in {dagen} dagen"
+                })
+        else:
+            leerling_signalen.append({
+                "type": "stilte_rapport", "urgentie": "laag",
+                "dagen": 999, "tekst": "Nog geen rapport gegenereerd"
+            })
+
+        # Signaal 3: verouderde toets
+        if isinstance(t_data, list) and t_data:
+            try:
+                laatste_toets = _date.fromisoformat(t_data[0]["afname_datum"][:10])
+                dagen = (vandaag - laatste_toets).days
+                if dagen >= TOETS_DAGEN:
+                    leerling_signalen.append({
+                        "type": "verouderde_toets", "urgentie": "medium",
+                        "dagen": dagen, "tekst": f"Toetsresultaten {dagen} dagen oud"
+                    })
+            except (ValueError, KeyError): pass
+
+        if leerling_signalen:
+            volgorde = {"hoog": 0, "medium": 1, "laag": 2}
+            leerling_signalen.sort(key=lambda s: volgorde.get(s["urgentie"], 9))
+            signalen.append({
+                "leerling_id": lid, "voornaam": naam,
+                "groep": leerling.get("groep", groep), "signalen": leerling_signalen
+            })
+
+    groepjes = [leerlingen_data[i:i+8] for i in range(0, len(leerlingen_data), 8)]
+    for groepje in groepjes:
+        await asyncio.gather(*[analyseer_leerling(l) for l in groepje])
+
+    score_map = {"hoog": 10, "medium": 5, "laag": 1}
+    signalen.sort(key=lambda l: -sum(score_map.get(s["urgentie"], 0) for s in l["signalen"]))
+
+    return {"signalen": signalen, "groep": groep, "totaal": len(signalen)}
+
+
+# ══════════════════════════════════════════════════════════
 # CASCADE HELPER — tijdlijn bijwerken vanuit elke module
 # ══════════════════════════════════════════════════════════
 
@@ -2095,6 +2619,94 @@ async def haal_groepsplan_op(groep: str, schooljaar: str = "2025-2026", user=Dep
     plan = data[0]
     rijen = await supabase_get("groepsplan_rijen", token, {"groepsplan_id": f"eq.{plan['id']}", "select": "*"})
     return {**plan, "rijen": rijen or []}
+
+@app.get("/groepsplan/suggestie/{groep}")
+async def genereer_groepsplan_suggestie(
+    groep: str,
+    vakgebied: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Genereert een instructieniveau-suggestie per leerling voor een vakgebied,
+    gebaseerd op hun LVS-scores. Overschrijft niets — puur een voorstel.
+
+    Scoregrenzen (CITO I-V schaal, 0-100):
+    - ≥ 78  (I/I+)      → onafhankelijk
+    - 63-77 (II)         → basis
+    - 32-62 (III/IV)     → intensief
+    - < 32  (V/V-)       → individueel
+    - 0 / geen score     → geen suggestie (leerling nog niet getoetst)
+    """
+    if vakgebied not in GELDIGE_VAKGEBIEDEN:
+        raise HTTPException(status_code=400, detail=f"Ongeldig vakgebied: {vakgebied}")
+
+    token = credentials.credentials
+
+    # Haal alle leerlingen in de groep op
+    leerlingen_data = await supabase_get("leerlingen", token, {
+        "groep":         f"eq.{groep}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "select":        "id,voornaam"
+    })
+    if not leerlingen_data:
+        return {"suggesties": [], "zonder_score": []}
+
+    # Haal LVS-profielen op voor alle leerlingen in de groep
+    leerling_ids = [l["id"] for l in leerlingen_data]
+
+    # Supabase 'in' filter
+    ids_filter = "(" + ",".join(leerling_ids) + ")"
+    profielen = await supabase_get("lvs_profielen", token, {
+        "leerling_id":   f"in.{ids_filter}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "select":        "leerling_id,scores"
+    })
+
+    # Maak een lookup: leerling_id → scores
+    score_lookup = {p["leerling_id"]: p.get("scores", {}) for p in (profielen or [])}
+
+    def score_naar_niveau(score: int | None) -> str | None:
+        """Zet een 0-100 score om naar een instructieniveau."""
+        if not score or score == 0:
+            return None  # Geen score beschikbaar
+        if score >= 78:
+            return "onafhankelijk"
+        elif score >= 63:
+            return "basis"
+        elif score >= 32:
+            return "intensief"
+        else:
+            return "individueel"
+
+    suggesties = []
+    zonder_score = []
+
+    for leerling in leerlingen_data:
+        scores = score_lookup.get(leerling["id"], {})
+        score = scores.get(vakgebied, 0)
+        niveau = score_naar_niveau(score)
+
+        if niveau:
+            suggesties.append({
+                "leerling_id": leerling["id"],
+                "voornaam":    leerling["voornaam"],
+                "niveau":      niveau,
+                "score":       score
+            })
+        else:
+            zonder_score.append({
+                "leerling_id": leerling["id"],
+                "voornaam":    leerling["voornaam"]
+            })
+
+    return {
+        "suggesties":    suggesties,
+        "zonder_score":  zonder_score,
+        "vakgebied":     vakgebied,
+        "groep":         groep
+    }
+
 
 @app.put("/groepsplan")
 async def sla_groepsplan_op(plan: GroepsplanOpslaan, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):

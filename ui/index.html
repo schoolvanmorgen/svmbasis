@@ -757,6 +757,76 @@ async function laadRapportgeschiedenis(leerlingId) {
       <button onclick="event.stopPropagation();verwijderRapport('${r.id}')" style="background:none;border:none;color:var(--tz);cursor:pointer;font-size:11px">✕</button>
     </div>`;
   }).join('');
+
+  // Als er 2+ rapporten zijn: haal automatisch de trend op
+  if (rapporten.length >= 2) {
+    toonRapportTrend(leerlingId);
+  } else {
+    const trendEl = document.getElementById('rapport-trend-balk');
+    if (trendEl) trendEl.style.display = 'none';
+  }
+}
+
+async function toonRapportTrend(leerlingId) {
+  const trendEl = document.getElementById('rapport-trend-balk');
+  if (!trendEl) return;
+
+  trendEl.style.display = 'block';
+  trendEl.innerHTML = '<div style="color:var(--tz);font-size:11px;padding:8px 0">Trendanalyse laden…</div>';
+
+  try {
+    const res = await fetch(API_BASE + '/rapporten/' + leerlingId + '/trend', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+
+    if (!data.beschikbaar || !data.trend) {
+      trendEl.style.display = 'none';
+      return;
+    }
+
+    const trend   = data.trend;
+    const kleuren = {
+      groei:        { bg: '#f0faf0', rand: '#c0e0c0', tekst: '#2d6a2d', icoon: '↑' },
+      stabiel:      { bg: '#f5f5f5', rand: '#ddd',    tekst: '#555',    icoon: '→' },
+      achteruitgang:{ bg: '#fff5f5', rand: '#fca5a5', tekst: '#991b1b', icoon: '↓' },
+      gemengd:      { bg: '#fffbeb', rand: '#fcd34d', tekst: '#92400e', icoon: '~' },
+    };
+    const k = kleuren[trend.sentiment] || kleuren.stabiel;
+
+    // Bouw trendkaart
+    let positiefHtml = '';
+    if (trend.positief && trend.positief.length) {
+      positiefHtml = '<div style="margin-top:6px;font-size:11px;color:#2d6a2d">'
+        + trend.positief.map(function(p) { return '✓ ' + p; }).join('<br>')
+        + '</div>';
+    }
+    let aandachtHtml = '';
+    if (trend.aandacht && trend.aandacht.length) {
+      aandachtHtml = '<div style="margin-top:4px;font-size:11px;color:#92400e">'
+        + trend.aandacht.map(function(a) { return '· ' + a; }).join('<br>')
+        + '</div>';
+    }
+    const periodeHtml = data.vorig_datum && data.huidig_datum
+      ? '<div style="font-size:10px;color:#999;margin-bottom:4px">'
+        + new Date(data.vorig_datum).toLocaleDateString('nl-NL')
+        + ' → '
+        + new Date(data.huidig_datum).toLocaleDateString('nl-NL')
+        + '</div>'
+      : '';
+
+    trendEl.style.cssText = 'display:block;background:' + k.bg + ';border:1px solid ' + k.rand + ';padding:10px 12px;margin-bottom:8px;border-radius:0';
+    trendEl.innerHTML = periodeHtml
+      + '<div style="font-size:11px;font-weight:700;color:' + k.tekst + ';margin-bottom:3px">'
+      + k.icoon + ' Trendanalyse: ' + (trend.kern || '')
+      + '</div>'
+      + '<div style="font-size:11px;color:' + k.tekst + ';line-height:1.5">' + (trend.samenvatting || '') + '</div>'
+      + positiefHtml
+      + aandachtHtml;
+  } catch(e) {
+    trendEl.style.display = 'none';
+  }
 }
 
 async function slaRapportOp(data) {
@@ -1179,6 +1249,9 @@ function toonTab(tab, knop) {
     <div class="vlabel" style="margin-bottom:6px">RAPPORTGESCHIEDENIS</div>
     <div id="rapport-geschiedenis" style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--tz)">Selecteer een leerling.</div>
   </div>
+  <div style="margin-top:12px">
+    <div id="rapport-trend-balk" style="display:none"></div>
+  </div>
 </div>
 <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden">
 <div class="app" style="display:contents">
@@ -1327,10 +1400,12 @@ function toonTab(tab, knop) {
       </div>
     </div>
     <div><div class="vlabel">NOTITIES</div><textarea id="gp-notities" rows="3" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical" placeholder="Algemene opmerkingen bij dit groepsplan..."></textarea></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="genknop" onclick="gpOpslaan()" style="flex:1"><div class="spin" id="gp-spin" style="display:none"></div><span id="gp-ktekst">Opslaan</span></button>
-      <button onclick="gpExportPrint()" style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 16px;font-size:12px;cursor:pointer;font-family:inherit">&#x1F5A8; Afdrukken</button>
+      <button onclick="gpSuggestie()" id="gp-suggestie-knop" style="background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:10px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap" title="Vul niveaus in op basis van LVS-scores">↗ Suggestie uit LVS</button>
+      <button onclick="gpExportPrint()" style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 16px;font-size:12px;cursor:pointer;font-family:inherit">🖨 Afdrukken</button>
     </div>
+    <div id="gp-suggestie-balk" style="display:none;font-size:12px;padding:10px 12px;background:#f0faf0;border:1px solid #c0e0c0;color:#2d6a2d;line-height:1.6"></div>
   </div>
   <div class="resultaat" id="gp-resultaat"><div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep en vakgebied</div></div></div>
 </div>
@@ -1415,6 +1490,9 @@ function toonTab(tab, knop) {
           <button onclick="lvsNaarTab('handelingsplan')" style="font-size:11px;padding:6px 12px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)">→ Handelingsplan</button>
         </div>
       </div>
+
+      <!-- Signalenbalk — toont stilte-alerts voor de huidige leerling -->
+      <div id="lvs-signalen-balk" style="display:none;border-bottom:1px solid var(--warmrand);background:#fffbeb;padding:8px 18px;flex-shrink:0"></div>
 
       <!-- Sub-tabs -->
       <div class="lvs-tabs" style="flex-shrink:0">
@@ -2684,10 +2762,18 @@ function lvsRenderLijst(lijst) {
     return;
   }
   el.innerHTML = lijst.map(l => {
-    const actief = lvsHuidig && lvsHuidig.id === l.id;
+    const actief   = lvsHuidig && lvsHuidig.id === l.id;
+    const signalen = _lvsSignalen[l.id] || [];
+    const hoogste  = signalen.length > 0 ? signalen[0] : null;
+    const badgeTekst = hoogste ? (hoogste.urgentie === 'hoog' ? '⚠' : '!') : '';
+    const badgeKleur = hoogste ? (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') : '';
+    const badgeHtml  = badgeTekst
+      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + badgeKleur + ';flex-shrink:0" title="' + hoogste.tekst + '">' + badgeTekst + '</span>'
+      : '';
     return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" onclick="lvsSelecteer(' + JSON.stringify(l.id) + ')">'
       + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
       + '<div class="lvs-item-info"><div class="lvs-item-naam">' + l.naam + '</div><div class="lvs-item-groep">Groep ' + (l.groep || '?') + '</div></div>'
+      + badgeHtml
       + '</div>';
   }).join('');
 }
@@ -2715,10 +2801,23 @@ async function lvsSelecteer(id) {
   document.getElementById('lvs-meta').textContent = 'Groep ' + (lvsHuidig.groep || '?') + ' · Schooljaar 2025–2026';
   const acties = document.getElementById('lvs-acties');
   if (acties) acties.style.display = 'flex';
+
+  // Toon uitstroombestemming als het beschikbaar is (uit OPP)
+  const oppMeta = basis.opp_meta || basis.opp_meta_json || null;
+  const metaEl  = document.getElementById('lvs-meta');
+  if (oppMeta && oppMeta.uitstroombestemming && metaEl) {
+    metaEl.innerHTML = 'Groep ' + (lvsHuidig.groep || '?') + ' · Schooljaar 2025–2026'
+      + ' <span style="display:inline-block;margin-left:8px;padding:2px 8px;background:#e8f0fe;color:#1a3a8a;font-size:10px;font-weight:600;letter-spacing:.03em" title="Uitstroombestemming uit OPP van ' + (oppMeta.opp_datum || '') + '">'
+      + '→ ' + oppMeta.uitstroombestemming.slice(0, 50) + (oppMeta.uitstroombestemming.length > 50 ? '…' : '')
+      + '</span>';
+  }
   lvsRenderLijst(lvsLeerlingen);
   lvsRenderDomeinen();
   lvsRenderRadar();
   lvsRenderTijdlijn();
+
+  // Toon signalen voor deze leerling als die al geladen zijn
+  lvsRenderSignalenBalk(id);
 
   // Stap 2: laad profiel op de achtergrond als het niet in cache zit
   // Zodra het binnenkomt update de UI stil — gebruiker merkt geen wachttijd
@@ -2847,7 +2946,7 @@ function lvsRenderTijdlijn() {
   const sentimentIcoon = { positief:'↑', neutraal:'·', aandacht:'!' };
   // Kleur per type voor de dot
   const dotKleur = {
-    rapport:'#2a3a2a', handelingsplan:'#3a4a2a', opp:'#2a3a4a',
+    rapport:'#2a3a2a', handelingsplan:'#3a4a2a', opp:'#2a3a4a', aanwezigheid:'#1a4a8a',
     sociaal:'#5a3a7a', werkhouding:'#4a7a4a', executief:'#7a4a3a',
     groeimeter:'#3a6a6a', toets:'#1a4a8a', algemeen:'#666'
   };
@@ -2857,7 +2956,8 @@ function lvsRenderTijdlijn() {
     const kleur  = dotKleur[item.type] || '#4a7a4a';
     const sKleur = sentimentKleur[item.sentiment] || '#555';
     const sIcon  = item.sentiment ? (sentimentIcoon[item.sentiment] || '·') : '';
-    const bron   = item.bron === 'notitie' ? ' · uit notitie' : '';
+    const bronLabels = { notitie:'uit notitie', aanwezigheid:'aanwezigheidssignaal', rapport:'rapport', toets:'toets' };
+    const bron = item.bron && bronLabels[item.bron] ? ' · ' + bronLabels[item.bron] : '';
     return '<div class="lvs-tl-item">'
       + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0">' + (item.type==='rapport'?'R':item.type==='toets'?'T':item.type==='opp'?'O':'N') + '</div>'
       + '<div class="lvs-tl-inhoud" style="flex:1;min-width:0">'
@@ -2959,10 +3059,12 @@ function lvsInitVanuitLeerlingen() {
   }));
 }
 
+// Globale cache voor signalen per leerling_id
+let _lvsSignalen = {};
+
 async function lvsInit() {
   if (!huidigToken) { lvsRenderLijst([]); return; }
 
-  // Gebruik de bestaande leerlingenlijst als die er al is, anders wacht op laadLeerlingen
   if (leerlingen.length > 0) {
     lvsInitVanuitLeerlingen();
   } else {
@@ -2972,12 +3074,77 @@ async function lvsInit() {
 
   lvsRenderLijst(lvsLeerlingen);
 
-  // Selecteer de leerling die al actief is (vanuit rapport-tab), anders de eerste
   const actieveId = window._huidigeLeerlingId;
   const startId = (actieveId && lvsLeerlingen.find(l => l.id === actieveId))
     ? actieveId
     : (lvsLeerlingen.length > 0 ? lvsLeerlingen[0].id : null);
   if (startId) lvsSelecteer(startId);
+
+  // Laad signalen op de achtergrond voor alle groepen in de lijst
+  lvsLaadSignalen();
+}
+
+async function lvsLaadSignalen() {
+  if (!huidigToken || !lvsLeerlingen.length) return;
+
+  // Bepaal unieke groepen
+  const groepen = [...new Set(lvsLeerlingen.map(l => l.groep).filter(Boolean))];
+
+  for (const groep of groepen) {
+    try {
+      const res = await fetch(API_BASE + '/signalen/groep/' + groep, {
+        headers: { 'Authorization': 'Bearer ' + huidigToken }
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const signalen = data.signalen || [];
+
+      // Sla op per leerling_id
+      signalen.forEach(function(s) {
+        _lvsSignalen[s.leerling_id] = s.signalen;
+      });
+
+      // Herrender de lijst zodat badges zichtbaar worden
+      lvsRenderLijst(lvsLeerlingen);
+
+      // Als er een actieve leerling is, update diens signaalbalk
+      if (lvsHuidig && _lvsSignalen[lvsHuidig.id]) {
+        lvsRenderSignalenBalk(lvsHuidig.id);
+      }
+    } catch(e) {
+      // Stil falen — signalen zijn optioneel
+    }
+  }
+}
+
+function lvsRenderSignalenBalk(leerlingId) {
+  const balk = document.getElementById('lvs-signalen-balk');
+  if (!balk) return;
+
+  const signalen = _lvsSignalen[leerlingId];
+  if (!signalen || !signalen.length) {
+    balk.style.display = 'none';
+    return;
+  }
+
+  const urgentieKleur = {
+    hoog:   { bg: '#fff5f5', rand: '#fca5a5', tekst: '#991b1b', icoon: '⚠' },
+    medium: { bg: '#fffbeb', rand: '#fcd34d', tekst: '#92400e', icoon: '!' },
+    laag:   { bg: '#f5f5f5', rand: '#ddd',    tekst: '#666',    icoon: '·' },
+  };
+
+  const items = signalen.map(function(s) {
+    const k = urgentieKleur[s.urgentie] || urgentieKleur.laag;
+    return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:' + k.bg + ';border:1px solid ' + k.rand + ';color:' + k.tekst + ';font-size:11px;font-weight:500">'
+      + k.icoon + ' ' + s.tekst
+      + '</span>';
+  }).join('');
+
+  balk.style.display = 'block';
+  balk.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">'
+    + '<span style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-right:2px">SIGNALEN</span>'
+    + items
+    + '</div>';
 }
 
 
@@ -3402,10 +3569,12 @@ function aawAlleAanwezig() {
 
 async function aawSlaOp() {
   if (!huidigToken || !aawGeselecteerdeKlas) return;
-  const sleutel = aawDatumSleutel(aawDatum);
-  const dagData = aawRegistraties[sleutel] || {};
+  const sleutel    = aawDatumSleutel(aawDatum);
+  const dagData    = aawRegistraties[sleutel] || {};
   const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
+  const balk = document.getElementById('aaw-export-balk');
 
+  // ── Stap 1: sla alle registraties op ──────────────────────
   const resultaten = await Promise.allSettled(klasLeerlingen.map(function(l) {
     const d = dagData[l.id] || { status: 'onbekend', reden: '', opmerking: '' };
     return fetch(API_BASE + '/aanwezigheid', {
@@ -3419,30 +3588,77 @@ async function aawSlaOp() {
   }));
 
   const mislukt = resultaten.filter(function(r) { return r.status === 'rejected'; });
-  const balk = document.getElementById('aaw-export-balk');
-  const datumEl = document.getElementById('aaw-export-datum');
 
   if (!balk) return;
 
-  if (mislukt.length === 0) {
-    // Alles opgeslagen — groene bevestiging
-    balk.style.background = 'var(--warm)';
-    balk.style.borderColor = 'var(--warmrand)';
-    balk.style.color = '';
-    balk.innerHTML = '\u2713 Opgeslagen voor <span id="aaw-export-datum">' + aawDatumTekst(aawDatum) + '</span>';
-  } else {
-    // Gedeeltelijk of volledig mislukt — rode melding
+  if (mislukt.length > 0) {
     const gelukt = resultaten.length - mislukt.length;
-    balk.style.background = '#fef2f2';
-    balk.style.borderColor = '#fecaca';
-    balk.style.color = '#991b1b';
-    balk.innerHTML = '\u26a0 ' + mislukt.length + ' van de ' + resultaten.length + ' registraties niet opgeslagen. '
+    balk.style.cssText = 'display:block;background:#fef2f2;border-color:#fecaca;color:#991b1b;padding:10px 24px;font-size:12px;flex-shrink:0';
+    balk.innerHTML = '⚠ ' + mislukt.length + ' van de ' + resultaten.length + ' registraties niet opgeslagen. '
       + (gelukt > 0 ? gelukt + ' wel opgeslagen. ' : '')
       + 'Controleer je verbinding en probeer opnieuw.';
+    setTimeout(function() { balk.style.display = 'none'; }, 6000);
+    return; // Niet verder analyseren als opslaan mislukt
   }
 
-  balk.style.display = 'block';
-  setTimeout(function() { balk.style.display = 'none'; }, mislukt.length > 0 ? 6000 : 3000);
+  // ── Stap 2: patroondetectie op de achtergrond ─────────────
+  // Toon direct bevestiging, analyseer daarna stil
+  balk.style.cssText = 'display:block;background:var(--warm);border-color:var(--warmrand);color:var(--t);padding:10px 24px;font-size:12px;flex-shrink:0';
+  balk.innerHTML = '✓ Opgeslagen voor ' + aawDatumTekst(aawDatum) + ' — aanwezigheidspatronen worden geanalyseerd…';
+
+  try {
+    const analyseRes = await fetch(API_BASE + '/aanwezigheid/analyseer_groep/' + aawGeselecteerdeKlas, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+
+    if (analyseRes.ok) {
+      const analyseData = await analyseRes.json();
+      const signalen = analyseData.signalen || [];
+
+      if (signalen.length === 0) {
+        // Geen patronen — gewone bevestiging
+        balk.innerHTML = '✓ Opgeslagen voor ' + aawDatumTekst(aawDatum);
+        setTimeout(function() { balk.style.display = 'none'; }, 3000);
+      } else {
+        // Patronen gevonden — toon melding met namen
+        aawToonSignalen(signalen, balk);
+      }
+    } else {
+      // Analyse mislukt — toon gewoon de opslabevestiging
+      balk.innerHTML = '✓ Opgeslagen voor ' + aawDatumTekst(aawDatum);
+      setTimeout(function() { balk.style.display = 'none'; }, 3000);
+    }
+  } catch(e) {
+    // Stil falen — analyse is optioneel
+    balk.innerHTML = '✓ Opgeslagen voor ' + aawDatumTekst(aawDatum);
+    setTimeout(function() { balk.style.display = 'none'; }, 3000);
+  }
+}
+
+function aawToonSignalen(signalen, balk) {
+  const ernstKleur = {
+    zorg:      { bg: '#fff5f5', rand: '#fca5a5', tekst: '#991b1b', icoon: '⚠' },
+    aandacht:  { bg: '#fffbeb', rand: '#fcd34d', tekst: '#92400e', icoon: '!' },
+  };
+
+  const regels = signalen.map(function(s) {
+    const sig = s.signaal;
+    const stijl = ernstKleur[sig.ernst] || ernstKleur.aandacht;
+    return '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 12px;background:' + stijl.bg + ';border:1px solid ' + stijl.rand + ';margin-bottom:6px">'
+      + '<span style="font-weight:700;color:' + stijl.tekst + ';flex-shrink:0">' + stijl.icoon + '</span>'
+      + '<div style="flex:1">'
+      + '<span style="font-weight:600;color:' + stijl.tekst + '">' + s.voornaam + '</span>'
+      + ' — <span style="color:' + stijl.tekst + '">' + sig.kern + '</span>'
+      + '<div style="font-size:10px;color:#666;margin-top:2px">Toegevoegd aan LVS-tijdlijn van ' + s.voornaam + '</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  balk.style.cssText = 'display:block;padding:12px 24px;font-size:12px;flex-shrink:0;background:#fff;border-bottom:1px solid var(--warmrand)';
+  balk.innerHTML = '<div style="font-weight:600;color:var(--t);margin-bottom:8px">✓ Opgeslagen · ' + signalen.length + ' aanwezigheidsignaal' + (signalen.length > 1 ? 'en' : '') + ' gedetecteerd:</div>'
+    + regels
+    + '<button onclick="this.parentElement.style.display='none'" style="margin-top:8px;font-size:11px;padding:4px 12px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Sluiten</button>';
 }
 
 function aawExporteer() {
@@ -3813,6 +4029,100 @@ function gpWerkSamenvattingBij() {
   });
   if (telling.geen) html += '<div style="background:#f5f5f5;color:#888;padding:4px 10px;font-size:11px;border-radius:4px">Nog in te delen: ' + telling.geen + '</div>';
   samenvatting.innerHTML = html;
+}
+
+async function gpSuggestie() {
+  const groep    = document.getElementById('gp-groep').value;
+  const vak      = gpHuidigVak;
+  const balk     = document.getElementById('gp-suggestie-balk');
+  const knop     = document.getElementById('gp-suggestie-knop');
+
+  if (!groep) {
+    alert('Kies eerst een groep.');
+    return;
+  }
+
+  if (knop) { knop.textContent = 'Laden…'; knop.disabled = true; }
+  if (balk) balk.style.display = 'none';
+
+  try {
+    const res = await fetch(
+      API_BASE + '/groepsplan/suggestie/' + groep + '?vakgebied=' + vak,
+      { headers: { 'Authorization': 'Bearer ' + huidigToken } }
+    );
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+
+    const suggesties   = data.suggesties || [];
+    const zonderScore  = data.zonder_score || [];
+
+    if (!suggesties.length && !zonderScore.length) {
+      if (balk) {
+        balk.style.display = 'block';
+        balk.style.background = '#fff5f5';
+        balk.style.borderColor = '#fca5a5';
+        balk.style.color = '#991b1b';
+        balk.textContent = 'Geen leerlingen gevonden in groep ' + groep + '.';
+      }
+      return;
+    }
+
+    if (!suggesties.length) {
+      if (balk) {
+        balk.style.display = 'block';
+        balk.textContent = 'Geen LVS-scores beschikbaar voor ' + gpHuidigVak + ' in groep ' + groep + '. Registreer eerst toetsresultaten in het LVS.';
+      }
+      return;
+    }
+
+    // ── Pas gpData aan op basis van de suggesties ──────────
+    // Overschrijf ALLEEN leerlingen zonder bestaande indeling
+    // Leerlingen die al ingedeeld zijn blijven ongewijzigd
+    let nieuw = 0;
+    let overgeslagen = 0;
+    suggesties.forEach(function(s) {
+      if (!gpData[s.leerling_id]) gpData[s.leerling_id] = {};
+      const bestaand = gpData[s.leerling_id][vak];
+      if (!bestaand) {
+        gpData[s.leerling_id][vak] = s.niveau;
+        nieuw++;
+      } else {
+        overgeslagen++;
+      }
+    });
+
+    // Herrender de tabel
+    gpRenderTabel();
+
+    // Toon samenvatting
+    if (balk) {
+      balk.style.display     = 'block';
+      balk.style.background  = '#f0faf0';
+      balk.style.borderColor = '#c0e0c0';
+      balk.style.color       = '#2d6a2d';
+
+      const niveauTelling = { onafhankelijk:0, basis:0, intensief:0, individueel:0 };
+      suggesties.forEach(function(s) { if (niveauTelling[s.niveau] !== undefined) niveauTelling[s.niveau]++; });
+
+      let tekst = '↗ Suggestie toegepast voor ' + nieuw + ' leerling' + (nieuw !== 1 ? 'en' : '') + ' ';
+      tekst += '(' + Object.entries(niveauTelling).filter(([,v]) => v > 0).map(([k,v]) => GP_NIVEAU_LABELS[k] + ': ' + v).join(', ') + ').';
+      if (overgeslagen > 0) tekst += ' ' + overgeslagen + ' leerling' + (overgeslagen !== 1 ? 'en' : '') + ' al ingedeeld — niet gewijzigd.';
+      if (zonderScore.length > 0) tekst += ' ' + zonderScore.length + ' leerling' + (zonderScore.length !== 1 ? 'en' : '') + ' zonder LVS-score voor dit vak: ' + zonderScore.map(function(l) { return l.voornaam; }).join(', ') + '.';
+      balk.textContent = tekst;
+      setTimeout(function() { balk.style.display = 'none'; }, 10000);
+    }
+
+  } catch(e) {
+    if (balk) {
+      balk.style.display = 'block';
+      balk.style.background = '#fff5f5';
+      balk.style.borderColor = '#fca5a5';
+      balk.style.color = '#991b1b';
+      balk.textContent = 'Suggestie laden mislukt: ' + e.message;
+    }
+  } finally {
+    if (knop) { knop.textContent = '↗ Suggestie uit LVS'; knop.disabled = false; }
+  }
 }
 
 async function gpOpslaan() {
