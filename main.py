@@ -478,6 +478,46 @@ async def get_school_context(user: dict, token: str) -> dict:
     }
 
 
+async def _controleer_leerling_toegang(
+    leerling_id: str,
+    user: dict,
+    token: str,
+    ctx: dict | None = None
+) -> dict:
+    """
+    Controleert of een leraar toegang heeft tot een leerling.
+    Toegang is er als:
+    1. De leerling direct van deze leraar is (leerkracht_id match), OF
+    2. De leerling op dezelfde school zit (school_id match)
+
+    Gooit HTTPException 404 als er geen toegang is.
+    Geeft het leerling-record terug bij succes.
+    """
+    if ctx is None:
+        ctx = await get_school_context(user, token)
+
+    # Probeer eerst directe eigenaar
+    leerling = await supabase_get("leerlingen", token, {
+        "id":            f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "select":        "*"
+    })
+    if leerling:
+        return leerling[0]
+
+    # Probeer via school_id
+    if ctx.get("school_id"):
+        leerling = await supabase_get("leerlingen", token, {
+            "id":        f"eq.{leerling_id}",
+            "school_id": f"eq.{ctx['school_id']}",
+            "select":    "*"
+        })
+        if leerling:
+            return leerling[0]
+
+    raise HTTPException(status_code=404, detail="Leerling niet gevonden of geen toegang.")
+
+
 async def update_user_metadata(user_id: str, metadata: dict):
     """
     Werk user_metadata bij via de Supabase Admin API.
@@ -1030,39 +1070,45 @@ async def haal_leerlingen_op(
     user=Depends(get_user),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
+    """
+    Haalt leerlingen op. Logica:
+    - Met school_id: alle leerlingen van de school (voor alle leraren, niet alleen eigen)
+    - Zonder school_id (solo): alleen eigen leerlingen
+    IB-ers en directeuren zien altijd de volledige schoollijst.
+    """
     token = credentials.credentials
-    ctx = await get_school_context(user, token)
+    ctx   = await get_school_context(user, token)
+    limit = min(limit, 500)
 
-    # Begrens limit zodat niemand per ongeluk de hele database opvraagt
-    limit = min(limit, 200)
-
-    if ctx["is_ib"] and ctx["school_id"]:
-        # IB-er en directeur zien alle leerlingen binnen de school
-        koppelingen = await supabase_get("leerkrachten_scholen", token,
-            {"school_id": f"eq.{ctx['school_id']}", "select": "leerkracht_id,voornaam,email"})
-        leerkracht_ids = [k["leerkracht_id"] for k in (koppelingen or [])]
-        if not leerkracht_ids:
-            return []
-        ids_param = "(" + ",".join(leerkracht_ids) + ")"
+    if ctx["school_id"]:
+        # Schoolbreed: alle leerlingen met dit school_id
+        # Alle leraren op dezelfde school zien dezelfde leerlingen
         params = {
-            "leerkracht_id": f"in.{ids_param}",
-            "order":         "groep.asc,voornaam.asc",
-            "select":        "*",
-            "limit":         str(limit),
-            "offset":        str(offset)
+            "school_id": f"eq.{ctx['school_id']}",
+            "order":     "groep.asc,voornaam.asc",
+            "select":    "*",
+            "limit":     str(limit),
+            "offset":    str(offset)
         }
         leerlingen = await supabase_get("leerlingen", token, params)
-        naam_map = {k["leerkracht_id"]: k.get("voornaam") or k.get("email", "Onbekend")
-                    for k in (koppelingen or [])}
-        for l in (leerlingen or []):
-            l["leerkracht_naam"] = naam_map.get(l.get("leerkracht_id"), "")
+
+        # Voeg leraar-naam toe voor IB/directeur-overzicht
+        if ctx["is_ib"]:
+            koppelingen = await supabase_get("leerkrachten_scholen", token,
+                {"school_id": f"eq.{ctx['school_id']}", "select": "leerkracht_id,voornaam,email"})
+            naam_map = {k["leerkracht_id"]: k.get("voornaam") or k.get("email", "Onbekend")
+                        for k in (koppelingen or [])}
+            for l in (leerlingen or []):
+                l["leerkracht_naam"] = naam_map.get(l.get("leerkracht_id"), "")
+
         return leerlingen or []
     else:
+        # Solo-gebruik: alleen eigen leerlingen
         return await supabase_get(
             "leerlingen", token,
             {
                 "leerkracht_id": f"eq.{user['id']}",
-                "order":         "bijgewerkt_op.desc",
+                "order":         "groep.asc,voornaam.asc",
                 "select":        "*",
                 "limit":         str(limit),
                 "offset":        str(offset)
@@ -1075,16 +1121,58 @@ async def maak_leerling_aan(
     user=Depends(get_user),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
+    """
+    Maakt een leerling aan. Met deduplicatie:
+    - Als er al een leerling bestaat met hetzelfde leerlingnummer binnen de school,
+      wordt die teruggegeven in plaats van een duplicaat aan te maken.
+    - Als er al een leerling bestaat met dezelfde voornaam+groep binnen de school,
+      wordt die teruggegeven (zachte deduplicatie, geen error).
+    """
     if not leerling.voornaam or not leerling.voornaam.strip():
         raise HTTPException(status_code=400, detail="Voornaam is verplicht.")
     token = credentials.credentials
-    ctx = await get_school_context(user, token)
+    ctx   = await get_school_context(user, token)
+
+    # ── Deduplicatie: check op leerlingnummer binnen school ──
+    if leerling.leerlingnummer and ctx["school_id"]:
+        bestaand = await supabase_get("leerlingen", token, {
+            "leerlingnummer": f"eq.{leerling.leerlingnummer.strip()}",
+            "school_id":      f"eq.{ctx['school_id']}",
+            "select":         "*",
+            "limit":          "1"
+        })
+        if bestaand:
+            # Leerling bestaat al — update groep als die gewijzigd is, geef terug
+            existing = bestaand[0]
+            if leerling.groep and existing.get("groep") != leerling.groep:
+                await supabase_patch(
+                    f"leerlingen?id=eq.{existing['id']}",
+                    token, {"groep": leerling.groep,
+                            "bijgewerkt_op": datetime.now(timezone.utc).isoformat()}
+                )
+                existing["groep"] = leerling.groep
+            existing["_bestaand"] = True  # signaal voor frontend
+            return existing
+
+    # ── Deduplicatie: check op voornaam+groep binnen school (zachte check) ──
+    if ctx["school_id"] and leerling.groep:
+        bestaand_naam = await supabase_get("leerlingen", token, {
+            "voornaam":  f"eq.{leerling.voornaam.strip()}",
+            "groep":     f"eq.{leerling.groep}",
+            "school_id": f"eq.{ctx['school_id']}",
+            "select":    "id,voornaam,groep",
+            "limit":     "1"
+        })
+        if bestaand_naam:
+            bestaand_naam[0]["_bestaand"] = True
+            return bestaand_naam[0]
+
     record = {
         "leerkracht_id": user["id"],
-        "voornaam": leerling.voornaam.strip(),
-        "groep": leerling.groep,
+        "voornaam":      leerling.voornaam.strip(),
+        "groep":         leerling.groep,
         "ondersteuningsbehoeftes": leerling.ondersteuningsbehoeftes,
-        "notities": leerling.notities,
+        "notities":      leerling.notities,
     }
     if ctx["school_id"]:
         record["school_id"] = ctx["school_id"]
@@ -1094,6 +1182,7 @@ async def maak_leerling_aan(
         record["achternaam"] = leerling.achternaam.strip()
     if leerling.tussenvoegsel:
         record["tussenvoegsel"] = leerling.tussenvoegsel.strip()
+
     data = await supabase_post("leerlingen", token, record)
     return data[0] if isinstance(data, list) and data else data
 
@@ -2013,11 +2102,9 @@ async def verstuur_ouder_bericht(
     """Verstuur een bericht naar ouders en sla het op in de communicatiegeschiedenis."""
     token = credentials.credentials
 
-    # Controleer of leerling bij deze leerkracht hoort
-    leerling = await supabase_get("leerlingen", token,
-        {"id": f"eq.{verzoek.leerling_id}", "leerkracht_id": f"eq.{user['id']}"})
-    if not leerling:
-        raise HTTPException(status_code=404, detail="Leerling niet gevonden.")
+    # Controleer toegang
+    ctx_ouder = await get_school_context(user, token)
+    await _controleer_leerling_toegang(verzoek.leerling_id, user, token, ctx_ouder)
 
     # Verstuur via Resend
     resend_result = await verstuur_email(
@@ -2267,11 +2354,10 @@ async def sla_notitie_op(
         raise HTTPException(status_code=400, detail="Notitie te lang (max 5000 tekens).")
     token = credentials.credentials
 
-    # Controleer dat de leerling bij deze leerkracht hoort
-    leerling = await supabase_get("leerlingen", token,
-        {"id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}", "select": "id,voornaam"})
-    if not leerling:
-        raise HTTPException(status_code=404, detail="Leerling niet gevonden.")
+    # Controleer toegang — eigen leerling of schoolbreed
+    ctx1 = await get_school_context(user, token)
+    leerling_rec = await _controleer_leerling_toegang(leerling_id, user, token, ctx1)
+    leerling = [leerling_rec]
 
     nu = datetime.now(timezone.utc)
     record = {
@@ -2345,11 +2431,8 @@ async def haal_volledig_profiel_op(
     token = credentials.credentials
 
     # Controleer toegang
-    leerling_data = await supabase_get("leerlingen", token,
-        {"id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}", "select": "*"})
-    if not leerling_data:
-        raise HTTPException(status_code=404, detail="Leerling niet gevonden.")
-    leerling = leerling_data[0]
+    ctx_vol = await get_school_context(user, token)
+    leerling = await _controleer_leerling_toegang(leerling_id, user, token, ctx_vol)
 
     import asyncio
     # Haal alles parallel op

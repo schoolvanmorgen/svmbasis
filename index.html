@@ -616,6 +616,8 @@ async function laadLeerlingen() {
     toonLeerlingenLijst();
     // Vul notities-zijbalk bij als die al open staat
     if (typeof notitieVulZijbalk === 'function') notitieVulZijbalk();
+    // Sync aanwezigheids-leerlingenlijst
+    aawLeerlingen = leerlingen;
 
     // Als er precies 50 terugkwamen kunnen er meer zijn — laad de rest stil
     if (leerlingen.length === 50) {
@@ -3234,13 +3236,15 @@ function aawDatumTekst(datum) {
 async function aawInit() {
   if (!huidigToken) return;
   document.getElementById('aaw-datum-tekst').textContent = aawDatumTekst(aawDatum);
-  try {
-    const res = await fetch(API_BASE + '/leerlingen', {
-      headers: { 'Authorization': 'Bearer ' + huidigToken }
-    });
-    const data = await res.json();
-    aawLeerlingen = Array.isArray(data) ? data : [];
-  } catch(e) { aawLeerlingen = []; }
+  // Gebruik de centrale leerlingenlijst — één bron van waarheid
+  if (leerlingen.length > 0) {
+    aawLeerlingen = leerlingen;
+  } else {
+    try {
+      await laadLeerlingen();
+      aawLeerlingen = leerlingen;
+    } catch(e) { aawLeerlingen = []; }
+  }
   aawRenderKlassen();
   if (aawGeselecteerdeKlas) aawToonKlas(aawGeselecteerdeKlas);
 }
@@ -4662,12 +4666,8 @@ function notitieVulZijbalk() {
     // Leerlingen nog niet geladen — haal ze op
     lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>';
     if (huidigToken) {
-      fetch(API_BASE + '/leerlingen?limit=200', {
-        headers: { 'Authorization': 'Bearer ' + huidigToken }
-      }).then(r => r.json()).then(data => {
-        if (Array.isArray(data) && data.length) {
-          leerlingen = data;
-          toonLeerlingenLijst();
+      laadLeerlingen().then(() => {
+        if (leerlingen.length) {
           notitieRenderZijbalk(leerlingen);
         } else {
           lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Nog geen leerlingen toegevoegd.</div>';
