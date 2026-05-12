@@ -84,13 +84,59 @@ Groep 4-6 (middenbouw): toegankelijk en concreet, CITO-niveaus uitleggen in gewo
 Groep 7-8 (bovenbouw): respecteer dat het kind zelf ook meeleest, eerlijk maar positief over uitdagingen.
 
 VAKGEBIEDEN DIE WE VOLGEN
-Technisch lezen: DMT (losse woorden) en AVI (leesniveau teksten). Noem altijd beide als ze vermeld zijn.
+Technisch lezen: DMT (losse woordenrijen) en AVI (lopende tekst, leesniveaukaarten).
 Rekenen: onderscheid Rekenen-Wiskunde (bewerkingen, meten, meetkunde) en Rekenen Basisbewerkingen (optellen, aftrekken, vermenigvuldigen, delen).
 Taal: Spelling, Taalverzorging, Woordenschat.
-Begrijpen: Begrijpend lezen en Begrijpend luisteren als aparte vaardigheden.
-Engels: vanaf groep 7.
-Sociaal-emotioneel: Sociaal-emotioneel functioneren (VISEON/Groeimeter), Executieve functies, Werkhouding.
-Groeimeter: sociaal-emotioneel meetinstrument — als dit vermeld is, neem het op in de sociaal-emotionele sectie.
+Begrijpen: Begrijpend lezen en Begrijpend luisteren zijn aparte vaardigheden — vermeld ze altijd apart.
+Engels: relevant vanaf groep 7.
+Sociaal-emotioneel (VISEON 2.0): Sociaal-emotioneel functioneren, Executieve functies, Groeimeter, Werkhouding.
+
+STANDAARD SCORERINGSYSTEMEN PRIMAIR ONDERWIJS
+Gebruik altijd de juiste terminologie. Leg niveaus uit in begrijpelijke taal.
+
+1. CITO "LEERLING IN BEELD" NIVEAUS (I t/m V)
+   Elk niveau = 20% van alle Nederlandse leerlingen in dezelfde groep.
+   I+ = top 10% (uitzonderlijk sterk)
+   I  = 80e–100e percentiel (ruim bovengemiddeld)
+   II = 60e–80e percentiel (bovengemiddeld)
+   III= 40e–60e percentiel (gemiddeld, rond het landelijk midden)
+   IV = 20e–40e percentiel (ondergemiddeld, aandacht nodig)
+   V  = 0e–20e percentiel (ruim ondergemiddeld, intensieve ondersteuning)
+   V- = laagste 10% (zeer kwetsbaar)
+   Alternatieve A-E notatie: A=I, B=II, C=III, D=IV, E=V (A+=I+)
+   Gebruik in rapporten NOOIT alleen het cijfer — leg altijd uit wat het betekent voor dit kind.
+
+2. AVI LEESNIVEAUS (technisch lezen, lopende tekst)
+   12 niveaus van laag naar hoog:
+   AVI Start (begin groep 3) → M3 → E3 → M4 → E4 → M5 → E5 → M6 → E6 → M7 → E7 → AVI Plus (boven groep 7)
+   M = midden schooljaar, E = einde schooljaar, cijfer = groepsnummer.
+   Verwacht niveau: einde groep X → AVI Ex. Voorlopen: AVI niveau hoger dan de groep. Achterlopen: lager.
+   Noem bij AVI altijd of het kind op, boven of onder verwacht niveau leest, en wat dit betekent.
+
+3. DMT (Drie-Minuten-Toets)
+   Meet technisch lezen van losse woorden op snelheid. Score als CITO-niveau I-V.
+   Verschil DMT en AVI signaleren als relevant (kind kan woorden lezen maar begrijpt tekst niet).
+
+4. REFERENTIENIVEAUS TAAL EN REKENEN (Rijksoverheid, wet 2010)
+   Gelden voor uitstroombeoordeling groep 8:
+   1F = fundamenteel minimum (taal+rekenen). Norm: ≥85% leerlingen behaalt dit einde gr8.
+       Uitstroom vmbo-b/k.
+   2F = streefniveau taal (complexere teksten). Uitstroom vmbo-t/havo/vwo.
+   1S = streefniveau rekenen (equivalent 2F). Uitstroom vmbo-t/havo/vwo.
+   Noem referentieniveaus alleen bij groep 7-8 of bij OPP/uitstroombestemming.
+
+5. SOCIAAL-EMOTIONEEL (VISEON 2.0 / Groeimeter)
+   Score als A-E schaal (of beschrijvend):
+   A = sterk positief, B = positief, C = gemiddeld, D = aandachtspunt, E = zorgelijk.
+   Domeinen: Welbevinden, Zelfredzaamheid, Sociaal gedrag, Motivatie, Werkhouding.
+   Groeimeter = Cito-instrument binnen VISEON, zelfde A-E schaal.
+   Schrijf sociaal-emotionele scores altijd uit in gedrag, niet alleen als letter.
+
+TOEPASSING IN RAPPORTEN
+- Noem CITO-niveaus altijd in context: "Fatima scoort II op rekenen, wat betekent dat ze bovengemiddeld presteert ten opzichte van haar leeftijdsgenoten in Nederland."
+- Bij AVI: "Pieter leest op AVI E5, terwijl E4 verwacht wordt voor midden groep 5 — hij loopt voor op technisch lezen."
+- Vermijd jargon richting ouders. Vertaal niveaus naar wat een kind wél kan.
+- Noem bij groep 7-8 het referentieniveau als dat relevant is voor het schooladvies.
 
 RAPPORTCOMMENTAAR - VERPLICHTE STRUCTUUR
 1. Persoonlijke opening over dit kind
@@ -231,6 +277,76 @@ class LvsProfielOpslaan(BaseModel):
 class LvsTijdlijnItem(BaseModel):
     leerling_id: str
     item: dict  # {type, datum, tekst}
+
+# ══════════════════════════════════════════════════════════
+# STANDAARD SCORERINGSYSTEMEN PRIMAIR ONDERWIJS NEDERLAND
+# Bronnen: Cito/Leerling in beeld, Rijksoverheid referentieniveaus,
+#          AVI-systeem (Zwijsen/Cito), VISEON 2.0
+# ══════════════════════════════════════════════════════════
+
+# CITO "Leerling in beeld" niveauindeling (I t/m V)
+# Elk niveau = 20% van landelijke populatie per jaargroep
+CITO_NIVEAUS = {
+    "I":   {"label": "I",   "omschrijving": "Ruim bovengemiddeld",  "percentiel": "80–100%", "kleur": "#2d6a2d"},
+    "I+":  {"label": "I+",  "omschrijving": "Zeer sterk (top 10%)", "percentiel": "90–100%", "kleur": "#1a4a1a"},
+    "II":  {"label": "II",  "omschrijving": "Bovengemiddeld",       "percentiel": "60–80%",  "kleur": "#4a8a4a"},
+    "III": {"label": "III", "omschrijving": "Gemiddeld",            "percentiel": "40–60%",  "kleur": "#8a8a00"},
+    "IV":  {"label": "IV",  "omschrijving": "Ondergemiddeld",       "percentiel": "20–40%",  "kleur": "#c07000"},
+    "V":   {"label": "V",   "omschrijving": "Ruim ondergemiddeld",  "percentiel": "0–20%",   "kleur": "#a03030"},
+    "V-":  {"label": "V-",  "omschrijving": "Zeer zwak (laagste 10%)", "percentiel": "0–10%","kleur": "#7a1a1a"},
+}
+
+# Mapping CITO-niveau → interne 0-100 score voor het radardiagram
+CITO_NAAR_SCORE = {"I+": 95, "I": 85, "II": 70, "III": 55, "IV": 38, "V": 22, "V-": 10}
+SCORE_NAAR_CITO = [(90,"I+"), (78,"I"), (63,"II"), (48,"III"), (32,"IV"), (18,"V"), (0,"V-")]
+
+# Alternatieve indeling A–E (25/25/25/15/10%)
+# A=top25%, B=bovengemiddeld, C=gemiddeld, D=ondergemiddeld, E=laagste 10%
+ABCDE_NIVEAUS = {
+    "A+": "Top 10% (zie I+)", "A": "Bovenste 25%", "B": "Bovengemiddeld",
+    "C": "Gemiddeld", "D": "Ondergemiddeld", "E": "Laagste 10%"
+}
+# Mapping A-E naar I-V voor uniformiteit
+ABCDE_NAAR_CITO = {"A+": "I+", "A": "I", "B": "II", "C": "III", "D": "IV", "E": "V"}
+
+# AVI-leesniveaus (Zwijsen/Cito, herzien 2008)
+# 12 niveaus: Start, M3, E3, M4, E4, M5, E5, M6, E6, M7, E7, Plus
+# M = midden schooljaar, E = einde schooljaar, cijfer = groep
+AVI_NIVEAUS = [
+    {"code": "START", "label": "AVI Start", "groep": "begin 3",  "score": 5},
+    {"code": "M3",    "label": "AVI M3",    "groep": "midden 3", "score": 15},
+    {"code": "E3",    "label": "AVI E3",    "groep": "eind 3",   "score": 25},
+    {"code": "M4",    "label": "AVI M4",    "groep": "midden 4", "score": 35},
+    {"code": "E4",    "label": "AVI E4",    "groep": "eind 4",   "score": 43},
+    {"code": "M5",    "label": "AVI M5",    "groep": "midden 5", "score": 52},
+    {"code": "E5",    "label": "AVI E5",    "groep": "eind 5",   "score": 60},
+    {"code": "M6",    "label": "AVI M6",    "groep": "midden 6", "score": 68},
+    {"code": "E6",    "label": "AVI E6",    "groep": "eind 6",   "score": 75},
+    {"code": "M7",    "label": "AVI M7",    "groep": "midden 7", "score": 83},
+    {"code": "E7",    "label": "AVI E7",    "groep": "eind 7",   "score": 90},
+    {"code": "PLUS",  "label": "AVI Plus",  "groep": "boven gr7","score": 97},
+]
+
+# Referentieniveaus taal en rekenen (Wet referentieniveaus 2010, Rijksoverheid)
+# Voor PO gelden: 1F (fundamenteel, eis voor ~85% leerlingen einde gr8)
+#                 2F (streefniveau taal), 1S (streefniveau rekenen)
+REFERENTIENIVEAUS = {
+    "taal": {
+        "1F": "Fundamenteel niveau — basis voor vmbo-b/k. Minimumeis einde basisschool (~85% leerlingen).",
+        "2F": "Streefniveau taal — voor vmbo-t, havo, vwo uitstroom. Complexere teksten en taalvaardigheid.",
+    },
+    "rekenen": {
+        "1F": "Fundamenteel niveau — basis voor vmbo-b/k. Minimumeis einde basisschool.",
+        "1S": "Streefniveau rekenen — equivalent aan 2F taal. Voor vmbo-t, havo, vwo uitstroom.",
+    },
+    "groep_8_norm": "Minimaal 85% van leerlingen moet 1F beheersen aan einde groep 8.",
+}
+
+# VISEON 2.0 — sociaal-emotionele ontwikkeling (Cito)
+# Scores worden weergegeven als A-E (zelfde schaal als CITO-cognitief)
+# Domeinen: Welbevinden, Zelfredzaamheid, Sociaal gedrag, Motivatie, Werkhouding
+VISEON_DOMEINEN = ["Welbevinden", "Zelfredzaamheid", "Sociaal gedrag", "Motivatie", "Werkhouding"]
+VISEON_SCHAAL = {"A": "Sterk positief", "B": "Positief", "C": "Gemiddeld", "D": "Aandachtspunt", "E": "Zorgelijk"}
 
 GELDIGE_VAKGEBIEDEN = {"lezen", "avi", "dmt", "rekenen", "rekenen_basis", "spelling", "taalverzorging", "woordenschat", "begrijpend", "begrijpend_luis", "engels", "sociaal", "executief", "groeimeter", "werkhouding"}
 GELDIGE_NIVEAUS     = {"I", "II", "III", "IV", "V", None}

@@ -1452,21 +1452,172 @@ function toonTab(tab, knop) {
           </select>
           <div class="vlabel" style="margin-top:8px">SCORES BIJWERKEN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px">
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Lezen (DMT)</div><input id="lvs-s-lezen" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">AVI</div><input id="lvs-s-avi" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">DMT</div><input id="lvs-s-dmt" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Rekenen-Wiskunde</div><input id="lvs-s-rekenen" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Rekenen Basisb.</div><input id="lvs-s-rekenen_basis" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Spelling</div><input id="lvs-s-spelling" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Taalverzorging</div><input id="lvs-s-taalverzorging" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Woordenschat</div><input id="lvs-s-woordenschat" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Begr. lezen</div><input id="lvs-s-begrijpend" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Begr. luisteren</div><input id="lvs-s-begrijpend_luis" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Engels</div><input id="lvs-s-engels" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Sociaal-emotioneel</div><input id="lvs-s-sociaal" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Executieve functies</div><input id="lvs-s-executief" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Groeimeter</div><input id="lvs-s-groeimeter" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
-            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Werkhouding</div><input id="lvs-s-werkhouding" type="number" min="0" max="100" placeholder="0–100" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none"></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Lezen (DMT) <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-lezen" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">AVI niveau</div>
+              <select id="lvs-s-avi" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="5">AVI Start</option>
+                <option value="15">AVI M3</option>
+                <option value="25">AVI E3</option>
+                <option value="35">AVI M4</option>
+                <option value="43">AVI E4</option>
+                <option value="52">AVI M5</option>
+                <option value="60">AVI E5</option>
+                <option value="68">AVI M6</option>
+                <option value="75">AVI E6</option>
+                <option value="83">AVI M7</option>
+                <option value="90">AVI E7</option>
+                <option value="97">AVI Plus</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">DMT <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-dmt" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Rekenen-Wiskunde <span style="font-weight:400">(CITO I-V)</span></div>
+              <select id="lvs-s-rekenen" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (ruim bovengemiddeld)</option>
+                <option value="70">II (bovengemiddeld)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (ruim ondergemiddeld)</option>
+                <option value="10">V- (laagste 10%)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Rekenen Basisb. <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-rekenen_basis" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Spelling <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-spelling" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Taalverzorging <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-taalverzorging" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Woordenschat <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-woordenschat" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Begr. lezen <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-begrijpend" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Begr. luisteren <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-begrijpend_luis" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Engels <span style="font-weight:400">(I–V)</span></div>
+              <select id="lvs-s-engels" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">I+ (top 10%)</option>
+                <option value="85">I (bovengemiddeld)</option>
+                <option value="70">II (ruim voldoende)</option>
+                <option value="55">III (gemiddeld)</option>
+                <option value="38">IV (ondergemiddeld)</option>
+                <option value="22">V (zwak)</option>
+                <option value="10">V- (zeer zwak)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Sociaal-emotioneel <span style="font-weight:400">(A–E)</span></div>
+              <select id="lvs-s-sociaal" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">A+ (uitzonderlijk, top 10%)</option>
+                <option value="85">A (sterk positief)</option>
+                <option value="70">B (positief)</option>
+                <option value="55">C (gemiddeld)</option>
+                <option value="38">D (aandachtspunt)</option>
+                <option value="22">E (zorgelijk)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Executieve functies <span style="font-weight:400">(A–E)</span></div>
+              <select id="lvs-s-executief" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">A+ (uitzonderlijk, top 10%)</option>
+                <option value="85">A (sterk positief)</option>
+                <option value="70">B (positief)</option>
+                <option value="55">C (gemiddeld)</option>
+                <option value="38">D (aandachtspunt)</option>
+                <option value="22">E (zorgelijk)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Groeimeter (VISEON) <span style="font-weight:400">(A–E)</span></div>
+              <select id="lvs-s-groeimeter" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">A+ (uitzonderlijk, top 10%)</option>
+                <option value="85">A (sterk positief)</option>
+                <option value="70">B (positief)</option>
+                <option value="55">C (gemiddeld)</option>
+                <option value="38">D (aandachtspunt)</option>
+                <option value="22">E (zorgelijk)</option>
+              </select></div>
+            <div><div style="font-size:10px;color:var(--tz);margin-bottom:2px">Werkhouding <span style="font-weight:400">(A–E)</span></div>
+              <select id="lvs-s-werkhouding" style="width:100%;border:1px solid var(--rand);padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+                <option value="">— kies —</option>
+                <option value="95">A+ (uitzonderlijk, top 10%)</option>
+                <option value="85">A (sterk positief)</option>
+                <option value="70">B (positief)</option>
+                <option value="55">C (gemiddeld)</option>
+                <option value="38">D (aandachtspunt)</option>
+                <option value="22">E (zorgelijk)</option>
+              </select></div>
           </div>
           <div class="vlabel" style="margin-top:8px">NOTITIE</div>
           <textarea id="lvs-notitie-tekst" rows="4" placeholder="Observatie, toetsresultaat, bijzonderheid…"
@@ -2432,7 +2583,7 @@ function downloadPDF() {
 //       'label' = dropdown Uitstekend/Goed/Voldoende/Matig/Onvoldoende
 const LVS_DOMEINEN = [
   { k:'lezen',         l:'Lezen (DMT)',           kleur:'#555', type:'cito'  },
-  { k:'avi',           l:'AVI',                   kleur:'#555', type:'cito'  },
+  { k:'avi',           l:'AVI',                   kleur:'#555', type:'avi'   },
   { k:'dmt',           l:'DMT',                   kleur:'#888', type:'cito'  },
   { k:'rekenen',       l:'Rekenen-Wiskunde',       kleur:'#555', type:'cito'  },
   { k:'rekenen_basis', l:'Rekenen Basisbew.',      kleur:'#888', type:'cito'  },
@@ -2442,11 +2593,35 @@ const LVS_DOMEINEN = [
   { k:'begrijpend',    l:'Begr. lezen',            kleur:'#555', type:'cito'  },
   { k:'begrijpend_luis',l:'Begr. luisteren',       kleur:'#888', type:'cito'  },
   { k:'engels',        l:'Engels',                 kleur:'#555', type:'cito'  },
-  { k:'sociaal',       l:'Sociaal-emotioneel',     kleur:'#555', type:'label' },
-  { k:'executief',     l:'Executieve functies',    kleur:'#555', type:'label' },
-  { k:'groeimeter',    l:'Groeimeter',             kleur:'#555', type:'label' },
-  { k:'werkhouding',   l:'Werkhouding',            kleur:'#000', type:'label' },
+  { k:'sociaal',       l:'Sociaal-emotioneel',     kleur:'#555', type:'abcde' },
+  { k:'executief',     l:'Executieve functies',    kleur:'#555', type:'abcde' },
+  { k:'groeimeter',    l:'Groeimeter (VISEON)',    kleur:'#555', type:'abcde' },
+  { k:'werkhouding',   l:'Werkhouding',            kleur:'#000', type:'abcde' },
 ];
+
+// ── Standaard scoreringsystemen PO ────────────────────────
+const CITO_SCORE_NAAR_LABEL = [
+  [92,'I+'], [78,'I'], [63,'II'], [48,'III'], [32,'IV'], [16,'V'], [0,'V-']
+];
+const AVI_SCORE_NAAR_LABEL = [
+  [94,'AVI Plus'],[87,'AVI E7'],[80,'AVI M7'],[72,'AVI E6'],
+  [64,'AVI M6'],[56,'AVI E5'],[49,'AVI M5'],[40,'AVI E4'],
+  [32,'AVI M4'],[22,'AVI E3'],[12,'AVI M3'],[0,'AVI Start']
+];
+const ABCDE_SCORE_NAAR_LABEL = [
+  [92,'A+'], [78,'A'], [63,'B'], [48,'C'], [32,'D'], [0,'E']
+];
+
+function scoreNaarLabel(score, type) {
+  if (!score || score === 0) return '—';
+  const tabel = type === 'avi' ? AVI_SCORE_NAAR_LABEL
+              : type === 'abcde' ? ABCDE_SCORE_NAAR_LABEL
+              : CITO_SCORE_NAAR_LABEL;
+  for (const [grens, label] of tabel) {
+    if (score >= grens) return label;
+  }
+  return '—';
+}
 
 // LVS_KLEUREN en lvsLeerlingen zijn verplaatst naar de globale staat bovenaan
 // Cache met TTL van 60 seconden — voorkomt verouderde data bij gebruik op meerdere apparaten
@@ -2574,12 +2749,15 @@ function lvsRenderDomeinen() {
     const score = l.scores[d.k] || 0;
     const vorig = l.vorige[d.k] || 0;
     const diff = score - vorig;
-    const kls = diff > 0 ? 'lvs-omhoog' : diff < 0 ? 'lvs-omlaag' : 'lvs-gelijk';
+    const kls  = diff > 0 ? 'lvs-omhoog' : diff < 0 ? 'lvs-omlaag' : 'lvs-gelijk';
     const pijl = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+    // Toon het gestandaardiseerde label (I, II, AVI E5, A, etc.) i.p.v. ruwe score
+    const labelStr = score > 0 ? scoreNaarLabel(score, d.type) : '—';
+    const trendTekst = diff !== 0 ? pijl + ' t.o.v. vorige meting' : '→ ongewijzigd';
     return '<div class="lvs-kaart">'
       + '<div class="lvs-domein-label">' + d.l + '</div>'
-      + '<div class="lvs-score" style="color:' + d.kleur + '">' + score + '</div>'
-      + '<div class="lvs-trend ' + kls + '">' + pijl + ' ' + (diff > 0 ? '+' : '') + diff + ' t.o.v. vorige periode</div>'
+      + '<div class="lvs-score" style="color:' + d.kleur + ';font-size:18px;font-weight:600">' + labelStr + '</div>'
+      + '<div class="lvs-trend ' + kls + '">' + trendTekst + '</div>'
       + '</div>';
   }).join('');
 }
