@@ -362,7 +362,13 @@ const SUPABASE_URL = 'https://ruaorbvprxcnnaltyvpi.supabase.co';
 // Voor de .exe / externe server: 'https://app.jouwdomein.nl'
 const API_BASE = window.__API_BASE__ || '';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1YW9yYnZwcnhjbm5hbHR5dnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMzgxMjEsImV4cCI6MjA5MzcxNDEyMX0.LPHqXtYQj3-qo8x5BUFLcOvWAPuBc1NkpWe1AyNKElk';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+let sb;
+try {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+} catch(e) {
+  document.getElementById('login-fout').textContent = 'Fout bij laden: Supabase kon niet worden geïnitialiseerd. Controleer je internetverbinding en herlaad de pagina.';
+  throw e;
+}
 let huidigGebruiker = null;
 let huidigToken = null;
 let leerlingen = [];
@@ -424,12 +430,17 @@ function stelLeerlingIn(leerling) {
 }
 
 async function initAuth() {
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    huidigGebruiker = session.user;
-    huidigToken = session.access_token;
-    toonApp();
-  } else {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      huidigGebruiker = session.user;
+      huidigToken = session.access_token;
+      toonApp();
+    } else {
+      toonLogin();
+    }
+  } catch(e) {
+    console.error('Auth fout:', e);
     toonLogin();
   }
   sb.auth.onAuthStateChange((event, session) => {
@@ -889,7 +900,7 @@ function toonTab(tab, knop) {
 </head>
 <body>
 
-<div id="login-scherm" style="display:none;position:fixed;inset:0;background:var(--warm);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+<div id="login-scherm" style="display:flex;position:fixed;inset:0;background:var(--warm);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:20px">
   <div style="text-align:center;margin-bottom:10px">
     <div style="font-family:Georgia,serif;font-size:28px;color:var(--donker)">School van <span style="color:var(--oranje)">morgen</span></div>
     <div style="font-size:13px;color:var(--tz);margin-top:4px">Administratie voor basisscholen</div>
