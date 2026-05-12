@@ -1686,6 +1686,7 @@ function toonTab(tab, knop) {
       <button onclick="aawAlleAanwezig()" style="padding:8px 16px;border:1px solid var(--rand);background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:var(--tm)">Iedereen aanwezig</button>
       <button onclick="aawSlaOp()" style="padding:8px 20px;background:#4a7a4a;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
       <button onclick="aawExporteer()" style="padding:8px 16px;border:1px solid var(--rand);background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:var(--tm)">CSV</button>
+      <button onclick="aawToonLeerlingToevoegen()" style="padding:8px 16px;border:1px solid #4a7a4a;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#4a7a4a;font-weight:600">+ Leerling</button>
     </div>
   </div>
 
@@ -3039,7 +3040,8 @@ function aawRenderKlassen() {
     return parseInt(a) - parseInt(b);
   });
   if (!groepen.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--tz);padding:10px">Geen klassen gevonden. Voeg leerlingen toe via de Rapport-tab.</div>';
+    el.innerHTML = '<div style="font-size:12px;color:var(--tz);padding:10px 0">Nog geen leerlingen — voeg ze hieronder toe.</div>';
+    aawToonLeerlingToevoegen();
     return;
   }
   el.style.display = 'flex'; el.style.gap = '6px'; el.style.flexWrap = 'wrap';
@@ -3048,6 +3050,90 @@ function aawRenderKlassen() {
     const aantal = aawLeerlingen.filter(function(l) { return l.groep === g; }).length;
     return '<button onclick="aawToonKlas(this.getAttribute(\'data-g\'))" data-g="' + g + '" style="padding:6px 16px;border:1.5px solid ' + (actief ? '#2a3a2a' : 'var(--rand)') + ';background:' + (actief ? '#2a3a2a' : '#fff') + ';color:' + (actief ? '#fff' : 'var(--tm)') + ';font-size:12px;font-weight:' + (actief ? '600' : '400') + ';cursor:pointer;font-family:inherit">Groep ' + g + ' <span style="opacity:.6;font-size:11px">(' + aantal + ')</span></button>';
   }).join('');
+}
+
+// ── Leerling toevoegen vanuit aanwezigheidstab ──────────────
+function aawToonLeerlingToevoegen() {
+  const aawLijst = document.getElementById('aaw-lijst');
+  if (!aawLijst) return;
+  aawLijst.innerHTML = `
+    <div style="max-width:480px;background:#fff;border:1px solid var(--warmrand);padding:24px;margin:0 auto">
+      <div style="font-family:Georgia,serif;font-size:18px;color:var(--t);margin-bottom:4px">Leerling toevoegen</div>
+      <div style="font-size:12px;color:var(--tz);margin-bottom:18px">Voeg leerlingen toe om aanwezigheid bij te houden. Je kunt ze ook importeren via het LVS of de rapport-tab.</div>
+
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div class="vlabel" style="margin-bottom:4px">VOORNAAM</div>
+          <input id="aaw-nieuw-voornaam" type="text" placeholder="Voornaam leerling"
+            style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+        </div>
+        <div>
+          <div class="vlabel" style="margin-bottom:4px">GROEP</div>
+          <select id="aaw-nieuw-groep" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
+            <option value="">— kies groep —</option>
+            ${[1,2,3,4,5,6,7,8].map(g => '<option value="' + g + '">Groep ' + g + '</option>').join('')}
+          </select>
+        </div>
+        <div>
+          <div class="vlabel" style="margin-bottom:4px">LEERLINGNUMMER <span style="font-weight:400;color:var(--tz)">(optioneel)</span></div>
+          <input id="aaw-nieuw-nummer" type="text" placeholder="bijv. 12345"
+            style="width:100%;border:1px solid var(--rand);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box">
+        </div>
+        <div id="aaw-toevoegen-fout" style="display:none;font-size:12px;color:#a03030;padding:8px;background:#fff5f5;border:1px solid #f0c0c0"></div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button onclick="aawVoegLeerlingToe()" style="flex:1;background:#4a7a4a;color:#fff;border:none;padding:10px;font-size:12px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">Toevoegen</button>
+          <button onclick="aawVoegMeerToe()" style="flex:1;border:1px solid var(--rand);background:#fff;padding:10px;font-size:12px;cursor:pointer;font-family:inherit;color:var(--tm)">+ Nog een leerling</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function aawVoegLeerlingToe(doorGaan) {
+  const voornaam = document.getElementById('aaw-nieuw-voornaam')?.value.trim();
+  const groep    = document.getElementById('aaw-nieuw-groep')?.value;
+  const nummer   = document.getElementById('aaw-nieuw-nummer')?.value.trim();
+  const foutEl   = document.getElementById('aaw-toevoegen-fout');
+
+  if (!voornaam || !groep) {
+    if (foutEl) { foutEl.style.display='block'; foutEl.textContent='Vul voornaam en groep in.'; }
+    return;
+  }
+  if (foutEl) foutEl.style.display = 'none';
+
+  const knop = document.querySelector('#aaw-lijst button[onclick="aawVoegLeerlingToe()"]');
+  if (knop) { knop.textContent = 'Bezig…'; knop.disabled = true; }
+
+  try {
+    const body = { voornaam, groep };
+    if (nummer) body.leerlingnummer = nummer;
+    const res = await fetch(API_BASE + '/leerlingen', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Opslaan mislukt (status ' + res.status + ')');
+    }
+    const nieuw = await res.json();
+    // Voeg toe aan globale lijst en herlaad aanwezigheid
+    leerlingen.push(nieuw);
+    aawLeerlingen.push(nieuw);
+    toonLeerlingenLijst();
+    if (doorGaan) {
+      aawToonLeerlingToevoegen(); // leeg formulier voor volgende leerling
+    } else {
+      aawRenderKlassen();
+      aawToonKlas(groep);
+    }
+  } catch(e) {
+    if (foutEl) { foutEl.style.display='block'; foutEl.textContent='Fout: ' + e.message; }
+    if (knop) { knop.textContent = 'Toevoegen'; knop.disabled = false; }
+  }
+}
+
+function aawVoegMeerToe() {
+  aawVoegLeerlingToe(true);
 }
 
 async function aawToonKlas(groep) {
