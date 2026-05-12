@@ -3658,7 +3658,7 @@ function aawToonSignalen(signalen, balk) {
   balk.style.cssText = 'display:block;padding:12px 24px;font-size:12px;flex-shrink:0;background:#fff;border-bottom:1px solid var(--warmrand)';
   balk.innerHTML = '<div style="font-weight:600;color:var(--t);margin-bottom:8px">✓ Opgeslagen · ' + signalen.length + ' aanwezigheidsignaal' + (signalen.length > 1 ? 'en' : '') + ' gedetecteerd:</div>'
     + regels
-    + '<button onclick="this.parentElement.style.display='none'" style="margin-top:8px;font-size:11px;padding:4px 12px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Sluiten</button>';
+    + '<button onclick="this.closest(\'#aaw-export-balk\').style.display=\'none\'" style="margin-top:8px;font-size:11px;padding:4px 12px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Sluiten</button>';
 }
 
 function aawExporteer() {
