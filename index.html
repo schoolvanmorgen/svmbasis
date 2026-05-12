@@ -158,7 +158,7 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .tab{padding:12px 14px;font-size:12px;font-weight:500;letter-spacing:.04em;color:#888;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:inherit;text-transform:uppercase}
 .tab:hover{color:var(--tm)}
 .tab.actief{color:#3a5a3a;border-bottom-color:#4a7a4a}
-.sectie{display:none}.sectie.actief{display:grid}#tab-notities.actief{display:flex;flex-direction:column;height:calc(100vh - 120px)}#tab-groepsplan.actief{display:flex!important;flex-direction:column;height:calc(100vh - 120px);overflow-y:auto}#tab-school.actief{display:flex!important;flex-direction:column;height:calc(100vh - 120px);overflow-y:auto}
+.sectie{display:none}.sectie.actief{display:grid}#tab-notities.actief{display:flex;flex-direction:column;height:calc(100vh - 120px)}#tab-groepsplan.actief{display:block!important}#tab-school.actief{display:block!important}
 .sectie-vol{display:none}.sectie-vol.actief{display:flex}
 
 
@@ -878,7 +878,9 @@ function toonTab(tab, knop) {
   if (knop) knop.classList.add('actief');
   document.querySelectorAll('.sectie, .sectie-vol').forEach(s => {
     s.classList.remove('actief');
-    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid' && s.id !== 'tab-notities' && s.id !== 'tab-groepsplan' && s.id !== 'tab-school') s.style.display = '';
+    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid' && s.id !== 'tab-notities') s.style.display = '';
+    // Groepsplan en school: expliciet verbergen tenzij ze het actieve tab zijn
+    if (s.id === 'tab-groepsplan' || s.id === 'tab-school') s.style.display = 'none';
   });
   const tabInhoud = document.getElementById('tab-inhoud');
   const lvsEl = document.getElementById('tab-lvs');
@@ -902,11 +904,9 @@ function toonTab(tab, knop) {
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
     if (tabInhoud) tabInhoud.style.display = 'none';
-    const notEl2 = document.getElementById('tab-notities');
-    if (notEl2) notEl2.classList.remove('actief');
-    const el = document.getElementById('tab-groepsplan');
-    if (el) el.classList.add('actief');
-    // Vul groep voorin vanuit actieve leerling
+    document.getElementById('tab-notities').classList.remove('actief');
+    const gpEl = document.getElementById('tab-groepsplan');
+    if (gpEl) { gpEl.style.display = 'block'; gpEl.classList.add('actief'); }
     if (huidigeLeerling && huidigeLeerling.groep) {
       const gpGroepEl = document.getElementById('gp-groep');
       if (gpGroepEl && !gpGroepEl.value) { gpGroepEl.value = huidigeLeerling.groep; gpLaad(); }
@@ -915,10 +915,9 @@ function toonTab(tab, knop) {
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
     if (tabInhoud) tabInhoud.style.display = 'none';
-    const notEl3 = document.getElementById('tab-notities');
-    if (notEl3) notEl3.classList.remove('actief');
-    const el2 = document.getElementById('tab-school');
-    if (el2) el2.classList.add('actief');
+    document.getElementById('tab-notities').classList.remove('actief');
+    const schoolEl = document.getElementById('tab-school');
+    if (schoolEl) { schoolEl.style.display = 'block'; schoolEl.classList.add('actief'); }
     schoolInit();
   } else {
     if (lvsEl) lvsEl.style.display = 'none';
