@@ -359,6 +359,36 @@ body{padding-bottom:64px}
 
 </style>
 <script>
+// ── Globale foutopvang — toont fout in pagina i.p.v. blank scherm ──
+window.addEventListener('error', function(e) {
+  if (document.body) {
+    var div = document.createElement('div');
+    div.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;padding:32px;font-family:monospace;font-size:13px;z-index:99999;overflow:auto';
+    div.innerHTML = '<b style="color:#c00">JavaScript fout</b><br><br>'
+      + '<b>Bericht:</b> ' + e.message + '<br>'
+      + '<b>Bestand:</b> ' + (e.filename || '-') + '<br>'
+      + '<b>Regel:</b> ' + e.lineno + ', kolom: ' + e.colno + '<br><br>'
+      + '<small>Ververs de pagina (Ctrl+Shift+R) om te proberen. Stuur dit bericht naar de ontwikkelaar.</small>';
+    document.body.appendChild(div);
+  }
+});
+
+// ── Noodoplossing: als na 5s niks zichtbaar is, toon inlogscherm ──
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    var login = document.getElementById('login-scherm');
+    var app = document.getElementById('app-scherm');
+    if (login && app) {
+      var loginHidden = login.style.display === 'none' || !login.style.display;
+      var appHidden = app.style.display === 'none' || !app.style.display;
+      if (loginHidden && appHidden) {
+        // Beide verborgen na 5s — toon inlogscherm als noodoplossing
+        login.style.display = 'flex';
+      }
+    }
+  }, 5000);
+});
+
 // Laad config.js indien aanwezig (voor .exe versie)
 // In de webversie bestaat dit bestand niet en werkt API_BASE als lege string
 </script>
@@ -904,7 +934,7 @@ function toonTab(tab, knop) {
 </head>
 <body>
 
-<div id="login-scherm" style="display:none;position:fixed;inset:0;background:var(--warm);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:20px">
+<div id="login-scherm" style="display:flex;position:fixed;inset:0;background:var(--warm);z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:20px">
   <div style="text-align:center;margin-bottom:10px">
     <div style="font-family:Georgia,serif;font-size:28px;color:var(--donker)">School van <span style="color:var(--oranje)">morgen</span></div>
     <div style="font-size:13px;color:var(--tz);margin-top:4px">Administratie voor basisscholen</div>
