@@ -462,9 +462,27 @@ function stelLeerlingIn(leerling) {
     }
   }
 
-  // Notities tab: herlaad als de actieve tab notities is, of als leerling wisselt
+  // Notities tab: herlaad + update zijbalk + header
   if (leerling && _notitiesHuidigId !== leerling.id) {
     if (typeof notitiesLaad === 'function') notitiesLaad(leerling.id);
+  }
+  if (leerling) {
+    // Update notitie-zijbalk highlight
+    if (typeof notitieRenderZijbalk === 'function') {
+      const zoekEl = document.getElementById('notitie-zoek');
+      const zoek = zoekEl ? zoekEl.value : '';
+      const lijst = zoek
+        ? leerlingen.filter(x => x.voornaam.toLowerCase().includes(zoek.toLowerCase()))
+        : leerlingen;
+      notitieRenderZijbalk(lijst);
+    }
+    // Update notitie-tab header
+    const header = document.getElementById('notitie-leerling-header');
+    const naamEl = document.getElementById('notitie-actieve-naam');
+    const metaEl = document.getElementById('notitie-actieve-meta');
+    if (header) header.style.display = 'block';
+    if (naamEl) naamEl.textContent = leerling.voornaam;
+    if (metaEl) metaEl.textContent = 'Groep ' + (leerling.groep || '?');
   }
 }
 
@@ -1523,27 +1541,48 @@ function toonTab(tab, knop) {
 
 </div>
 
-<div class="sectie" id="tab-notities" style="height:calc(100vh - 120px)">
-  <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+<div class="sectie" id="tab-notities" style="height:calc(100vh - 108px)">
+  <div style="display:flex;height:100%;overflow:hidden">
 
-    <!-- Tijdlijn bovenaan -->
-    <div style="flex:1;overflow-y:auto;padding:1.2rem 1.8rem;border-bottom:1px solid var(--warmrand);background:#fff">
-      <div class="vlabel" style="margin-bottom:1rem">TIJDLIJN</div>
-      <div id="notitie-tijdlijn">
-        <div style="color:var(--tz);font-size:13px">Nog geen notities.</div>
+    <!-- Zijbalk leerlingen -->
+    <div style="width:200px;flex-shrink:0;border-right:1px solid var(--warmrand);background:#fff;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:10px 10px 6px;border-bottom:1px solid var(--warmrand)">
+        <input type="text" id="notitie-zoek" placeholder="Zoek leerling…" oninput="notitieFilterLeerlingen(this.value)"
+          style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
+      </div>
+      <div id="notitie-leerlingen-lijst" style="flex:1;overflow-y:auto;padding:6px">
+        <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
     </div>
 
-    <!-- Invoer onderaan -->
-    <div style="flex-shrink:0;padding:1.2rem 1.8rem;background:var(--warm);display:flex;flex-direction:column;gap:10px">
-      <div class="vlabel">NIEUWE NOTITIE</div>
-      <textarea id="notitie-tekst" rows="4" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf een notitie…"></textarea>
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <button onclick="notitieOpslaan()" style="background:#4a7a4a;color:#fff;border:none;padding:9px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-family:inherit">Opslaan</button>
-        <div id="notitie-doorstroom-bevestiging" style="display:none;font-size:11px;color:#4a7a4a;font-weight:500">✓ Notitie opgeslagen en doorgestuurd naar rapport, OPP en handelingsplan</div>
-      </div>
-    </div>
+    <!-- Hoofdpaneel -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
 
+      <!-- Actieve leerling header -->
+      <div id="notitie-leerling-header" style="padding:12px 18px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0;display:none">
+        <div id="notitie-actieve-naam" style="font-family:Georgia,serif;font-size:18px;color:var(--t)"></div>
+        <div id="notitie-actieve-meta" style="font-size:11px;color:var(--tz);margin-top:2px"></div>
+      </div>
+
+      <!-- Tijdlijn -->
+      <div style="flex:1;overflow-y:auto;padding:1.2rem 1.8rem;background:#fff">
+        <div class="vlabel" style="margin-bottom:1rem">TIJDLIJN</div>
+        <div id="notitie-tijdlijn">
+          <div style="color:var(--tz);font-size:13px">Selecteer een leerling om notities te zien.</div>
+        </div>
+      </div>
+
+      <!-- Invoer onderaan -->
+      <div style="flex-shrink:0;padding:1rem 1.8rem;background:var(--warm);border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:10px">
+        <div class="vlabel">NIEUWE NOTITIE</div>
+        <textarea id="notitie-tekst" rows="3" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf een notitie voor de geselecteerde leerling…"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <button onclick="notitieOpslaan()" style="background:#4a7a4a;color:#fff;border:none;padding:9px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-family:inherit">Opslaan</button>
+          <div id="notitie-doorstroom-bevestiging" style="display:none;font-size:11px;color:#4a7a4a;font-weight:500">✓ Notitie opgeslagen en doorgestuurd naar rapport, OPP en handelingsplan</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div><!-- einde tab-notities -->
 
@@ -3822,14 +3861,68 @@ async function stroomNotitieNaarModules(leerlingId) {
 }
 
 function notitieRender() {
-  // Herlaad vanuit DB als er een actieve leerling is
+  notitieVulZijbalk();
   const leerlingId = window._huidigeLeerlingId;
   if (leerlingId) {
     notitiesLaad(leerlingId);
   } else {
     const el = document.getElementById('notitie-tijdlijn');
-    if (el) el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Selecteer eerst een leerling via de zijbalk of rapport-tab.</div>';
+    if (el) el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Selecteer een leerling in de zijbalk.</div>';
   }
+}
+
+// ── Notitie-zijbalk ──────────────────────────────────────────
+function notitieVulZijbalk() {
+  const lijst = document.getElementById('notitie-leerlingen-lijst');
+  if (!lijst) return;
+  notitieRenderZijbalk(leerlingen);
+}
+
+function notitieFilterLeerlingen(zoek) {
+  const gefilterd = leerlingen.filter(l =>
+    l.voornaam.toLowerCase().includes(zoek.toLowerCase())
+  );
+  notitieRenderZijbalk(gefilterd);
+}
+
+function notitieRenderZijbalk(lijst) {
+  const el = document.getElementById('notitie-leerlingen-lijst');
+  if (!el) return;
+  if (!lijst || !lijst.length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen gevonden.</div>';
+    return;
+  }
+  el.innerHTML = lijst.map(l => {
+    const actief = window._huidigeLeerlingId === l.id;
+    return '<div onclick="notitieSelecteerLeerling(' + JSON.stringify(l.id) + ')" style="'
+      + 'padding:9px 14px;cursor:pointer;border-left:2px solid ' + (actief ? '#4a7a4a' : 'transparent') + ';'
+      + 'background:' + (actief ? '#f8f8f8' : '#fff') + ';transition:all .1s">'
+      + '<div style="font-size:12px;font-weight:500;color:#2a3a2a">' + l.voornaam + '</div>'
+      + '<div style="font-size:10px;color:var(--tz);margin-top:1px">Groep ' + (l.groep || '?') + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function notitieSelecteerLeerling(id) {
+  const l = leerlingen.find(x => x.id === id);
+  if (!l) return;
+  // Zet als actieve leerling (sync met rest van de app)
+  stelLeerlingIn(l);
+  // Update zijbalk highlight
+  notitieRenderZijbalk(
+    document.getElementById('notitie-zoek')?.value
+      ? leerlingen.filter(x => x.voornaam.toLowerCase().includes(document.getElementById('notitie-zoek').value.toLowerCase()))
+      : leerlingen
+  );
+  // Toon header
+  const header = document.getElementById('notitie-leerling-header');
+  const naamEl = document.getElementById('notitie-actieve-naam');
+  const metaEl = document.getElementById('notitie-actieve-meta');
+  if (header) header.style.display = 'block';
+  if (naamEl) naamEl.textContent = l.voornaam;
+  if (metaEl) metaEl.textContent = 'Groep ' + (l.groep || '?');
+  // Laad notities
+  notitiesLaad(id);
 }
 
 function notitieRenderData(notities) {
