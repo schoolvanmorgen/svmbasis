@@ -617,7 +617,7 @@ function toonLeerlingenLijst() {
       '<div style="margin-bottom:8px">'
       + '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.08em;text-transform:uppercase;padding:4px 14px;background:var(--warm)">' + leerkracht + '</div>'
       + lls.map(l =>
-          '<div class="leerling-item" onclick="selecteerLeerling('' + l.id + '')">'
+          '<div class="leerling-item" onclick="selecteerLeerling(\'' + l.id + '\')">'
           + '<div class="leerling-naam">' + l.voornaam + '</div>'
           + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
           + '</div>'
@@ -626,7 +626,7 @@ function toonLeerlingenLijst() {
     ).join('');
   } else {
     lijst.innerHTML = leerlingen.map(l =>
-      '<div class="leerling-item" onclick="selecteerLeerling('' + l.id + '')">'
+      '<div class="leerling-item" onclick="selecteerLeerling(\'' + l.id + '\')">'
       + '<div class="leerling-naam">' + l.voornaam + '</div>'
       + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>'
       + '</div>'
