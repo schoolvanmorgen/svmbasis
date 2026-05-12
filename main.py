@@ -83,6 +83,15 @@ Groep 1-3 (onderbouw): warm en verhalend, geen cijfers of toetsniveaus, focus op
 Groep 4-6 (middenbouw): toegankelijk en concreet, CITO-niveaus uitleggen in gewone taal.
 Groep 7-8 (bovenbouw): respecteer dat het kind zelf ook meeleest, eerlijk maar positief over uitdagingen.
 
+VAKGEBIEDEN DIE WE VOLGEN
+Technisch lezen: DMT (losse woorden) en AVI (leesniveau teksten). Noem altijd beide als ze vermeld zijn.
+Rekenen: onderscheid Rekenen-Wiskunde (bewerkingen, meten, meetkunde) en Rekenen Basisbewerkingen (optellen, aftrekken, vermenigvuldigen, delen).
+Taal: Spelling, Taalverzorging, Woordenschat.
+Begrijpen: Begrijpend lezen en Begrijpend luisteren als aparte vaardigheden.
+Engels: vanaf groep 7.
+Sociaal-emotioneel: Sociaal-emotioneel functioneren (VISEON/Groeimeter), Executieve functies, Werkhouding.
+Groeimeter: sociaal-emotioneel meetinstrument — als dit vermeld is, neem het op in de sociaal-emotionele sectie.
+
 RAPPORTCOMMENTAAR - VERPLICHTE STRUCTUUR
 1. Persoonlijke opening over dit kind
 2. Wat goed gaat, concreet en herkenbaar
@@ -223,7 +232,7 @@ class LvsTijdlijnItem(BaseModel):
     leerling_id: str
     item: dict  # {type, datum, tekst}
 
-GELDIGE_VAKGEBIEDEN = {"lezen", "dmt", "rekenen", "spelling", "taalverzorging", "woordenschat", "begrijpend", "begrijpend_luis", "engels", "sociaal", "executief", "werkhouding"}
+GELDIGE_VAKGEBIEDEN = {"lezen", "avi", "dmt", "rekenen", "rekenen_basis", "spelling", "taalverzorging", "woordenschat", "begrijpend", "begrijpend_luis", "engels", "sociaal", "executief", "groeimeter", "werkhouding"}
 GELDIGE_NIVEAUS     = {"I", "II", "III", "IV", "V", None}
 GELDIGE_BRONNEN     = {"handmatig", "csv", "cito"}
 
@@ -1321,8 +1330,8 @@ async def haal_lvs_profiel_op(
     nieuw = await supabase_post("lvs_profielen", token, {
         "leerling_id": leerling_id,
         "leerkracht_id": user["id"],
-        "scores": {"lezen":70,"dmt":70,"rekenen":70,"spelling":70,"taalverzorging":70,"woordenschat":70,"begrijpend":70,"begrijpend_luis":70,"engels":70,"sociaal":70,"executief":70,"werkhouding":70},
-        "vorige_scores": {"lezen":70,"dmt":70,"rekenen":70,"spelling":70,"taalverzorging":70,"woordenschat":70,"begrijpend":70,"begrijpend_luis":70,"engels":70,"sociaal":70,"executief":70,"werkhouding":70},
+        "scores": {"lezen":70,"avi":70,"dmt":70,"rekenen":70,"rekenen_basis":70,"spelling":70,"taalverzorging":70,"woordenschat":70,"begrijpend":70,"begrijpend_luis":70,"engels":70,"sociaal":70,"executief":70,"groeimeter":70,"werkhouding":70},
+        "vorige_scores": {"lezen":70,"avi":70,"dmt":70,"rekenen":70,"rekenen_basis":70,"spelling":70,"taalverzorging":70,"woordenschat":70,"begrijpend":70,"begrijpend_luis":70,"engels":70,"sociaal":70,"executief":70,"groeimeter":70,"werkhouding":70},
         "tijdlijn": []
     })
     return nieuw[0] if isinstance(nieuw, list) and nieuw else nieuw
@@ -1877,8 +1886,8 @@ async def _voeg_tijdlijn_toe(leerling_id: str, leerkracht_id: str, token: str, i
             )
         else:
             # Profiel bestaat nog niet — aanmaken met standaard scores
-            standaard = {k: 70 for k in ["lezen","dmt","rekenen","spelling","taalverzorging",
-                "woordenschat","begrijpend","begrijpend_luis","engels","sociaal","executief","werkhouding"]}
+            standaard = {k: 70 for k in ["lezen","avi","dmt","rekenen","rekenen_basis","spelling","taalverzorging",
+                "woordenschat","begrijpend","begrijpend_luis","engels","sociaal","executief","groeimeter","werkhouding"]}
             await supabase_post("lvs_profielen", token, {
                 "leerling_id":   leerling_id,
                 "leerkracht_id": leerkracht_id,
