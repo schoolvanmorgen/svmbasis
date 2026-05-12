@@ -2823,20 +2823,50 @@ function lvsRenderRadar() {
 
 function lvsRenderTijdlijn() {
   if (!lvsHuidig) return;
-  const icons = { rapport:'📄', notitie:'✏️', toets:'📊', gesprek:'💬', observatie:'👁️', bijzonderheid:'⭐' };
   const el = document.getElementById('lvs-tijdlijn');
   if (!el) return;
-  if (!lvsHuidig.tijdlijn.length) {
+  if (!lvsHuidig.tijdlijn || !lvsHuidig.tijdlijn.length) {
     el.innerHTML = '<div style="color:#444;font-size:12px">Nog geen notities of rapporten.</div>';
     return;
   }
-  el.innerHTML = lvsHuidig.tijdlijn.map(item =>
-    '<div class="lvs-tl-item">'
-    + '<div class="lvs-tl-dot ' + (item.type==='rapport'?'rapport':'notitie') + '">' + (icons[item.type]||'•') + '</div>'
-    + '<div class="lvs-tl-inhoud"><div class="lvs-tl-datum">' + item.datum + '</div>'
-    + '<div class="lvs-tl-tekst">' + item.tekst + '</div></div>'
-    + '</div>'
-  ).join('');
+
+  // Domeinlabels voor categorisatie
+  const domeinLabels = {
+    sociaal:'Sociaal-emotioneel', werkhouding:'Werkhouding', executief:'Executieve functies',
+    groeimeter:'Groeimeter', lezen:'Technisch lezen', dmt:'DMT', avi:'AVI',
+    rekenen:'Rekenen', rekenen_basis:'Rekenen basisbew.', spelling:'Spelling',
+    taalverzorging:'Taalverzorging', woordenschat:'Woordenschat',
+    begrijpend:'Begrijpend lezen', begrijpend_luis:'Begrijpend luisteren',
+    engels:'Engels', rapport:'Rapport', handelingsplan:'Handelingsplan',
+    opp:'OPP', toets:'Toets', gesprek:'Gesprek', algemeen:'Observatie'
+  };
+  // Kleur per sentiment
+  const sentimentKleur = { positief:'#2d6a2d', neutraal:'#555', aandacht:'#c07000' };
+  const sentimentIcoon = { positief:'↑', neutraal:'·', aandacht:'!' };
+  // Kleur per type voor de dot
+  const dotKleur = {
+    rapport:'#2a3a2a', handelingsplan:'#3a4a2a', opp:'#2a3a4a',
+    sociaal:'#5a3a7a', werkhouding:'#4a7a4a', executief:'#7a4a3a',
+    groeimeter:'#3a6a6a', toets:'#1a4a8a', algemeen:'#666'
+  };
+
+  el.innerHTML = lvsHuidig.tijdlijn.map(function(item) {
+    const label  = domeinLabels[item.type] || item.type || 'Observatie';
+    const kleur  = dotKleur[item.type] || '#4a7a4a';
+    const sKleur = sentimentKleur[item.sentiment] || '#555';
+    const sIcon  = item.sentiment ? (sentimentIcoon[item.sentiment] || '·') : '';
+    const bron   = item.bron === 'notitie' ? ' · uit notitie' : '';
+    return '<div class="lvs-tl-item">'
+      + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0">' + (item.type==='rapport'?'R':item.type==='toets'?'T':item.type==='opp'?'O':'N') + '</div>'
+      + '<div class="lvs-tl-inhoud" style="flex:1;min-width:0">'
+      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">'
+      + '<span style="font-size:10px;font-weight:700;color:' + kleur + ';letter-spacing:.04em;text-transform:uppercase">' + label + '</span>'
+      + (sIcon ? '<span style="font-size:11px;color:' + sKleur + ';font-weight:600">' + sIcon + '</span>' : '')
+      + '<span style="font-size:10px;color:#999">' + item.datum + bron + '</span>'
+      + '</div>'
+      + '<div class="lvs-tl-tekst" style="font-size:12px;color:#333;line-height:1.5">' + item.tekst + '</div>'
+      + '</div></div>';
+  }).join('');
 }
 
 async function lvsSlaNotitieOp() {
@@ -4208,10 +4238,35 @@ async function notitieOpslaan() {
       const fout = await res.json().catch(() => ({}));
       throw new Error(fout.detail || 'Opslaan mislukt');
     }
+    const opgeslagenData = await res.json().catch(() => ({}));
     document.getElementById('notitie-tekst').value = '';
     await notitiesLaad(leerlingId);
-    // ── Cascade: stroom de notitie door naar alle invoervelden ──
     stroomNotitieNaarModules(leerlingId);
+
+    // ── Toon categorisatie-feedback ──
+    const cat = opgeslagenData._categorie;
+    if (cat) {
+      const domeinLabels = {
+        sociaal:'Sociaal-emotioneel', werkhouding:'Werkhouding', executief:'Executieve functies',
+        groeimeter:'Groeimeter', lezen:'Technisch lezen', dmt:'DMT', avi:'AVI',
+        rekenen:'Rekenen', rekenen_basis:'Rekenen basisbew.', spelling:'Spelling',
+        taalverzorging:'Taalverzorging', woordenschat:'Woordenschat',
+        begrijpend:'Begrijpend lezen', begrijpend_luis:'Begrijpend luisteren',
+        engels:'Engels', algemeen:'Algemeen'
+      };
+      const sentimentKleur = { positief:'#2d6a2d', neutraal:'#555', aandacht:'#c07000' };
+      const sentimentIcoon = { positief:'↑', neutraal:'→', aandacht:'!' };
+      const domeinLabel = domeinLabels[cat.domein] || cat.domein;
+      const kleur = sentimentKleur[cat.sentiment] || '#555';
+      const icoon = sentimentIcoon[cat.sentiment] || '→';
+      const bevestiging = document.getElementById('notitie-doorstroom-bevestiging');
+      if (bevestiging) {
+        bevestiging.style.display = 'block';
+        bevestiging.style.color = kleur;
+        bevestiging.innerHTML = icoon + ' Toegevoegd aan LVS <strong>' + domeinLabel + '</strong> · "' + cat.kern + '"';
+        setTimeout(() => { bevestiging.style.display = 'none'; }, 5000);
+      }
+    }
   } catch(e) {
     alert('Notitie opslaan mislukt: ' + e.message);
   } finally {

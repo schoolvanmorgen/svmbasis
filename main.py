@@ -1889,19 +1889,30 @@ async def sla_notitie_op(
     if not opgeslagen:
         raise HTTPException(status_code=500, detail="Notitie opslaan mislukt.")
 
-    # Cascade: voeg toe aan LVS-tijdlijn
+    # Cascade: categoriseer de notitie en voeg toe aan LVS-tijdlijn
     datum_nl = nu.strftime("%-d %b %Y")
+    categorie = await categoriseer_notitie(notitie.tekst.strip())
+    domein    = categorie.get("domein", "algemeen")
+    kern      = categorie.get("kern",   notitie.tekst.strip()[:80])
+    sentiment = categorie.get("sentiment", "neutraal")
+
     await _voeg_tijdlijn_toe(
         leerling_id=leerling_id,
         leerkracht_id=user["id"],
         token=token,
         item={
-            "type":  notitie.type or "notitie",
-            "datum": datum_nl,
-            "tekst": notitie.tekst.strip()[:200]
+            "type":      domein,
+            "datum":     datum_nl,
+            "tekst":     kern,
+            "sentiment": sentiment,
+            "bron":      "notitie"
         }
     )
-    return opgeslagen[0] if isinstance(opgeslagen, list) else opgeslagen
+    result = opgeslagen[0] if isinstance(opgeslagen, list) else opgeslagen
+    # Geef de categorisatie terug aan de frontend zodat die feedback kan tonen
+    if isinstance(result, dict):
+        result["_categorie"] = {"domein": domein, "kern": kern, "sentiment": sentiment}
+    return result
 
 @app.delete("/leerlingen/{leerling_id}/notities/{notitie_id}")
 async def verwijder_notitie(
@@ -2013,6 +2024,60 @@ async def _voeg_tijdlijn_toe(leerling_id: str, leerkracht_id: str, token: str, i
             })
     except Exception as e:
         logger.warning(f"Cascade tijdlijn-update mislukt (stil): {e}")
+
+
+# ══════════════════════════════════════════════════════════
+# NOTITIE CATEGORISATIE — Claude analyseert domein + kern
+# ══════════════════════════════════════════════════════════
+
+CATEGORISATIE_PROMPT = """Je bent een assistent die observatienotities van leraren categoriseert voor het leerlingvolgsysteem.
+
+Analyseer de notitie en retourneer ALLEEN een JSON-object:
+{
+  "domein": "<één van: sociaal, werkhouding, executief, groeimeter, lezen, rekenen, spelling, taalverzorging, woordenschat, begrijpend, begrijpend_luis, engels, rekenen_basis, dmt, avi, algemeen>",
+  "kern": "<de kern van de observatie in maximaal 12 woorden, feitelijk en neutraal>",
+  "sentiment": "<positief|neutraal|aandacht>"
+}
+
+Domein-richtlijnen:
+- sociaal: sociale interacties, conflicten, vriendschappen, groepsgedrag, pesten
+- werkhouding: concentratie, taakgerichtheid, motivatie, inzet, huiswerk
+- executief: planning, impulscontrole, organisatie, overgangen, flexibiliteit
+- groeimeter: welbevinden, zelfvertrouwen, emotieregulatie, weerbaarheid
+- lezen/dmt/avi: technisch lezen, leesniveau, leessnelheid
+- begrijpend: tekstbegrip, begrijpend lezen/luisteren
+- rekenen/rekenen_basis: rekenprestaties, getalbegrip, bewerkingen
+- spelling/taalverzorging/woordenschat: taalvaardigheid
+- engels: Engelse taalvaardigheid
+- algemeen: past niet in één specifiek domein
+
+Sentiment:
+- positief: groei, succes, vooruitgang, iets goed opgelost
+- aandacht: zorgpunt, achteruitgang, ondersteuning nodig
+- neutraal: feitelijke observatie zonder duidelijke trend
+
+Retourneer ALLEEN het JSON-object, geen uitleg."""
+
+
+async def categoriseer_notitie(tekst: str) -> dict:
+    """
+    Laat Claude de notitie categoriseren naar domein en kern.
+    Stil falen: als het mislukt, gebruik 'algemeen' als fallback.
+    """
+    try:
+        import anthropic as _ac
+        client = _ac.AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        response = await client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=150,
+            system=CATEGORISATIE_PROMPT,
+            messages=[{"role": "user", "content": f"Notitie: {tekst[:500]}"}]
+        )
+        raw = response.content[0].text.strip()
+        return _veilig_json_parse(raw)
+    except Exception as e:
+        logger.warning(f"Categorisatie mislukt (stil): {e}")
+        return {"domein": "algemeen", "kern": tekst[:80], "sentiment": "neutraal"}
 
 
 # ══════════════════════════════════════════════════════════
