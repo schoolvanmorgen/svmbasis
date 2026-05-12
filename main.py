@@ -197,18 +197,21 @@ class OppVerzoek(BaseModel):
     naam: str = ""
     groep: str = ""
     ondersteuningsbehoefte: str = ""
+    leerling_id: Optional[str] = None
 
 class HandelingsplanVerzoek(BaseModel):
     notities: str
     naam: str = ""
     groep: str = ""
     ondersteuningsbehoefte: str = ""
+    leerling_id: Optional[str] = None
 
 class OudergesprekVerzoek(BaseModel):
     notities: str
     naam: str = ""
     groep: str = ""
     datum: str = ""
+    leerling_id: Optional[str] = None
 
 class LvsProfielOpslaan(BaseModel):
     leerling_id: str
@@ -1063,7 +1066,22 @@ async def sla_rapport_op(
         "leerkracht_id": user["id"],
         "rapport_data": verzoek.rapport_data
     })
-    return data[0] if isinstance(data, list) and data else data
+    opgeslagen = data[0] if isinstance(data, list) and data else data
+
+    # Cascade: voeg rapport toe aan LVS-tijdlijn (stil falen)
+    try:
+        datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+        commentaar = verzoek.rapport_data.get("rapportcommentaar") or ""
+        tekst = "Rapport opgeslagen." + (f" {commentaar[:80]}..." if commentaar else "")
+        await _voeg_tijdlijn_toe(
+            leerling_id=verzoek.leerling_id,
+            leerkracht_id=user["id"],
+            token=token,
+            item={"type": "rapport", "datum": datum_nl, "tekst": tekst}
+        )
+    except Exception as _e:
+        logger.warning(f"Cascade rapport->LVS mislukt (stil): {_e}")
+    return opgeslagen
 
 @app.delete("/rapporten/{rapport_id}")
 async def verwijder_rapport(
@@ -1083,7 +1101,7 @@ async def verwijder_rapport(
 # ══════════════════════════════════════════════════════════
 
 @app.post("/opp")
-async def opp(verzoek: OppVerzoek, user=Depends(get_user)):
+async def opp(verzoek: OppVerzoek, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
     if not verzoek.notities or len(verzoek.notities.strip()) < 20:
         raise HTTPException(status_code=400, detail="Notities moeten minimaal 20 tekens bevatten.")
     if len(verzoek.notities) > MAX_PROMPT_LENGTE:
@@ -1105,10 +1123,25 @@ async def opp(verzoek: OppVerzoek, user=Depends(get_user)):
 
     try:
         parsed = _veilig_json_parse(tekst)
-        return {"data": parsed, "tekst": tekst}
     except (json.JSONDecodeError, ValueError):
         logger.warning(f"OPP JSON parse mislukt: {tekst[:100]}")
         return {"data": None, "tekst": tekst}
+
+    # Cascade: voeg OPP toe aan LVS-tijdlijn
+    if verzoek.leerling_id:
+        try:
+            datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+            uitstroom = (parsed.get("uitstroombestemming") or parsed.get("uitstroom") or "")[:60]
+            tijdlijn_tekst = "OPP gegenereerd." + (f" Uitstroom: {uitstroom}…" if uitstroom else "")
+            await _voeg_tijdlijn_toe(
+                leerling_id=verzoek.leerling_id,
+                leerkracht_id=user["id"],
+                token=credentials.credentials if hasattr(credentials, "credentials") else "",
+                item={"type": "opp", "datum": datum_nl, "tekst": tijdlijn_tekst}
+            )
+        except Exception as _e:
+            logger.warning(f"Cascade OPP->LVS mislukt (stil): {_e}")
+    return {"data": parsed, "tekst": tekst}
 
 # ══════════════════════════════════════════════════════════
 # HANDELINGSPLAN
@@ -1169,7 +1202,7 @@ async def sla_aanwezigheid_op(item: AanwezigheidItem, user=Depends(get_user), cr
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
 
 @app.post("/handelingsplan")
-async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user)):
+async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user), credentials: HTTPAuthorizationCredentials = Depends(security)):
     if not verzoek.ondersteuningsbehoefte:
         raise HTTPException(status_code=400, detail="Ondersteuningsbehoefte is verplicht voor een handelingsplan.")
     if not verzoek.notities or len(verzoek.notities.strip()) < 10:
@@ -1192,10 +1225,25 @@ async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user))
 
     try:
         parsed = _veilig_json_parse(tekst)
-        return {"data": parsed, "tekst": tekst}
     except (json.JSONDecodeError, ValueError):
         logger.warning(f"Handelingsplan JSON parse mislukt: {tekst[:100]}")
         return {"data": None, "tekst": tekst}
+
+    # Cascade: voeg handelingsplan toe aan LVS-tijdlijn
+    if verzoek.leerling_id:
+        try:
+            datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+            behoefte = verzoek.ondersteuningsbehoefte or ""
+            tijdlijn_tekst = f"Handelingsplan {behoefte} gegenereerd.".strip()
+            await _voeg_tijdlijn_toe(
+                leerling_id=verzoek.leerling_id,
+                leerkracht_id=user["id"],
+                token=credentials.credentials,
+                item={"type": "handelingsplan", "datum": datum_nl, "tekst": tijdlijn_tekst}
+            )
+        except Exception as _e:
+            logger.warning(f"Cascade handelingsplan->LVS mislukt (stil): {_e}")
+    return {"data": parsed, "tekst": tekst}
 
 # ══════════════════════════════════════════════════════════
 # OUDERGESPREK
@@ -1658,6 +1706,188 @@ async def haal_toetsen_op(leerling_id: str, user=Depends(get_user), credentials:
         "order": "afname_datum.desc", "select": "*"
     })
     return data or []
+
+
+# ══════════════════════════════════════════════════════════
+# NOTITIES PER LEERLING (database-backed, vervangt localStorage)
+# ══════════════════════════════════════════════════════════
+
+class NotitieAanmaken(BaseModel):
+    tekst: str
+    type: Optional[str] = "notitie"  # notitie | observatie | bijzonderheid | gesprek
+
+@app.get("/leerlingen/{leerling_id}/notities")
+async def haal_notities_op(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Haal alle notities op voor een leerling, nieuwste eerst."""
+    token = credentials.credentials
+    data = await supabase_get("leerling_notities", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "order": "aangemaakt_op.desc",
+        "select": "*"
+    })
+    return data or []
+
+@app.post("/leerlingen/{leerling_id}/notities")
+async def sla_notitie_op(
+    leerling_id: str,
+    notitie: NotitieAanmaken,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """Sla een notitie op en voeg hem toe aan de LVS-tijdlijn."""
+    if not notitie.tekst or not notitie.tekst.strip():
+        raise HTTPException(status_code=400, detail="Notitietekst is leeg.")
+    if len(notitie.tekst) > 5000:
+        raise HTTPException(status_code=400, detail="Notitie te lang (max 5000 tekens).")
+    token = credentials.credentials
+
+    # Controleer dat de leerling bij deze leerkracht hoort
+    leerling = await supabase_get("leerlingen", token,
+        {"id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}", "select": "id,voornaam"})
+    if not leerling:
+        raise HTTPException(status_code=404, detail="Leerling niet gevonden.")
+
+    nu = datetime.now(timezone.utc)
+    record = {
+        "leerling_id":   leerling_id,
+        "leerkracht_id": user["id"],
+        "tekst":         notitie.tekst.strip(),
+        "type":          notitie.type or "notitie",
+        "aangemaakt_op": nu.isoformat()
+    }
+    opgeslagen = await supabase_post("leerling_notities", token, record)
+    if not opgeslagen:
+        raise HTTPException(status_code=500, detail="Notitie opslaan mislukt.")
+
+    # Cascade: voeg toe aan LVS-tijdlijn
+    datum_nl = nu.strftime("%-d %b %Y")
+    await _voeg_tijdlijn_toe(
+        leerling_id=leerling_id,
+        leerkracht_id=user["id"],
+        token=token,
+        item={
+            "type":  notitie.type or "notitie",
+            "datum": datum_nl,
+            "tekst": notitie.tekst.strip()[:200]
+        }
+    )
+    return opgeslagen[0] if isinstance(opgeslagen, list) else opgeslagen
+
+@app.delete("/leerlingen/{leerling_id}/notities/{notitie_id}")
+async def verwijder_notitie(
+    leerling_id: str,
+    notitie_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+    bestaand = await supabase_get("leerling_notities", token,
+        {"id": f"eq.{notitie_id}", "leerling_id": f"eq.{leerling_id}",
+         "leerkracht_id": f"eq.{user['id']}", "select": "id"})
+    if not bestaand:
+        raise HTTPException(status_code=404, detail="Notitie niet gevonden.")
+    await supabase_delete(f"leerling_notities?id=eq.{notitie_id}", token)
+    return {"verwijderd": True}
+
+
+# ══════════════════════════════════════════════════════════
+# VOLLEDIG LEERLINGPROFIEL (geaggregeerde studentkaart)
+# ══════════════════════════════════════════════════════════
+
+@app.get("/leerlingen/{leerling_id}/volledig")
+async def haal_volledig_profiel_op(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Geaggregeerde studentkaart: combineert leerlingdata, LVS-profiel,
+    recente rapporten, notities, OPP/handelingsplan-tijdlijn en aanwezigheid
+    in één API-aanroep.
+    """
+    token = credentials.credentials
+
+    # Controleer toegang
+    leerling_data = await supabase_get("leerlingen", token,
+        {"id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}", "select": "*"})
+    if not leerling_data:
+        raise HTTPException(status_code=404, detail="Leerling niet gevonden.")
+    leerling = leerling_data[0]
+
+    import asyncio
+    # Haal alles parallel op
+    lvs_taak        = supabase_get("lvs_profielen", token,
+        {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}", "select": "*"})
+    rapporten_taak  = supabase_get("rapporten", token,
+        {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}",
+         "order": "aangemaakt_op.desc", "select": "id,aangemaakt_op,rapport_data", "limit": "5"})
+    notities_taak   = supabase_get("leerling_notities", token,
+        {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}",
+         "order": "aangemaakt_op.desc", "select": "*", "limit": "20"})
+    toetsen_taak    = supabase_get("toetsresultaten", token,
+        {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}",
+         "order": "afname_datum.desc", "select": "*", "limit": "30"})
+    berichten_taak  = supabase_get("ouder_berichten", token,
+        {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{user['id']}",
+         "order": "verstuurd_op.desc", "select": "id,onderwerp,verstuurd_op,bericht_type,ouder_email", "limit": "10"})
+
+    lvs_res, rapporten_res, notities_res, toetsen_res, berichten_res = await asyncio.gather(
+        lvs_taak, rapporten_taak, notities_taak, toetsen_taak, berichten_taak,
+        return_exceptions=True
+    )
+
+    def veilig(r):
+        return r if isinstance(r, list) else []
+
+    return {
+        "leerling":   leerling,
+        "lvs":        veilig(lvs_res)[0] if veilig(lvs_res) else None,
+        "rapporten":  veilig(rapporten_res),
+        "notities":   veilig(notities_res),
+        "toetsen":    veilig(toetsen_res),
+        "berichten":  veilig(berichten_res),
+    }
+
+
+# ══════════════════════════════════════════════════════════
+# CASCADE HELPER — tijdlijn bijwerken vanuit elke module
+# ══════════════════════════════════════════════════════════
+
+async def _voeg_tijdlijn_toe(leerling_id: str, leerkracht_id: str, token: str, item: dict):
+    """
+    Voegt één item toe aan de LVS-tijdlijn van een leerling.
+    Maakt het profiel aan als het nog niet bestaat.
+    Stil falen: cascade-fouten mogen de primaire actie niet breken.
+    """
+    try:
+        data = await supabase_get("lvs_profielen", token,
+            {"leerling_id": f"eq.{leerling_id}", "leerkracht_id": f"eq.{leerkracht_id}",
+             "select": "tijdlijn"})
+        if data:
+            tijdlijn = data[0].get("tijdlijn") or []
+            tijdlijn.insert(0, item)
+            await supabase_patch(
+                f"lvs_profielen?leerling_id=eq.{leerling_id}&leerkracht_id=eq.{leerkracht_id}",
+                token, {"tijdlijn": tijdlijn}
+            )
+        else:
+            # Profiel bestaat nog niet — aanmaken met standaard scores
+            standaard = {k: 70 for k in ["lezen","dmt","rekenen","spelling","taalverzorging",
+                "woordenschat","begrijpend","begrijpend_luis","engels","sociaal","executief","werkhouding"]}
+            await supabase_post("lvs_profielen", token, {
+                "leerling_id":   leerling_id,
+                "leerkracht_id": leerkracht_id,
+                "scores":        standaard,
+                "vorige_scores": standaard,
+                "tijdlijn":      [item]
+            })
+    except Exception as e:
+        logger.warning(f"Cascade tijdlijn-update mislukt (stil): {e}")
 
 
 # ══════════════════════════════════════════════════════════

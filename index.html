@@ -461,6 +461,11 @@ function stelLeerlingIn(leerling) {
       lvsSelecteer(leerling.id);
     }
   }
+
+  // Notities tab: herlaad als de actieve tab notities is, of als leerling wisselt
+  if (leerling && _notitiesHuidigId !== leerling.id) {
+    if (typeof notitiesLaad === 'function') notitiesLaad(leerling.id);
+  }
 }
 
 async function initAuth() {
@@ -698,9 +703,19 @@ async function verwijderLeerling(id) {
 function selecteerLeerling(id) {
   const l = leerlingen.find(x => x.id === id);
   if (!l) return;
-  document.querySelectorAll('.leerling-item').forEach(el => el.classList.remove('actief'));
+  document.querySelectorAll('.leerling-item').forEach(el => {
+    el.classList.toggle('actief', el.dataset.id === id);
+  });
   stelLeerlingIn(l);
   laadRapportgeschiedenis(id);
+  // Laad notities voor deze leerling (database-backed)
+  notitiesLaad(id);
+  // Sync OPP-notities veld met de notities van de leerling
+  const oppNotEl = document.getElementById('opp-notities');
+  if (oppNotEl && l.notities) oppNotEl.value = l.notities;
+  // Sync handelingsplan-notities veld
+  const hpNotEl = document.getElementById('hp-notities');
+  if (hpNotEl && l.notities) hpNotEl.value = l.notities;
 }
 
 async function laadRapportgeschiedenis(leerlingId) {
@@ -739,8 +754,26 @@ async function verwijderRapport(id) {
   if (window._huidigeLeerlingId) laadRapportgeschiedenis(window._huidigeLeerlingId);
 }
 
-function laadRapport(id) {
-  // TODO: rapport terugzetten in resultaten
+async function laadRapport(id) {
+  const leerlingId = window._huidigeLeerlingId;
+  if (!leerlingId || !huidigToken) return;
+  const r = document.getElementById('resultaat');
+  if (r) r.innerHTML = '<div style="padding:20px;color:var(--tz);font-size:13px">Rapport laden…</div>';
+  try {
+    const res = await fetch(API_BASE + '/rapporten/' + leerlingId + '/' + id, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+    const parsed = data.rapport_data;
+    if (!parsed) throw new Error('Geen rapport data gevonden.');
+    huidigeSectieData = parsed;
+    const naam = document.getElementById('naam').value.trim();
+    const groep = document.getElementById('groep').value;
+    toonResultaten(parsed, naam, groep);
+  } catch(e) {
+    if (r) r.innerHTML = '<div class="fout">Rapport laden mislukt: ' + e.message + '</div>';
+  }
 }
 
 function leerlingTab(nr) {
@@ -2229,7 +2262,7 @@ async function lvsSla() {
   if (!lvsHuidig) return;
   await lvsSlaProfielOp(lvsHuidig.id, {
     scores: lvsHuidig.scores,
-    vorige: lvsHuidig.vorige,
+    vorige_scores: lvsHuidig.vorige,
     tijdlijn: lvsHuidig.tijdlijn
   });
 }
@@ -2870,9 +2903,9 @@ async function werkLvsVanuitRapportBij(parsed, naam, groep) {
 
     // ── 4. Opslaan via API ──────────────────────────────────
     await lvsSlaProfielOp(leerlingId, {
-      scores:   updatedScores,
-      vorige:   updatedVorige,
-      tijdlijn: updatedTijdlijn
+      scores:        updatedScores,
+      vorige_scores: updatedVorige,
+      tijdlijn:      updatedTijdlijn
     });
 
     // ── 5. Toetsresultaten opslaan voor vakken met score ───
@@ -3453,8 +3486,23 @@ async function genereerOpp() {
 Notities: "${notities}"
 Retourneer ALLEEN een JSON-object met:
 {"uitstroom":"Uitstroombestemming en motivatie in 3-4 zinnen","bevorderend":"Bevorderende factoren in 2-3 zinnen","belemmerend":"Belemmerende factoren in 2-3 zinnen","doelen":"SMART-geformuleerde doelen voor de komende periode","hoorrecht":"Samenvatting hoorrecht leerling en ouders in 2 zinnen","evaluatie":"Evaluatiemoment en -methode"}`;
+  // Stuur leerling_id mee zodat de backend de cascade naar LVS kan doen
+  const _oppLeerlingId = window._huidigeLeerlingId || null;
   try {
-    const tekst = await roepAPIaan(prompt);
+    // Gebruik het dedicated /opp endpoint voor betere privacyfiltering en cascade
+    const _oppRes = await fetch(API_BASE + '/opp', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notities, naam, groep, ondersteuningsbehoefte: behoefte, leerling_id: _oppLeerlingId })
+    });
+    let tekst;
+    if (_oppRes.ok) {
+      const _oppData = await _oppRes.json();
+      tekst = _oppData.tekst || JSON.stringify(_oppData.data || {});
+    } else {
+      // Fallback naar generieke stream als het OPP-endpoint niet beschikbaar is
+      tekst = await roepAPIaan(prompt);
+    }
     const d = JSON.parse(tekst.replace(/```json|```/g,'').trim());
     resultaat.innerHTML = `<div class="naambalk">${naam ? naam+(groep?' — groep '+groep:'') : 'OPP'}</div>`
       + Object.entries({uitstroom:'Uitstroombestemming',bevorderend:'Bevorderende factoren',belemmerend:'Belemmerende factoren',doelen:'SMART-doelen',hoorrecht:'Hoorrecht',evaluatie:'Evaluatie'})
@@ -3466,7 +3514,7 @@ Retourneer ALLEEN een JSON-object met:
       const profiel = await lvsHaalProfielOp(leerlingId);
       if (profiel) {
         const tijdlijn = [{ type:'opp', datum, tekst:'OPP gegenereerd.' + (d.uitstroom ? ' Uitstroom: ' + d.uitstroom.slice(0,60) + '…' : '') + (d.doelen ? ' Doel: ' + d.doelen.slice(0,60) + '…' : '') }, ...(profiel.tijdlijn||[])];
-        await lvsSlaProfielOp(leerlingId, { scores: profiel.scores||{}, vorige: profiel.vorige_scores||{}, tijdlijn });
+        await lvsSlaProfielOp(leerlingId, { scores: profiel.scores||{}, vorige_scores: profiel.vorige_scores||{}, tijdlijn });
         if (lvsHuidig && lvsHuidig.id === leerlingId) { lvsHuidig.tijdlijn = tijdlijn; lvsRenderTijdlijn(); }
       }
     }
@@ -3491,8 +3539,21 @@ async function genereerHandelingsplan() {
 Notities: "${notities}"
 Retourneer ALLEEN een JSON-object met:
 {"doel":"Concreet doel voor de komende 6 weken","aanpak":"Bewezen interventies en hoe ze in te zetten in 3-4 zinnen","materialen":"Benodigde materialen of aanpassingen","evaluatie":"Hoe en wanneer evalueren","ouders":"Aanbeveling voor thuissituatie in 2 zinnen"}`;
+  // Stuur leerling_id mee voor cascade naar LVS
+  const _hpLeerlingId = window._huidigeLeerlingId || null;
   try {
-    const tekst = await roepAPIaan(prompt);
+    const _hpRes = await fetch(API_BASE + '/handelingsplan', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notities, naam, groep, ondersteuningsbehoefte: behoefte, leerling_id: _hpLeerlingId })
+    });
+    let tekst;
+    if (_hpRes.ok) {
+      const _hpData = await _hpRes.json();
+      tekst = _hpData.tekst || JSON.stringify(_hpData.data || {});
+    } else {
+      tekst = await roepAPIaan(prompt);
+    }
     const d = JSON.parse(tekst.replace(/```json|```/g,'').trim());
     resultaat.innerHTML = `<div class="naambalk">${naam?naam+' — ':''}Handelingsplan ${behoefte}</div>`
       + Object.entries({doel:'Doel',aanpak:'Aanpak & interventies',materialen:'Materialen',evaluatie:'Evaluatie',ouders:'Tips voor thuis'})
@@ -3504,7 +3565,7 @@ Retourneer ALLEEN een JSON-object met:
       const profiel = await lvsHaalProfielOp(leerlingId);
       if (profiel) {
         const tijdlijn = [{ type:'handelingsplan', datum, tekst:'Handelingsplan ' + behoefte + ' gegenereerd.' + (d.doel ? ' Doel: ' + d.doel.slice(0,60) + '…' : '') }, ...(profiel.tijdlijn||[])];
-        await lvsSlaProfielOp(leerlingId, { scores: profiel.scores||{}, vorige: profiel.vorige_scores||{}, tijdlijn });
+        await lvsSlaProfielOp(leerlingId, { scores: profiel.scores||{}, vorige_scores: profiel.vorige_scores||{}, tijdlijn });
         if (lvsHuidig && lvsHuidig.id === leerlingId) { lvsHuidig.tijdlijn = tijdlijn; lvsRenderTijdlijn(); }
       }
     }
@@ -3512,46 +3573,97 @@ Retourneer ALLEEN een JSON-object met:
   finally { knop.disabled=false; spin.style.display='none'; document.getElementById('hp-ktekst').textContent='Genereer handelingsplan'; }
 }
 
-// ── Notities ────────────────────────────────────────────────
-let notities_opgeslagen = JSON.parse(localStorage.getItem('svm_notities') || '[]');
+// ── Notities — database-backed (vervangt localStorage) ──────
+// Notities worden opgeslagen per leerling in Supabase.
+// Zonder actieve leerling: toon instructie.
+let _notitiesHuidigId = null;  // leerling_id waarvoor notities geladen zijn
 
-function notitieOpslaan() {
+async function notitiesLaad(leerlingId) {
+  _notitiesHuidigId = leerlingId;
+  const el = document.getElementById('notitie-tijdlijn');
+  if (!el) return;
+  if (!leerlingId) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Selecteer eerst een leerling via de zijbalk of rapport-tab.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:12px 0">Laden…</div>';
+  try {
+    const res = await fetch(API_BASE + '/leerlingen/' + leerlingId + '/notities', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+    notitieRenderData(data);
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:12px 0">Laden mislukt: ' + e.message + '</div>';
+  }
+}
+
+async function notitieOpslaan() {
   const tekst = document.getElementById('notitie-tekst')?.value.trim();
   if (!tekst) return;
-  const notitie = {
-    id: Date.now().toString(),
-    datum: new Date().toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long', year:'numeric'}),
-    tijdstip: new Date().toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'}),
-    tekst
-  };
-  notities_opgeslagen.unshift(notitie);
-  localStorage.setItem('svm_notities', JSON.stringify(notities_opgeslagen));
-  document.getElementById('notitie-tekst').value = '';
-  notitieRender();
+  const leerlingId = window._huidigeLeerlingId;
+  if (!leerlingId) {
+    alert('Selecteer eerst een leerling voordat je een notitie opslaat.');
+    return;
+  }
+  const knop = document.querySelector('#tab-notities button[onclick="notitieOpslaan()"]');
+  if (knop) { knop.textContent = 'Opslaan…'; knop.disabled = true; }
+  try {
+    const res = await fetch(API_BASE + '/leerlingen/' + leerlingId + '/notities', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tekst, type: 'notitie' })
+    });
+    if (!res.ok) {
+      const fout = await res.json().catch(() => ({}));
+      throw new Error(fout.detail || 'Opslaan mislukt');
+    }
+    document.getElementById('notitie-tekst').value = '';
+    // Herlaad notities uit DB voor actuele lijst
+    await notitiesLaad(leerlingId);
+  } catch(e) {
+    alert('Notitie opslaan mislukt: ' + e.message);
+  } finally {
+    if (knop) { knop.textContent = 'Opslaan'; knop.disabled = false; }
+  }
 }
 
 function notitieRender() {
+  // Herlaad vanuit DB als er een actieve leerling is
+  const leerlingId = window._huidigeLeerlingId;
+  if (leerlingId) {
+    notitiesLaad(leerlingId);
+  } else {
+    const el = document.getElementById('notitie-tijdlijn');
+    if (el) el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Selecteer eerst een leerling via de zijbalk of rapport-tab.</div>';
+  }
+}
+
+function notitieRenderData(notities) {
   const el = document.getElementById('notitie-tijdlijn');
   if (!el) return;
-  if (!notities_opgeslagen.length) {
-    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Nog geen notities. Schrijf je eerste notitie.</div>';
+  if (!notities || !notities.length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Nog geen notities voor deze leerling.</div>';
     return;
   }
-  el.innerHTML = notities_opgeslagen.map((n, idx) => {
+  el.innerHTML = notities.map((n, idx) => {
+    const datum = new Date(n.aangemaakt_op).toLocaleDateString('nl-NL', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    const tijdstip = new Date(n.aangemaakt_op).toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit'});
     const kort = n.tekst.length > 120 ? n.tekst.slice(0,120) + '...' : n.tekst;
-    const lijn = idx < notities_opgeslagen.length - 1
+    const lijn = idx < notities.length - 1
       ? '<div style="position:absolute;left:11px;top:26px;bottom:0;width:1px;background:var(--warmrand)"></div>'
       : '';
     return '<div style="display:flex;gap:14px;padding-bottom:20px;position:relative">'
       + lijn
       + '<div style="width:24px;height:24px;background:#4a7a4a;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:#fff"></div></div>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-size:10px;color:var(--tz);letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">' + n.datum + ' &middot; ' + n.tijdstip + '</div>'
+      + '<div style="font-size:10px;color:var(--tz);letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase">' + datum + ' &middot; ' + tijdstip + '</div>'
       + '<div id="notitie-preview-' + n.id + '" style="font-size:13px;color:var(--tm);line-height:1.7;cursor:pointer;border:1px solid var(--warmrand);padding:12px 14px;background:#fff;white-space:pre-wrap" onclick="notitieToggle(this.dataset.id)" data-id="' + n.id + '">' + kort + '</div>'
-      + '<div id="notitie-vol-' + n.id + '" style="display:none;font-size:13px;color:var(--tm);line-height:1.7;border:1px solid #4a7a4a;padding:12px 14px;background:#fff;white-space:pre-wrap">' + n.tekst
+      + '<div id="notitie-vol-' + n.id + '" style="display:none;font-size:13px;color:var(--tm);line-height:1.7;border:1px solid #4a7a4a;padding:12px 14px;background:#fff;white-space:pre-wrap">' + escHtml(n.tekst)
       + '<div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--warmrand);padding-top:10px">'
-      + '<button onclick="notitieKopieer(this.dataset.id)" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit">Kopieer</button>'
-      + '<button onclick="notitieVerwijder(this.dataset.id)" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Verwijder</button>'
+      + '<button onclick="notitieKopieer(this.dataset.id)" data-id="' + n.id + '" data-tekst="' + encodeURIComponent(n.tekst) + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit">Kopieer</button>'
+      + '<button onclick="notitieVerwijder(this.dataset.id,'' + _notitiesHuidigId + '')" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Verwijder</button>'
       + '<button onclick="notitieToggle(this.dataset.id)" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;margin-left:auto">Sluiten</button>'
       + '</div></div>'
       + '</div></div>';
@@ -3568,15 +3680,25 @@ function notitieToggle(id) {
 }
 
 function notitieKopieer(id) {
-  const n = notities_opgeslagen.find(function(x) { return x.id === id; });
-  if (n) navigator.clipboard.writeText(n.tekst);
+  const knop = document.querySelector('[data-id="' + id + '"][data-tekst]');
+  if (knop) {
+    const tekst = decodeURIComponent(knop.dataset.tekst);
+    navigator.clipboard.writeText(tekst);
+  }
 }
 
-function notitieVerwijder(id) {
+async function notitieVerwijder(id, leerlingId) {
   if (!confirm('Notitie verwijderen?')) return;
-  notities_opgeslagen = notities_opgeslagen.filter(function(x) { return x.id !== id; });
-  localStorage.setItem('svm_notities', JSON.stringify(notities_opgeslagen));
-  notitieRender();
+  try {
+    const res = await fetch(API_BASE + '/leerlingen/' + leerlingId + '/notities/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Verwijderen mislukt');
+    await notitiesLaad(leerlingId);
+  } catch(e) {
+    alert('Verwijderen mislukt: ' + e.message);
+  }
 }
 
 
