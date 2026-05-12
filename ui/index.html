@@ -1062,7 +1062,7 @@ function toonTab(tab, knop) {
 </header>
 
 
-<div class="tijdsbalk" id="tijdsbalk">
+<div class="tijdsbalk" id="tijdsbalk" style="flex-shrink:0">
   <div class="tijds-item">
     <div class="tijds-getal" id="t-rapporten">0</div>
     <div class="tijds-label">rapporten<br>gegenereerd</div>
@@ -1080,7 +1080,7 @@ function toonTab(tab, knop) {
   <div class="tijds-tip" id="t-tip">Elk rapport bespaart gemiddeld 25 minuten schrijftijd.</div>
   <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #c4cfc4;background:transparent;color:#4a5a4a;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
 </div>
-<div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem;position:sticky;top:0;z-index:90;flex-shrink:0">
+<div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem;flex-shrink:0;z-index:90">
   <button class="tab actief" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
   <button class="tab" onclick="toonTab('notities',this)">Notities</button>
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
@@ -1088,8 +1088,8 @@ function toonTab(tab, knop) {
   <button class="tab" onclick="toonTab('groepsplan',this)">Groepsplan</button>
   <button class="tab" onclick="toonTab('school',this)">School</button>
 </div>
-<div id="tab-inhoud">
-  <div class="invoer">
+<div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0">
+  <div class="invoer" style="height:100%;overflow-y:auto">
     <div>
       <div class="vlabel">LEERLING</div>
       <div class="rij2">
