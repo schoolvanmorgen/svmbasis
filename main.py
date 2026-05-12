@@ -220,7 +220,7 @@ class LvsTijdlijnItem(BaseModel):
     leerling_id: str
     item: dict  # {type, datum, tekst}
 
-GELDIGE_VAKGEBIEDEN = {"lezen", "rekenen", "spelling", "begrijpend", "sociaal", "werkhouding"}
+GELDIGE_VAKGEBIEDEN = {"lezen", "dmt", "rekenen", "spelling", "taalverzorging", "woordenschat", "begrijpend", "begrijpend_luis", "engels", "sociaal", "executief", "werkhouding"}
 GELDIGE_NIVEAUS     = {"I", "II", "III", "IV", "V", None}
 GELDIGE_BRONNEN     = {"handmatig", "csv", "cito"}
 
@@ -1273,8 +1273,8 @@ async def haal_lvs_profiel_op(
     nieuw = await supabase_post("lvs_profielen", token, {
         "leerling_id": leerling_id,
         "leerkracht_id": user["id"],
-        "scores": {"lezen":70,"rekenen":70,"spelling":70,"begrijpend":70,"sociaal":70,"werkhouding":70},
-        "vorige_scores": {"lezen":70,"rekenen":70,"spelling":70,"begrijpend":70,"sociaal":70,"werkhouding":70},
+        "scores": {"lezen":70,"dmt":70,"rekenen":70,"spelling":70,"taalverzorging":70,"woordenschat":70,"begrijpend":70,"begrijpend_luis":70,"engels":70,"sociaal":70,"executief":70,"werkhouding":70},
+        "vorige_scores": {"lezen":70,"dmt":70,"rekenen":70,"spelling":70,"taalverzorging":70,"woordenschat":70,"begrijpend":70,"begrijpend_luis":70,"engels":70,"sociaal":70,"executief":70,"werkhouding":70},
         "tijdlijn": []
     })
     return nieuw[0] if isinstance(nieuw, list) and nieuw else nieuw
