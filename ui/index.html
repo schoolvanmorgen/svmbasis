@@ -3663,7 +3663,7 @@ function notitieRenderData(notities) {
       + '<div id="notitie-vol-' + n.id + '" style="display:none;font-size:13px;color:var(--tm);line-height:1.7;border:1px solid #4a7a4a;padding:12px 14px;background:#fff;white-space:pre-wrap">' + escHtml(n.tekst)
       + '<div style="display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--warmrand);padding-top:10px">'
       + '<button onclick="notitieKopieer(this.dataset.id)" data-id="' + n.id + '" data-tekst="' + encodeURIComponent(n.tekst) + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit">Kopieer</button>'
-      + '<button onclick="notitieVerwijder(this.dataset.id,'' + _notitiesHuidigId + '')" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Verwijder</button>'
+      + '<button onclick="notitieVerwijder(this.dataset.id,\''+_notitiesHuidigId+''\')" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tz)">Verwijder</button>'
       + '<button onclick="notitieToggle(this.dataset.id)" data-id="' + n.id + '" style="font-size:11px;padding:5px 10px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;margin-left:auto">Sluiten</button>'
       + '</div></div>'
       + '</div></div>';
