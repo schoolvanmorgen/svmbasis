@@ -1268,6 +1268,207 @@ async def haal_rapport_op(
         raise HTTPException(status_code=404, detail="Rapport niet gevonden.")
     return data[0]
 
+@app.post("/rapporten/batch")
+async def genereer_batch_rapporten(
+    verzoek: dict,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Genereert rapporten voor alle leerlingen in een groep in één aanroep.
+    Per leerling:
+    1. Haalt notities op (laatste 5)
+    2. Haalt LVS-scores op
+    3. Haalt ondersteuningsbehoeftes op van de leerling
+    4. Combineert alles tot één prompt
+    5. Genereert het rapport via Claude
+    6. Slaat het op en cascadeert naar LVS-tijdlijn
+    """
+    import asyncio
+
+    groep      = verzoek.get("groep", "")
+    schooljaar = verzoek.get("schooljaar", "")
+    token      = credentials.credentials
+
+    if not groep:
+        raise HTTPException(status_code=400, detail="Groep is verplicht.")
+
+    # Haal alle leerlingen in de groep op
+    leerlingen_data = await supabase_get("leerlingen", token, {
+        "groep":         f"eq.{groep}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "select":        "*",
+        "order":         "voornaam.asc"
+    })
+    if not leerlingen_data:
+        raise HTTPException(status_code=404, detail=f"Geen leerlingen gevonden in groep {groep}.")
+
+    resultaten = []
+    fouten     = []
+
+    async def genereer_voor_leerling(leerling: dict) -> dict:
+        lid   = leerling["id"]
+        naam  = leerling.get("voornaam", "")
+        g     = leerling.get("groep", groep)
+
+        try:
+            # Haal notities, LVS-scores en eerder rapport parallel op
+            notities_taak = supabase_get("leerling_notities", token, {
+                "leerling_id":  f"eq.{lid}",
+                "leerkracht_id": f"eq.{user['id']}",
+                "order":        "aangemaakt_op.desc",
+                "limit":        "5",
+                "select":       "tekst,aangemaakt_op,type"
+            })
+            lvs_taak = supabase_get("lvs_profielen", token, {
+                "leerling_id":  f"eq.{lid}",
+                "leerkracht_id": f"eq.{user['id']}",
+                "select":       "scores"
+            })
+
+            notities_data, lvs_data = await asyncio.gather(
+                notities_taak, lvs_taak, return_exceptions=True
+            )
+
+            # Bouw notitie-context
+            notities_tekst = ""
+            if isinstance(notities_data, list) and notities_data:
+                regels = []
+                for n in notities_data:
+                    datum = n.get("aangemaakt_op", "")[:10]
+                    regels.append(f"[{datum}] {n.get('tekst', '').strip()}")
+                notities_tekst = "\n".join(regels)
+
+            if not notities_tekst:
+                return {
+                    "leerling_id":  lid,
+                    "voornaam":     naam,
+                    "status":       "overgeslagen",
+                    "reden":        "Geen notities beschikbaar"
+                }
+
+            # Bouw LVS-context
+            lvs_tekst = ""
+            if isinstance(lvs_data, list) and lvs_data:
+                scores = lvs_data[0].get("scores", {})
+                gevuld = []
+                for k_score, v_score in scores.items():
+                    if v_score and v_score > 0:
+                        gevuld.append(f"{k_score}: {v_score}")
+                if gevuld:
+                    lvs_tekst = "\nBekende LVS-scores (ter informatie): " + ", ".join(gevuld) + "."
+
+            # Bouw ondersteuningscontext
+            behoeftes = leerling.get("ondersteuningsbehoeftes") or []
+            if isinstance(behoeftes, str):
+                behoeftes = [behoeftes] if behoeftes else []
+            ond_tekst = ""
+            if behoeftes:
+                ond_tekst = f"\nOndersteuningsbehoeftes: {', '.join(behoeftes)}."
+
+
+            groep_type = (
+                "onderbouw (groep 1-3)" if int(g or 0) <= 3
+                else "middenbouw (groep 4-6)" if int(g or 0) <= 6
+                else "bovenbouw (groep 7-8)"
+            ) if g and str(g).isdigit() else ""
+
+            prompt = (
+                f"Leerling: {naam}, groep {g}."
+                + (f" Dit kind zit in de {groep_type}." if groep_type else "")
+                + ond_tekst
+                + lvs_tekst
+                + f"\nNotities van de leerkracht:\n\"{notities_tekst}\""
+                + "\n\nRetourneer ALLEEN een geldig JSON-object met deze sleutels:"
+                + '\n{"leerresultaten":null,"werkhouding":null,"sociaal_emotioneel":null,'
+                + '"aandachtspunten":null,"doelen":null,"positieve_punten":null,'
+                + '"ondersteuning":null,"rapportcommentaar":null}'
+            )
+
+            tekst = await roep_claude_aan(SYSTEM_PROMPT, prompt, max_tokens=1200)
+
+            try:
+                parsed = _veilig_json_parse(tekst)
+            except Exception:
+                return {
+                    "leerling_id": lid,
+                    "voornaam":    naam,
+                    "status":      "fout",
+                    "reden":       "Rapport kon niet worden verwerkt"
+                }
+
+            if not parsed:
+                return {
+                    "leerling_id": lid,
+                    "voornaam":    naam,
+                    "status":      "fout",
+                    "reden":       "Leeg rapport gegenereerd"
+                }
+
+            # Sla op
+            rapport_data = await supabase_post("rapporten", token, {
+                "leerling_id":   lid,
+                "leerkracht_id": user["id"],
+                "rapport_data":  parsed
+            })
+
+            # Cascade naar LVS-tijdlijn
+            datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+            commentaar = parsed.get("rapportcommentaar") or ""
+            try:
+                await _voeg_tijdlijn_toe(
+                    leerling_id=lid,
+                    leerkracht_id=user["id"],
+                    token=token,
+                    item={
+                        "type":      "rapport",
+                        "datum":     datum_nl,
+                        "tekst":     f"Rapport (batch) gegenereerd. {commentaar[:80]}…" if commentaar else "Rapport (batch) gegenereerd.",
+                        "sentiment": "neutraal",
+                        "bron":      "rapport"
+                    }
+                )
+            except Exception:
+                pass
+
+            return {
+                "leerling_id":  lid,
+                "voornaam":     naam,
+                "status":       "ok",
+                "rapport_data": parsed,
+                "rapport_id":   (rapport_data[0] if isinstance(rapport_data, list) and rapport_data else rapport_data or {}).get("id")
+            }
+
+        except Exception as e:
+            logger.warning(f"Batch rapport fout voor {naam}: {e}")
+            return {
+                "leerling_id": lid,
+                "voornaam":    naam,
+                "status":      "fout",
+                "reden":       str(e)[:200]
+            }
+
+    # Verwerk in batches van 3 parallel om API-limieten te respecteren
+    BATCH_GROOTTE = 3
+    for i in range(0, len(leerlingen_data), BATCH_GROOTTE):
+        batch   = leerlingen_data[i:i + BATCH_GROOTTE]
+        groepje = await asyncio.gather(*[genereer_voor_leerling(l) for l in batch])
+        for r in groepje:
+            if r["status"] == "ok":
+                resultaten.append(r)
+            else:
+                fouten.append(r)
+
+    return {
+        "totaal":      len(leerlingen_data),
+        "gegenereerd": len(resultaten),
+        "overgeslagen": len([f for f in fouten if f.get("status") == "overgeslagen"]),
+        "fouten":      len([f for f in fouten if f.get("status") == "fout"]),
+        "resultaten":  resultaten,
+        "fouten_detail": fouten
+    }
+
+
 @app.get("/rapporten/{leerling_id}/trend")
 async def analyseer_rapport_trend(
     leerling_id: str,
