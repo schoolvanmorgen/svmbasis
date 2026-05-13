@@ -1131,15 +1131,21 @@ function toonTab(tab, knop) {
   if (tab === 'lvs') {
     if (tabInhoud) tabInhoud.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
+    document.getElementById('tab-groepsplan').style.display = 'none';
+    document.getElementById('tab-school').style.display = 'none';
     if (lvsEl) { lvsEl.style.display = 'block'; if (typeof lvsInit === 'function') lvsInit(); }
   } else if (tab === 'aanwezigheid') {
     if (tabInhoud) tabInhoud.style.display = 'none';
     if (lvsEl) lvsEl.style.display = 'none';
+    document.getElementById('tab-groepsplan').style.display = 'none';
+    document.getElementById('tab-school').style.display = 'none';
     if (aawEl) { aawEl.style.display = 'block'; if (typeof aawInit === 'function') aawInit(); }
   } else if (tab === 'notities') {
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
     if (tabInhoud) tabInhoud.style.display = 'none';
+    document.getElementById('tab-groepsplan').style.display = 'none';
+    document.getElementById('tab-school').style.display = 'none';
     const notEl = document.getElementById('tab-notities');
     if (notEl) notEl.classList.add('actief');
     if (typeof notitieRender === 'function') notitieRender();
@@ -1166,6 +1172,8 @@ function toonTab(tab, knop) {
     // Rapport, OPP, handelingsplan — zitten in tab-inhoud
     if (lvsEl) lvsEl.style.display = 'none';
     if (aawEl) aawEl.style.display = 'none';
+    document.getElementById('tab-groepsplan').style.display = 'none';
+    document.getElementById('tab-school').style.display = 'none';
     const notEl4 = document.getElementById('tab-notities');
     if (notEl4) notEl4.classList.remove('actief');
     if (tabInhoud) { tabInhoud.style.display = ''; tabInhoud.style.flex = '1'; }
@@ -1499,6 +1507,15 @@ function toonTab(tab, knop) {
 </div>
 </div><!-- einde tab-handelingsplan -->
 
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- Aanwezigheidsregistratie tab                          -->
+<!-- ══════════════════════════════════════════════════════ -->
+
+
+
+</div><!-- einde tab-inhoud -->
+
 <!-- ── Groepsplan Tab ── -->
 <div class="sectie" id="tab-groepsplan">
 <div class="app">
@@ -1544,6 +1561,7 @@ function toonTab(tab, knop) {
 </div>
 </div><!-- einde tab-groepsplan -->
 
+
 <!-- ── School Tab ── -->
 <div class="sectie" id="tab-school">
 <div class="app">
@@ -1581,14 +1599,6 @@ function toonTab(tab, knop) {
   <div class="resultaat" id="school-resultaat"><div class="leeg"><div class="leeg-c">&#x1F3EB;</div><div class="leeg-t">Schoolprofiel laden...</div></div></div>
 </div>
 </div><!-- einde tab-school -->
-
-<!-- ══════════════════════════════════════════════════════ -->
-<!-- Aanwezigheidsregistratie tab                          -->
-<!-- ══════════════════════════════════════════════════════ -->
-
-
-
-</div><!-- einde tab-inhoud -->
 
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- LVS — Leerlingvolgsysteem                             -->
