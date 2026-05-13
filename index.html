@@ -1115,70 +1115,66 @@ function sluitLeerlingModal() {
 window.addEventListener('DOMContentLoaded', initAuth);
 
 function toonTab(tab, knop) {
+  // ── 1. Reset tab-knoppen ──────────────────────────────
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
-  // Speciale tabs hebben eigen display-logica — niet via forEach aanraken
-  const specialeTabs = new Set(['tab-lvs','tab-aanwezigheid','tab-notities','tab-groepsplan','tab-school']);
+
+  // ── 2. Verberg ALLES expliciet via inline style ───────
+  // Zet alle mogelijke containers op none — geen CSS-afhankelijkheid
+  const alleContainers = [
+    'tab-inhoud',      // rapport/opp/handelingsplan
+    'tab-lvs',
+    'tab-aanwezigheid',
+    'tab-groepsplan',
+    'tab-school',
+  ];
+  alleContainers.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  // Verberg ook de sectie-divs binnen tab-inhoud
   document.querySelectorAll('.sectie, .sectie-vol').forEach(s => {
     s.classList.remove('actief');
-    if (!specialeTabs.has(s.id)) {
-      s.style.display = 'none';
-    }
   });
-  const tabInhoud = document.getElementById('tab-inhoud');
-  const lvsEl = document.getElementById('tab-lvs');
-  const aawEl = document.getElementById('tab-aanwezigheid');
+  const notEl = document.getElementById('tab-notities');
+  if (notEl) { notEl.style.display = 'none'; notEl.classList.remove('actief'); }
+
+  // ── 3. Toon alleen de gevraagde tab ───────────────────
+  const toon = id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'block'; el.classList.add('actief'); }
+  };
+
   if (tab === 'lvs') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    document.getElementById('tab-groepsplan').style.display = 'none';
-    document.getElementById('tab-school').style.display = 'none';
-    if (lvsEl) { lvsEl.style.display = 'block'; if (typeof lvsInit === 'function') lvsInit(); }
+    toon('tab-lvs');
+    if (typeof lvsInit === 'function') lvsInit();
+
   } else if (tab === 'aanwezigheid') {
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    if (lvsEl) lvsEl.style.display = 'none';
-    document.getElementById('tab-groepsplan').style.display = 'none';
-    document.getElementById('tab-school').style.display = 'none';
-    if (aawEl) { aawEl.style.display = 'block'; if (typeof aawInit === 'function') aawInit(); }
+    toon('tab-aanwezigheid');
+    if (typeof aawInit === 'function') aawInit();
+
   } else if (tab === 'notities') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    document.getElementById('tab-groepsplan').style.display = 'none';
-    document.getElementById('tab-school').style.display = 'none';
-    const notEl = document.getElementById('tab-notities');
-    if (notEl) notEl.classList.add('actief');
+    const notitiesEl = document.getElementById('tab-notities');
+    if (notitiesEl) { notitiesEl.style.display = 'flex'; notitiesEl.classList.add('actief'); }
     if (typeof notitieRender === 'function') notitieRender();
+
   } else if (tab === 'groepsplan') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    document.getElementById('tab-notities').classList.remove('actief');
-    const gpEl = document.getElementById('tab-groepsplan');
-    if (gpEl) { gpEl.style.display = 'block'; gpEl.classList.add('actief'); }
+    toon('tab-groepsplan');
     if (huidigeLeerling && huidigeLeerling.groep) {
       const gpGroepEl = document.getElementById('gp-groep');
       if (gpGroepEl && !gpGroepEl.value) { gpGroepEl.value = huidigeLeerling.groep; gpLaad(); }
     }
+
   } else if (tab === 'school') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    document.getElementById('tab-notities').classList.remove('actief');
-    const schoolEl = document.getElementById('tab-school');
-    if (schoolEl) { schoolEl.style.display = 'block'; schoolEl.classList.add('actief'); }
+    toon('tab-school');
     schoolInit();
+
   } else {
-    // Rapport, OPP, handelingsplan — zitten in tab-inhoud
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    document.getElementById('tab-groepsplan').style.display = 'none';
-    document.getElementById('tab-school').style.display = 'none';
-    const notEl4 = document.getElementById('tab-notities');
-    if (notEl4) notEl4.classList.remove('actief');
-    if (tabInhoud) { tabInhoud.style.display = ''; tabInhoud.style.flex = '1'; }
-    const el = document.getElementById('tab-' + tab);
-    if (el) el.classList.add('actief');
+    // Rapport, OPP, handelingsplan — in tab-inhoud
+    const inhoud = document.getElementById('tab-inhoud');
+    if (inhoud) { inhoud.style.display = ''; inhoud.style.flex = '1'; }
+    const sectieEl = document.getElementById('tab-' + tab);
+    if (sectieEl) sectieEl.classList.add('actief');
   }
 }
 </script>
