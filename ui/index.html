@@ -1571,22 +1571,55 @@ function toonTab(tab, knop) {
 <!-- ── Groepsplan Tab ── -->
 <div class="sectie" id="tab-groepsplan">
 <div class="app">
-  <div class="invoer">
-    <div><div class="ptitel">Groepsplan</div><div class="psub">Deel leerlingen per vakgebied in op instructieniveau. Exporteer als PDF voor de IB-er of inspectie.</div></div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <div class="vlabel" style="margin-bottom:0;width:100%">GROEP &amp; SCHOOLJAAR</div>
-      <select id="gp-groep" onchange="gpLaad()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff;flex:1">
-        <option value="">Kies groep...</option>
-        <option>1</option><option>2</option><option>3</option><option>4</option>
-        <option>5</option><option>6</option><option>7</option><option>8</option>
-      </select>
-      <select id="gp-schooljaar" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
-        <option value="2025-2026">2025-2026</option><option value="2024-2025">2024-2025</option>
-      </select>
+  <div class="invoer" style="overflow-y:auto">
+
+    <!-- Uitleg header -->
+    <div style="background:var(--warm);border:1px solid var(--warmrand);padding:14px 16px;margin-bottom:4px">
+      <div style="font-family:Georgia,serif;font-size:16px;color:var(--t);margin-bottom:6px">Groepsplan</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7">
+        Het groepsplan laat zien <strong>welke instructie elke leerling nodig heeft</strong> per vakgebied.
+        Kies een groep en vakgebied → deel de leerlingen in → sla op.<br>
+        De IB-er en inspectie vragen dit document periodiek op.
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#fff;border:1px solid var(--rand);font-size:11px">
+          <span style="width:10px;height:10px;background:#2d6a2d;display:inline-block"></span>
+          <span><strong>Onafhankelijk</strong> — werkt zelfstandig</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#fff;border:1px solid var(--rand);font-size:11px">
+          <span style="width:10px;height:10px;background:#4a7a4a;display:inline-block"></span>
+          <span><strong>Basis</strong> — volgt reguliere instructie</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#fff;border:1px solid var(--rand);font-size:11px">
+          <span style="width:10px;height:10px;background:#c07000;display:inline-block"></span>
+          <span><strong>Intensief</strong> — extra instructie nodig</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;background:#fff;border:1px solid var(--rand);font-size:11px">
+          <span style="width:10px;height:10px;background:#991b1b;display:inline-block"></span>
+          <span><strong>Individueel</strong> — eigen leerlijn</span>
+        </div>
+      </div>
     </div>
+
+    <!-- Stap 1 -->
+    <div style="padding:10px 0 4px">
+      <div class="vlabel" style="margin-bottom:6px">① KIES GROEP &amp; SCHOOLJAAR</div>
+      <div style="display:flex;gap:8px">
+        <select id="gp-groep" onchange="gpLaad()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff;flex:1">
+          <option value="">Kies groep...</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+        <select id="gp-schooljaar" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
+          <option value="2025-2026">2025-2026</option><option value="2024-2025">2024-2025</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stap 2 -->
     <div>
-      <div class="vlabel">VAKGEBIED</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap" id="gp-vak-knoppen">
+      <div class="vlabel" style="margin-bottom:6px">② KIES VAKGEBIED</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap" id="gp-vak-knoppen">
         <button class="gp-vak-btn actief" onclick="gpSelecteerVak('lezen',this)">Lezen (AVI)</button>
         <button class="gp-vak-btn" onclick="gpSelecteerVak('dmt',this)">DMT</button>
         <button class="gp-vak-btn" onclick="gpSelecteerVak('rekenen',this)">Rekenen</button>
@@ -1601,15 +1634,35 @@ function toonTab(tab, knop) {
         <button class="gp-vak-btn" onclick="gpSelecteerVak('werkhouding',this)">Werkhouding</button>
       </div>
     </div>
-    <div><div class="vlabel">NOTITIES</div><textarea id="gp-notities" rows="3" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:vertical" placeholder="Algemene opmerkingen bij dit groepsplan..."></textarea></div>
+
+    <!-- Stap 3 -->
+    <div>
+      <div class="vlabel" style="margin-bottom:4px">③ OPMERKINGEN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
+      <textarea id="gp-notities" rows="2" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;resize:none" placeholder="Algemene opmerkingen bij dit groepsplan voor de IB-er..."></textarea>
+    </div>
+
+    <!-- Acties -->
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="genknop" onclick="gpOpslaan()" style="flex:1"><div class="spin" id="gp-spin" style="display:none"></div><span id="gp-ktekst">Opslaan</span></button>
-      <button onclick="gpSuggestie()" id="gp-suggestie-knop" style="background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:10px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap" title="Vul niveaus in op basis van LVS-scores">↗ Suggestie uit LVS</button>
-      <button onclick="gpExportPrint()" style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 16px;font-size:12px;cursor:pointer;font-family:inherit">🖨 Afdrukken</button>
+      <button class="genknop" onclick="gpOpslaan()" style="flex:1">
+        <div class="spin" id="gp-spin" style="display:none"></div>
+        <span id="gp-ktekst">Opslaan</span>
+      </button>
+      <button onclick="gpSuggestie()" id="gp-suggestie-knop"
+        style="background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:10px 14px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;white-space:nowrap"
+        title="Vul niveaus automatisch in op basis van CITO-scores uit het LVS">↗ Vul in vanuit LVS</button>
+      <button onclick="gpExportPrint()"
+        style="background:var(--grijs);color:var(--tm);border:1px solid var(--rand);padding:10px 14px;font-size:12px;cursor:pointer;font-family:inherit"
+        title="Exporteer groepsplan voor IB-er of inspectie">🖨 Exporteer</button>
     </div>
     <div id="gp-suggestie-balk" style="display:none;font-size:12px;padding:10px 12px;background:#f0faf0;border:1px solid #c0e0c0;color:#2d6a2d;line-height:1.6"></div>
   </div>
-  <div class="resultaat" id="gp-resultaat"><div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep en vakgebied</div></div></div>
+  <div class="resultaat" id="gp-resultaat">
+    <div class="leeg">
+      <div class="leeg-c">📋</div>
+      <div class="leeg-t">Kies een groep en vakgebied om te beginnen</div>
+      <div style="font-size:12px;color:var(--tz);margin-top:8px;max-width:260px;text-align:center;line-height:1.6">Hier zie je alle leerlingen van de groep. Klik op een naam om het instructieniveau te wijzigen.</div>
+    </div>
+  </div>
 </div>
 </div><!-- einde tab-groepsplan -->
 
@@ -1617,38 +1670,84 @@ function toonTab(tab, knop) {
 <!-- ── School Tab ── -->
 <div class="sectie" id="tab-school">
 <div class="app">
-  <div class="invoer">
-    <div><div class="ptitel">School</div><div class="psub">Beheer je schoolaccount en collega's.</div></div>
-    <div id="school-geen-account" style="display:none">
-      <div class="vlabel">SCHOOLACCOUNT AANMAKEN</div>
-      <input type="text" id="school-naam-input" placeholder="Naam van de school" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
-      <input type="text" id="school-brin-input" placeholder="BRIN-nummer (optioneel)" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
-      <button class="genknop" onclick="schoolAanmaken()" style="width:100%">School aanmaken</button>
-      <div style="margin:16px 0;height:0.5px;background:var(--rand)"></div>
-      <div class="vlabel">DEELNEMEN AAN BESTAANDE SCHOOL</div>
-      <input type="text" id="school-token-input" placeholder="Uitnodigingstoken van de directeur" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px">
-      <button class="genknop" onclick="schoolDeelnemen()" style="width:100%">Deelnemen</button>
+  <div class="invoer" style="overflow-y:auto">
+
+    <!-- Uitleg header -->
+    <div style="background:var(--warm);border:1px solid var(--warmrand);padding:14px 16px;margin-bottom:4px">
+      <div style="font-family:Georgia,serif;font-size:16px;color:var(--t);margin-bottom:6px">School</div>
+      <div style="font-size:12px;color:var(--tm);line-height:1.7">
+        Koppel je school zodat <strong>alle collega's dezelfde leerlingenlijst delen</strong>. Importeer leerlingen één keer — iedereen op de school ziet ze direct.
+      </div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:8px;align-items:flex-start;font-size:11px;padding:8px 10px;background:#fff;border:1px solid var(--rand)">
+          <span style="font-size:16px;flex-shrink:0">🏫</span>
+          <div><strong>Directeur</strong> — maakt de school aan en nodigt collega's uit via een token.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start;font-size:11px;padding:8px 10px;background:#fff;border:1px solid var(--rand)">
+          <span style="font-size:16px;flex-shrink:0">👩‍🏫</span>
+          <div><strong>Leerkracht / IB-er</strong> — voert het token in om deel te nemen. Ziet daarna alle leerlingen van de school.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-start;font-size:11px;padding:8px 10px;background:#fff;border:1px solid var(--rand)">
+          <span style="font-size:16px;flex-shrink:0">👁</span>
+          <div><strong>IB-er</strong> — ziet alle leerlingen van alle groepen en alle groepsplannen.</div>
+        </div>
+      </div>
     </div>
+
+    <!-- Geen account -->
+    <div id="school-geen-account" style="display:none">
+      <div style="margin-bottom:12px">
+        <div class="vlabel" style="margin-bottom:6px">① BEN JE DE DIRECTEUR? — maak de school aan</div>
+        <input type="text" id="school-naam-input" placeholder="Naam van de school" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:6px;box-sizing:border-box">
+        <input type="text" id="school-brin-input" placeholder="BRIN-nummer (optioneel)" style="width:100%;border:1px solid var(--rand);padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;box-sizing:border-box">
+        <button class="genknop" onclick="schoolAanmaken()" style="width:100%">School aanmaken</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin:12px 0">
+        <div style="flex:1;height:1px;background:var(--rand)"></div>
+        <span style="font-size:11px;color:var(--tz)">of</span>
+        <div style="flex:1;height:1px;background:var(--rand)"></div>
+      </div>
+      <div>
+        <div class="vlabel" style="margin-bottom:6px">② COLLEGA? — deelnemen aan een bestaande school</div>
+        <div style="font-size:11px;color:var(--tz);margin-bottom:8px;line-height:1.5">Vraag de directeur om een uitnodigingstoken. Plak het hieronder.</div>
+        <input type="text" id="school-token-input" placeholder="Plak het uitnodigingstoken hier" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;margin-bottom:8px;box-sizing:border-box">
+        <button class="genknop" onclick="schoolDeelnemen()" style="width:100%">Deelnemen aan school</button>
+      </div>
+    </div>
+
+    <!-- Gekoppeld account -->
     <div id="school-account" style="display:none">
-      <div class="vlabel">SCHOOLPROFIEL</div>
-      <div id="school-info" style="background:var(--warm);padding:12px;font-size:13px;line-height:1.8;margin-bottom:12px"></div>
+      <div class="vlabel" style="margin-bottom:6px">GEKOPPELDE SCHOOL</div>
+      <div id="school-info" style="background:var(--warm);border:1px solid var(--warmrand);padding:12px;font-size:13px;line-height:1.8;margin-bottom:12px"></div>
+
       <div id="school-directeur-acties" style="display:none">
-        <div class="vlabel">COLLEGA UITNODIGEN</div>
+        <div class="vlabel" style="margin-bottom:6px">COLLEGA UITNODIGEN</div>
+        <div style="font-size:11px;color:var(--tz);margin-bottom:8px;line-height:1.5">Kies een rol en genereer een token. Stuur het token naar de collega — die kan er direct mee deelnemen.</div>
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <select id="school-uitnodig-rol" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff">
-            <option value="leerkracht">Leerkracht</option><option value="ib">IB-er</option><option value="directeur">Directeur</option>
+            <option value="leerkracht">Leerkracht</option>
+            <option value="ib">IB-er</option>
+            <option value="directeur">Directeur</option>
           </select>
           <button class="genknop" onclick="schoolUitnodigGenereer()" style="flex:1">Genereer token</button>
         </div>
-        <div id="school-uitnodig-resultaat" style="display:none;background:var(--gl);border:1px solid var(--gm);padding:10px 12px;font-size:12px;word-break:break-all;margin-top:8px"></div>
+        <div id="school-uitnodig-resultaat" style="display:none;background:var(--gl);border:1px solid var(--gm);padding:10px 12px;font-size:12px;word-break:break-all;margin-top:8px;line-height:1.6"></div>
       </div>
+
       <div id="school-ib-acties" style="display:none;margin-top:16px">
-        <div class="vlabel">COLLEGAS</div>
-        <div id="school-collegas" style="font-size:13px;color:var(--tz)">Laden...</div>
+        <div class="vlabel" style="margin-bottom:6px">COLLEGA'S OP DEZE SCHOOL</div>
+        <div id="school-collegas" style="font-size:13px;color:var(--tz);line-height:1.8">Laden...</div>
       </div>
     </div>
   </div>
-  <div class="resultaat" id="school-resultaat"><div class="leeg"><div class="leeg-c">&#x1F3EB;</div><div class="leeg-t">Schoolprofiel laden...</div></div></div>
+
+  <div class="resultaat" id="school-resultaat">
+    <div class="leeg">
+      <div class="leeg-c">🏫</div>
+      <div class="leeg-t">Schoolprofiel</div>
+      <div style="font-size:12px;color:var(--tz);margin-top:8px;max-width:280px;text-align:center;line-height:1.6">Hier zie je straks je schoolprofiel, gekoppelde collega's en hun rollen.</div>
+    </div>
+  </div>
 </div>
 </div><!-- einde tab-school -->
 
