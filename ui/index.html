@@ -4211,65 +4211,13 @@ function aawExporteer() {
 
 function aawFilter(zoek) { aawRender(); }
 
-// ── Tijdsbesparing tracker ────────────────────────────────
 const MINUTEN_PER_RAPPORT = 25;
-
-function laadStats() {}');
-  if (!stats.start) {
-    stats.start = new Date().getFullYear() + '-08-01';
-    slaStats(stats);
-  }
-  return stats;
-}
-
+function laadStats() { return {}; }
 function slaStats() {}
+function updateStatsBalk() {}
+function resetStats() {}
+function registreerRapport() {}
 
-function updateStatsBalk() {} else if (stats.rapporten < 5) {
-    tip.textContent = 'Goed bezig! Nog ' + (5 - stats.rapporten) + ' rapporten tot je eerste uur bespaard.';
-  } else if (stats.minuten >= 60) {
-    const dagdelen = Math.floor(stats.minuten / 120);
-    tip.textContent = dagdelen > 0
-      ? 'Je hebt al ' + dagdelen + ' dagdeel' + (dagdelen > 1 ? 'en' : '') + ' schrijftijd bespaard dit schooljaar.'
-      : 'Ruim een uur bespaard — dat is tijd die je aan je klas kon besteden.';
-  } else {
-    tip.textContent = 'Je bespaart gemiddeld ' + Math.round(stats.minuten / stats.rapporten) + ' minuten per rapport.';
-  }
-}
-
-// ── LVS bijwerken vanuit rapportresultaat ────────────────────
-// Wordt aangeroepen na elke succesvolle rapportgeneratie.
-// Werkt scores, niveaus en tijdlijn bij op basis van het JSON-rapport.
-// ── LVS bijwerken vanuit rapportresultaat ────────────────────
-// Voegt alleen een tijdlijnregel toe. Scores komen uitsluitend
-// uit echte toetsdata (CSV-import of handmatige invoer).
-async function werkLvsVanuitRapportBij(parsed, naam, groep) {
-  const leerlingId = window._huidigeLeerlingId;
-  if (!leerlingId || !huidigToken) return;
-  const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'short',year:'numeric'});
-  const tijdlijnTekst = 'Rapport gegenereerd.'
-    + (parsed.rapportcommentaar ? ' ' + parsed.rapportcommentaar.slice(0, 100) + '…' : '');
-  try {
-    const profiel = await lvsHaalProfielOp(leerlingId);
-    const huidigTijdlijn = (profiel && profiel.tijdlijn) || [];
-    const updatedTijdlijn = [{ type: 'rapport', datum, tekst: tijdlijnTekst }, ...huidigTijdlijn];
-    await lvsSlaProfielOp(leerlingId, {
-      scores:        (profiel && profiel.scores)        || {},
-      vorige_scores: (profiel && profiel.vorige_scores) || {},
-      tijdlijn:      updatedTijdlijn
-    });
-    if (lvsHuidig && lvsHuidig.id === leerlingId) {
-      lvsHuidig.tijdlijn = updatedTijdlijn;
-      lvsRenderTijdlijn();
-    }
-  } catch(e) {
-    console.error('LVS tijdlijn update mislukt:', e);
-  }
-}
-
-function registreerRapport() {}, 300);
-}
-
-updateStatsBalk();
 
 // ══════════════════════════════════════════════════════════
 // TOETSREGISTRATIE — LVS uitbreiding
