@@ -913,14 +913,43 @@ async function voegKlasToe() {
   setTimeout(sluitLeerlingModal, 1200);
 }
 
+function _leesCSVBestand(bestand, callback) {
+  // Lees als ArrayBuffer zodat we de encoding zelf bepalen
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const buffer = e.target.result;
+    const bytes  = new Uint8Array(buffer);
+
+    // Strip UTF-8 BOM (EF BB BF) als die aanwezig is
+    let start = 0;
+    if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) start = 3;
+
+    // Probeer UTF-8, val terug op Windows-1252 (meest gebruikt door NL Excel/ParnasSys)
+    let tekst;
+    try {
+      tekst = new TextDecoder('utf-8', {fatal: true}).decode(buffer.slice(start));
+    } catch(e) {
+      tekst = new TextDecoder('windows-1252').decode(buffer.slice(start));
+    }
+
+    // Normaliseer regeleindes: 
+ en  → 
+
+    tekst = tekst.replace(/
+/g, '
+').replace(//g, '
+');
+    callback(tekst);
+  };
+  reader.readAsArrayBuffer(bestand);
+}
+
 function parnassysLeesBestand(bestand) {
   if (!bestand) return;
   document.getElementById('parnassys-bestandsnaam').textContent = bestand.name;
   const ext = bestand.name.split('.').pop().toLowerCase();
   if (ext === 'csv') {
-    const reader = new FileReader();
-    reader.onload = function(e) { parnassysVerwerk(e.target.result, 'csv'); };
-    reader.readAsText(bestand, 'UTF-8');
+    _leesCSVBestand(bestand, function(tekst) { parnassysVerwerk(tekst, 'csv'); });
   } else {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -937,23 +966,7 @@ function parnassysLeesBestand(bestand) {
 function parnassysLees(input) {
   const bestand = input.files[0];
   if (!bestand) return;
-  document.getElementById('parnassys-bestandsnaam').textContent = bestand.name;
-  const ext = bestand.name.split('.').pop().toLowerCase();
-  if (ext === 'csv') {
-    const reader = new FileReader();
-    reader.onload = function(e) { parnassysVerwerk(e.target.result, 'csv'); };
-    reader.readAsText(bestand);
-  } else {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, {type:'array'});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const csv = XLSX.utils.sheet_to_csv(ws);
-      parnassysVerwerk(csv, 'xlsx');
-    };
-    reader.readAsArrayBuffer(bestand);
-  }
+  parnassysLeesBestand(bestand);
 }
 
 function _parseCsvRegel(regel) {
@@ -980,7 +993,7 @@ function parnassysVerwerk(csv, type) {
   const regels = csv.split('\n').filter(r => r.trim());
   if (!regels.length) return;
 
-  const headers = _parseCsvRegel(regels[0]).map(h => h.toLowerCase().replace(/"/g,'').trim());
+  const headers = _parseCsvRegel(regels[0]).map(h => h.toLowerCase().replace(/"/g,'').replace(/\r/g,'').replace(/\uFEFF/g,'').trim());
 
   // Kolom-detectie: breed opgezet voor ParnasSys, Magister en handmatige exports
   const idx = {
@@ -1106,6 +1119,13 @@ async function parnassysImporteer() {
 
   await laadLeerlingen();
 
+  // Ververs alle lijsten direct — niet wachten op modal sluiten
+  aawLeerlingen = leerlingen;
+  if (typeof lvsInitVanuitLeerlingen === 'function') lvsInitVanuitLeerlingen();
+  if (typeof lvsRenderLijst === 'function') lvsRenderLijst(lvsLeerlingen);
+  if (typeof notitieVulZijbalk === 'function') notitieVulZijbalk();
+  if (typeof toonLeerlingenLijst === 'function') toonLeerlingenLijst();
+
   if (voortgang) {
     voortgang.style.color = fout > 0 ? '#92400e' : '#2d6a2d';
     voortgang.innerHTML = '✓ <strong>' + nieuw + ' nieuwe leerlingen</strong> geïmporteerd'
@@ -1122,18 +1142,29 @@ function openLeerlingModal() {
   leerlingTab(1);
 }
 function openImportModal() {
+  // Zet callback-flags zodat na sluiten de juiste tab ververst
+  const actieveTab = document.querySelector('.tab.actief');
+  const tabNaam = actieveTab ? actieveTab.getAttribute('onclick') : '';
+  if (tabNaam.includes('lvs'))         window._lvsModalCallback = true;
+  if (tabNaam.includes('aanwezigheid')) window._aawModalCallback = true;
+  // Altijd beide zetten — import is schoolbreed
+  window._lvsModalCallback = true;
+  window._aawModalCallback = true;
   document.getElementById('leerling-modal').style.display = 'flex';
   leerlingTab(3);
 }
 function sluitLeerlingModal() {
   document.getElementById('leerling-modal').style.display = 'none';
-  if (window._lvsModalCallback) {
+  // Altijd de actieve tab refreshen na modal sluiten
+  const actief = document.querySelector('.tab.actief');
+  const tab = actief ? actief.getAttribute('onclick') : '';
+  if (window._lvsModalCallback || tab.includes('lvs')) {
     window._lvsModalCallback = false;
-    setTimeout(lvsInit, 500);
+    setTimeout(lvsInit, 300);
   }
-  if (window._aawModalCallback) {
+  if (window._aawModalCallback || tab.includes('aanwezigheid')) {
     window._aawModalCallback = false;
-    setTimeout(aawInit, 500);
+    setTimeout(aawInit, 300);
   }
 }
 
