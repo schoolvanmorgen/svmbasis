@@ -1117,10 +1117,11 @@ window.addEventListener('DOMContentLoaded', initAuth);
 function toonTab(tab, knop) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
+  // Speciale tabs hebben eigen display-logica — niet via forEach aanraken
+  const specialeTabs = new Set(['tab-lvs','tab-aanwezigheid','tab-notities','tab-groepsplan','tab-school']);
   document.querySelectorAll('.sectie, .sectie-vol').forEach(s => {
     s.classList.remove('actief');
-    // Verberg alles behalve de speciale full-screen tabs (die hebben eigen display-logica)
-    if (s.id !== 'tab-lvs' && s.id !== 'tab-aanwezigheid' && s.id !== 'tab-notities') {
+    if (!specialeTabs.has(s.id)) {
       s.style.display = 'none';
     }
   });
