@@ -183,12 +183,12 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .od-tag-x{cursor:pointer;font-size:10px;opacity:.6}
 .od-tag-x:hover{opacity:1}
 
-.tijdsbalk{display:flex;align-items:center;gap:1.5rem;padding:5px 1.5rem;background:#f8f8f8;border-bottom:1px solid #e0e0e0;flex-shrink:0}
-.tijds-item{display:flex;align-items:center;gap:7px}
-.tijds-getal{font-size:18px;font-weight:500;color:var(--g);font-family:'Times New Roman',Times,serif}
-.tijds-label{font-size:11px;color:#4a5a4a;line-height:1.3}
-.tijds-divider{width:.5px;height:28px;background:#e0e0e0}
-.tijds-tip{font-size:11px;color:#4a5a4a;margin-left:auto;font-style:italic}
+
+
+
+
+
+
 
 /* ── Mobiele bottom nav ── */
 .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--warm);border-top:1px solid var(--warmrand);z-index:200;box-shadow:none}
@@ -1435,24 +1435,7 @@ function toonTab(tab, knop) {
 </header>
 
 
-<div class="tijdsbalk" id="tijdsbalk" style="flex-shrink:0">
-  <div class="tijds-item">
-    <div class="tijds-getal" id="t-rapporten">0</div>
-    <div class="tijds-label">rapporten<br>gegenereerd</div>
-  </div>
-  <div class="tijds-divider"></div>
-  <div class="tijds-item">
-    <div class="tijds-getal" id="t-minuten">0</div>
-    <div class="tijds-label">minuten<br>bespaard</div>
-  </div>
-  <div class="tijds-divider"></div>
-  <div class="tijds-item">
-    <div class="tijds-getal" id="t-uur">0,0</div>
-    <div class="tijds-label">uur bespaard<br>dit schooljaar</div>
-  </div>
-  <div class="tijds-tip" id="t-tip">Elk rapport bespaart gemiddeld 25 minuten schrijftijd.</div>
-  <button onclick="resetStats()" style="margin-left:auto;font-size:10px;padding:4px 10px;border-radius:0;border:1px solid #c4cfc4;background:transparent;color:#4a5a4a;cursor:pointer;font-family:inherit;white-space:nowrap" title="Statistieken resetten">↺ Reset</button>
-</div>
+
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem;flex-shrink:0;z-index:90">
   <button class="tab actief" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
   <button class="tab" onclick="toonTab('notities',this)">Notities</button>
@@ -2261,7 +2244,8 @@ function toonTab(tab, knop) {
   <div id="aaw-export-balk" style="display:none;background:var(--gl);border-bottom:1px solid var(--warmrand);padding:10px 24px;font-size:12px;color:var(--g);flex-shrink:0"></div>
 
   <!-- Leerlingenlijst — vult rest van scherm -->
-  <div style="flex:1;overflow-y:auto;padding:20px 24px">
+  <div style="flex:1;overflow-y:auto;padding:20px 24px;position:relative">
+    <div id="aaw-toevoeg-wrap" style="display:none;margin-bottom:16px"></div>
     <div id="aaw-lijst" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
   </div>
 
@@ -3114,11 +3098,7 @@ function verbergResultaten() {
   if (leeg) leeg.style.display = 'flex';
 }
 
-function resetStats() {
-  if (!confirm('Wil je de statistieken resetten?')) return;
-  localStorage.removeItem('svm_stats');
-  updateStatsBalk();
-}
+function resetStats() {}
 
 function downloadPDF() {
   const naam = document.getElementById('naam')?.value.trim() || '';
@@ -3803,7 +3783,9 @@ function aawRenderKlassen() {
 function aawToonLeerlingToevoegen() {
   const aawLijst = document.getElementById('aaw-lijst');
   if (!aawLijst) return;
-  aawLijst.innerHTML = `
+  const wrap = document.getElementById('aaw-toevoeg-wrap') || aawLijst;
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
     <div style="max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
 
       <!-- Tabs: leerling of groep -->
@@ -3907,6 +3889,8 @@ async function aawVoegLeerlingToe(doorGaan) {
     if (doorGaan) {
       aawToonLeerlingToevoegen(); // leeg formulier voor volgende leerling
     } else {
+      const tw = document.getElementById('aaw-toevoeg-wrap');
+      if (tw) tw.style.display = 'none';
       aawRenderKlassen();
       aawToonKlas(groep);
     }
@@ -4007,6 +3991,8 @@ async function aawVoegGroepToe() {
   // Ga naar de nieuwe klas
   if (toegevoegd > 0) {
     setTimeout(() => {
+      const tw = document.getElementById('aaw-toevoeg-wrap');
+      if (tw) tw.style.display = 'none';
       aawRenderKlassen();
       aawToonKlas(groep);
     }, 800);
@@ -4228,8 +4214,7 @@ function aawFilter(zoek) { aawRender(); }
 // ── Tijdsbesparing tracker ────────────────────────────────
 const MINUTEN_PER_RAPPORT = 25;
 
-function laadStats() {
-  const stats = JSON.parse(localStorage.getItem('svm_stats') || '{"rapporten":0,"minuten":0,"start":null}');
+function laadStats() {}');
   if (!stats.start) {
     stats.start = new Date().getFullYear() + '-08-01';
     slaStats(stats);
@@ -4237,20 +4222,9 @@ function laadStats() {
   return stats;
 }
 
-function slaStats(stats) {
-  localStorage.setItem('svm_stats', JSON.stringify(stats));
-}
+function slaStats() {}
 
-function updateStatsBalk() {
-  const stats = laadStats();
-  const uur = (stats.minuten / 60).toFixed(1).replace('.', ',');
-  document.getElementById('t-rapporten').textContent = stats.rapporten;
-  document.getElementById('t-minuten').textContent = stats.minuten;
-  document.getElementById('t-uur').textContent = uur;
-  const tip = document.getElementById('t-tip');
-  if (stats.rapporten === 0) {
-    tip.textContent = 'Elk rapport bespaart gemiddeld 25 minuten schrijftijd.';
-  } else if (stats.rapporten < 5) {
+function updateStatsBalk() {} else if (stats.rapporten < 5) {
     tip.textContent = 'Goed bezig! Nog ' + (5 - stats.rapporten) + ' rapporten tot je eerste uur bespaard.';
   } else if (stats.minuten >= 60) {
     const dagdelen = Math.floor(stats.minuten / 120);
@@ -4292,16 +4266,7 @@ async function werkLvsVanuitRapportBij(parsed, naam, groep) {
   }
 }
 
-function registreerRapport() {
-  const stats = laadStats();
-  stats.rapporten += 1;
-  stats.minuten += MINUTEN_PER_RAPPORT;
-  slaStats(stats);
-  updateStatsBalk();
-  const el = document.getElementById('t-rapporten');
-  el.style.transform = 'scale(1.3)';
-  el.style.transition = 'transform 0.3s ease';
-  setTimeout(() => { el.style.transform = 'scale(1)'; }, 300);
+function registreerRapport() {}, 300);
 }
 
 updateStatsBalk();
