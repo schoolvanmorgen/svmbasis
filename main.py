@@ -36,8 +36,8 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_URL     = "https://api.anthropic.com/v1/messages"
 MODEL             = "claude-sonnet-4-20250514"
 
-SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+SUPABASE_URL      = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "").strip()
 RESEND_API_KEY       = os.environ.get("RESEND_API_KEY", "")      # resend.com — gratis laag: 3000 e-mails/maand
 MAIL_FROM            = os.environ.get("MAIL_FROM", "noreply@schoolvanmorgen.nl")
 APP_URL              = os.environ.get("APP_URL", "http://localhost:8000")

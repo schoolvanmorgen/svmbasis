@@ -792,7 +792,11 @@ async function laadLeerlingen() {
     const res = await fetch(API_BASE + '/leerlingen?limit=50&offset=0', {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      const aawFout = document.getElementById('aaw-klassen-lijst');
+      if (aawFout) aawFout.innerHTML = '<div style="font-size:12px;color:#c0392b;padding:4px 0">Verbinding mislukt ('+res.status+'). Ververs de pagina.</div>';
+      return;
+    }
     leerlingen = await res.json();
     toonLeerlingenLijst();
     // Vul notities-zijbalk bij als die al open staat
