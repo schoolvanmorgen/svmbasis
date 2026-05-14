@@ -1360,6 +1360,7 @@ function toonTab(tab, knop) {
     'tab-lvs',
     'tab-aanwezigheid',
     'tab-ib',
+    'tab-inspectie',
   ];
   alleContainers.forEach(id => {
     const el = document.getElementById(id);
@@ -1391,6 +1392,15 @@ function toonTab(tab, knop) {
     if (notitiesEl) { notitiesEl.style.display = 'flex'; notitiesEl.classList.add('actief'); }
     if (typeof notitieRender === 'function') notitieRender();
 
+
+  } else if (tab === 'inspectie') {
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.display = 'none';
+    const notElInsp = document.getElementById('tab-notities');
+    if (notElInsp) notElInsp.classList.remove('actief');
+    const inspEl = document.getElementById('tab-inspectie');
+    if (inspEl) inspEl.style.display = 'block';
 
   } else if (tab === 'ib') {
     if (lvsEl) lvsEl.style.display = 'none';
@@ -1520,6 +1530,7 @@ function toonTab(tab, knop) {
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
   <button class="tab" onclick="toonTab('rapport',this)">Rapport</button>
   <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
+  <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0;height:100%">
 <div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
@@ -1827,6 +1838,63 @@ function toonTab(tab, knop) {
 
   </div>
 </div><!-- einde tab-ib -->
+
+<!-- ── Inspectie Tab (als sub van IB, of standalone) ── -->
+<div class="sectie" id="tab-inspectie" style="height:100%;overflow:hidden;display:none">
+  <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+
+    <!-- Header -->
+    <div style="padding:14px 20px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-family:Georgia,serif;font-size:18px;color:var(--t);margin-bottom:4px">Inspectie-gereedheid</div>
+          <div style="font-size:12px;color:var(--tz);line-height:1.5">Overzicht ondersteuningscyclus per groep. Kies een groep om de status te zien en een inspectierapport te genereren.</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="inspectie-groep" onchange="inspectieLaad()"
+            style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+            <option value="">Kies groep…</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+          </select>
+          <button onclick="inspectieGenereerRapport()" id="inspectie-rapport-knop"
+            style="padding:7px 14px;background:#4a7a4a;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
+            📄 Genereer inspectierapport
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status balk -->
+    <div id="inspectie-status-balk" style="display:none;padding:10px 20px;border-bottom:1px solid var(--warmrand);background:var(--warm);flex-shrink:0;display:flex;gap:20px;flex-wrap:wrap"></div>
+
+    <!-- Inhoud: twee kolommen -->
+    <div style="flex:1;overflow:hidden;display:flex">
+
+      <!-- Links: leerlingenlijst -->
+      <div style="flex:1;overflow-y:auto;padding:14px 20px;min-width:0">
+        <div id="inspectie-lijst">
+          <div style="color:var(--tz);font-size:12px">Kies een groep om de inspectie-status te zien.</div>
+        </div>
+      </div>
+
+      <!-- Rechts: gegenereerd rapport -->
+      <div id="inspectie-rapport-paneel" style="display:none;width:420px;flex-shrink:0;border-left:1px solid var(--warmrand);overflow-y:auto;padding:16px 18px;background:#fff">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:600;color:var(--t)">Inspectierapport</div>
+          <div style="display:flex;gap:6px">
+            <button id="inspectie-kopieer-knop" onclick="inspectieKopieer()"
+              style="padding:4px 10px;border:1px solid var(--rand);background:#fff;font-size:11px;cursor:pointer;font-family:inherit">Kopieer</button>
+            <button onclick="document.getElementById('inspectie-rapport-paneel').style.display='none'"
+              style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--tz)">✕</button>
+          </div>
+        </div>
+        <div id="inspectie-rapport-tekst" style="font-size:12px;line-height:1.8;color:#333;white-space:pre-wrap"></div>
+      </div>
+
+    </div>
+  </div>
+</div><!-- einde tab-inspectie -->
 
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- LVS — Leerlingvolgsysteem                             -->
@@ -3576,6 +3644,158 @@ function dossierKopieerOverdracht() {
   if (!_dossierOverdracht) return;
   navigator.clipboard.writeText(_dossierOverdracht).then(function() {
     const knop = document.querySelector('[onclick="dossierKopieerOverdracht()"]');
+    if (knop) { knop.textContent = '✓ Gekopieerd'; setTimeout(function() { knop.textContent = 'Kopieer'; }, 2000); }
+  });
+}
+
+// ── Inspectie-readiness (moat 4) ────────────────────────────
+
+let _inspectieRapportTekst = '';
+
+async function inspectieLaad() {
+  const groep = document.getElementById('inspectie-groep').value;
+  if (!groep) return;
+
+  const lijst  = document.getElementById('inspectie-lijst');
+  const status = document.getElementById('inspectie-status-balk');
+  if (lijst) lijst.innerHTML = '<div style="color:var(--tz);font-size:12px">Laden…</div>';
+
+  try {
+    const res = await fetch(API_BASE + '/inspectie/groep/' + groep, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+    inspectieRenderStatus(data, status);
+    inspectieRenderLijst(data.leerlingen || [], lijst);
+  } catch(e) {
+    if (lijst) lijst.innerHTML = '<div style="color:#991b1b;font-size:12px">Laden mislukt: ' + e.message + '</div>';
+  }
+}
+
+function inspectieRenderStatus(data, el) {
+  if (!el) return;
+  el.style.display = 'flex';
+
+  const gereed = data.inspectie_gereed;
+  const kleur  = gereed ? '#2d6a2d' : '#c07000';
+
+  el.innerHTML = [
+    [data.totaal,             'leerlingen',         null],
+    [data.met_ondersteuning,  'met ondersteuning',  null],
+    [data.opp_compleet,       'OPP compleet',       data.opp_compleet < data.met_ondersteuning ? '#c07000' : '#2d6a2d'],
+    [data.cyclus_volledig,    'cyclus volledig',    data.cyclus_volledig < data.totaal ? '#c07000' : '#2d6a2d'],
+  ].map(function(item) {
+    const [n, l, k] = item;
+    return '<div style="text-align:center;padding:0 10px">'
+      + '<div style="font-size:20px;font-weight:500;font-family:Georgia,serif;color:' + (k || 'var(--t)') + '">' + n + '</div>'
+      + '<div style="font-size:10px;color:var(--tz);letter-spacing:.04em">' + l.toUpperCase() + '</div>'
+      + '</div>';
+  }).join('<div style="width:1px;background:var(--warmrand)"></div>')
+  + '<div style="margin-left:auto;padding:5px 12px;background:' + (gereed ? '#e8f5e9' : '#fff3e0') + ';border:1px solid ' + (gereed ? '#c8e6c9' : '#ffe0b2') + ';font-size:11px;font-weight:600;color:' + kleur + ';align-self:center">'
+  + (gereed ? '✓ Inspectie-gereed' : '⚠ Aandachtspunten')
+  + '</div>';
+}
+
+function inspectieRenderLijst(leerlingen, el) {
+  if (!el || !leerlingen.length) {
+    if (el) el.innerHTML = '<div style="color:var(--tz);font-size:12px">Geen leerlingen gevonden.</div>';
+    return;
+  }
+
+  const statusKleur = {
+    compleet:   { bg: '#e8f5e9', rand: '#c8e6c9', kleur: '#2d6a2d' },
+    gedeeltelijk: { bg: '#fffbeb', rand: '#fcd34d', kleur: '#92400e' },
+    ontbreekt:  { bg: '#fff5f5', rand: '#fca5a5', kleur: '#991b1b' },
+  };
+
+  let html = '';
+
+  // Legenda
+  html += '<div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;font-size:11px">';
+  html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:2px"></div> Cyclus volledig</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;background:#fffbeb;border:1px solid #fcd34d;border-radius:2px"></div> Gedeeltelijk</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;background:#fff5f5;border:1px solid #fca5a5;border-radius:2px"></div> Ontbreekt</div>';
+  html += '</div>';
+
+  leerlingen.forEach(function(l) {
+    const vol   = l.cyclus_volledig;
+    const stijl = vol === 3 ? statusKleur.compleet
+                : vol >= 1  ? statusKleur.gedeeltelijk
+                : statusKleur.ontbreekt;
+    const cyclus = l.cyclus || {};
+
+    html += '<div style="padding:10px 12px;border:1px solid ' + stijl.rand + ';background:' + stijl.bg + ';margin-bottom:6px">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+    html += '<span style="font-size:13px;font-weight:600;color:var(--t)">' + l.voornaam + '</span>';
+    if (l.heeft_ondersteuning) {
+      html += '<span style="font-size:10px;padding:2px 7px;background:#e8f0fe;color:#1a3a8a">ondersteuning</span>';
+    }
+    html += '<span style="margin-left:auto;font-size:11px;color:' + stijl.kleur + ';font-weight:600">' + vol + '/3 stappen</span>';
+    html += '</div>';
+
+    // Cyclus stappen
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+    const stappen = [
+      ['signalering', 'Gesignaleerd', cyclus.signalering],
+      ['documentatie', 'Gedocumenteerd', cyclus.documentatie],
+      ['opp', 'OPP aanwezig', cyclus.opp],
+    ];
+    stappen.forEach(function(stap) {
+      const [, label, ok] = stap;
+      html += '<span style="font-size:10px;padding:2px 8px;'
+        + (ok ? 'background:#e8f5e9;color:#2d6a2d;border:1px solid #c8e6c9'
+              : 'background:#f5f5f5;color:#999;border:1px solid #e0e0e0')
+        + '">' + (ok ? '✓' : '○') + ' ' + label + '</span>';
+    });
+    html += '</div>';
+
+    // Datums
+    html += '<div style="display:flex;gap:12px;margin-top:5px;flex-wrap:wrap">';
+    if (l.laatste_notitie) html += '<span style="font-size:10px;color:var(--tz)">Notitie: ' + new Date(l.laatste_notitie).toLocaleDateString('nl-NL') + '</span>';
+    if (l.laatste_rapport) html += '<span style="font-size:10px;color:var(--tz)">Rapport: ' + new Date(l.laatste_rapport).toLocaleDateString('nl-NL') + '</span>';
+    if (l.signalen_count)  html += '<span style="font-size:10px;color:#c07000">⚡ ' + l.signalen_count + ' signalen</span>';
+    html += '</div>';
+
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+}
+
+async function inspectieGenereerRapport() {
+  const groep = document.getElementById('inspectie-groep').value;
+  if (!groep) { alert('Kies eerst een groep.'); return; }
+
+  const knop    = document.getElementById('inspectie-rapport-knop');
+  const paneel  = document.getElementById('inspectie-rapport-paneel');
+  const tekst   = document.getElementById('inspectie-rapport-tekst');
+
+  if (knop) { knop.textContent = 'Genereren…'; knop.disabled = true; }
+  if (paneel) paneel.style.display = 'block';
+  if (tekst) tekst.textContent = 'Inspectierapport wordt gegenereerd…';
+
+  try {
+    const res = await fetch(API_BASE + '/inspectie/rapport/' + groep, {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+
+    _inspectieRapportTekst = data.rapport || '';
+    if (tekst) tekst.textContent = _inspectieRapportTekst;
+  } catch(e) {
+    if (tekst) { tekst.textContent = 'Generatie mislukt: ' + e.message; }
+  } finally {
+    if (knop) { knop.textContent = '📄 Genereer inspectierapport'; knop.disabled = false; }
+  }
+}
+
+function inspectieKopieer() {
+  if (!_inspectieRapportTekst) return;
+  navigator.clipboard.writeText(_inspectieRapportTekst).then(function() {
+    const knop = document.getElementById('inspectie-kopieer-knop');
     if (knop) { knop.textContent = '✓ Gekopieerd'; setTimeout(function() { knop.textContent = 'Kopieer'; }, 2000); }
   });
 }

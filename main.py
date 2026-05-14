@@ -3712,6 +3712,343 @@ async def haal_ib_leerling_volledig_op(
 
 
 # ══════════════════════════════════════════════════════════
+# INSPECTIE-READINESS — moat 4
+#
+# De onderwijsinspectie beoordeelt scholen op handelingsgericht
+# werken: signaleren → analyseren → interveniëren → evalueren.
+# Scholen moeten dit kunnen aantonen met documentatie.
+#
+# Dit module genereert die documentatie automatisch op basis
+# van wat al in het systeem zit. Een school hoeft niet extra
+# werk te doen — de bewijslast wordt samengesteld uit de
+# notities, rapporten, OPP's, signalen en aanwezigheidsdata.
+#
+# Een school die dit kan laten zien bij een inspectiebezoek
+# verlaat de software nooit.
+# ══════════════════════════════════════════════════════════
+
+@app.get("/inspectie/leerling/{leerling_id}")
+async def haal_inspectie_dossier_op(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Genereert het inspectiedossier voor één leerling.
+    Toont de volledige ondersteuningscyclus:
+    signaleren → analyseren → interveniëren → evalueren
+
+    Dit is het document dat je aan de inspecteur laat zien.
+    """
+    import asyncio
+    from datetime import date, timedelta
+
+    token = credentials.credentials
+    ctx   = await get_school_context(user, token)
+    leerling = await _controleer_leerling_toegang(leerling_id, user, token, ctx)
+
+    # Haal alles parallel op
+    notities_taak = supabase_get("leerling_notities", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "order":       "aangemaakt_op.asc",
+        "select":      "tekst,aangemaakt_op,type"
+    })
+    rapporten_taak = supabase_get("rapporten", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "order":       "aangemaakt_op.asc",
+        "select":      "id,aangemaakt_op,rapport_data"
+    })
+    lvs_taak = supabase_get("lvs_profielen", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "select":      "tijdlijn,scores"
+    })
+    aanwezigheid_taak = supabase_get("aanwezigheid", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "order":       "datum.asc",
+        "select":      "datum,status"
+    })
+
+    notities_res, rapporten_res, lvs_res, aaw_res = await asyncio.gather(
+        notities_taak, rapporten_taak, lvs_taak, aanwezigheid_taak,
+        return_exceptions=True
+    )
+
+    def veilig(r): return r if isinstance(r, list) else []
+
+    notities    = veilig(notities_res)
+    rapporten   = veilig(rapporten_res)
+    lvs         = veilig(lvs_res)[0] if veilig(lvs_res) else {}
+    aanwezigheid = veilig(aaw_res)
+    tijdlijn    = lvs.get("tijdlijn") or []
+
+    # ── Bouw de ondersteuningscyclus op ───────────────────
+    # De inspectie wil zien: signaal → actie → evaluatie
+    opp_meta = leerling.get("opp_meta") or {}
+
+    # Aanwezigheidsstatistieken
+    totaal_aaw  = len(aanwezigheid)
+    afwezig_aaw = sum(1 for a in aanwezigheid if a.get("status") == "afwezig")
+    te_laat_aaw = sum(1 for a in aanwezigheid if a.get("status") == "laat")
+    aaw_pct     = round((totaal_aaw - afwezig_aaw) / totaal_aaw * 100) if totaal_aaw else 100
+
+    # Signalen uit tijdlijn
+    signalen = [
+        t for t in tijdlijn
+        if t.get("sentiment") in ("aandacht", "zorg")
+    ]
+
+    # Interventies: rapporten + OPP + handelingsplannen
+    interventies = []
+    for r in rapporten:
+        rd   = r.get("rapport_data", {}) or {}
+        datum = r.get("aangemaakt_op", "")[:10]
+        type_doc = rd.get("type", "rapport")
+        if type_doc == "overdracht":
+            interventies.append({"type": "overdracht", "datum": datum})
+        elif type_doc == "handelingsplan":
+            interventies.append({"type": "handelingsplan", "datum": datum,
+                "doelen": rd.get("doelen", "")})
+        else:
+            interventies.append({"type": "rapport", "datum": datum,
+                "samenvatting": (rd.get("rapportcommentaar") or rd.get("leerresultaten") or "")[:200]})
+
+    # OPP als interventie
+    if opp_meta.get("uitstroombestemming"):
+        interventies.append({
+            "type":       "opp",
+            "datum":      opp_meta.get("opp_datum", ""),
+            "uitstroom":  opp_meta.get("uitstroombestemming", ""),
+            "doelen":     opp_meta.get("doelen", ""),
+            "evaluatie":  opp_meta.get("evaluatie", "")
+        })
+
+    # Sorteer interventies op datum
+    interventies.sort(key=lambda i: i.get("datum", ""))
+
+    # Scores
+    scores = lvs.get("scores", {}) or {}
+
+    # ── Beoordeling: is de cyclus compleet? ───────────────
+    cyclus_check = {
+        "signalering":  len(signalen) > 0 or len(notities) > 0,
+        "analyse":      len(rapporten) > 0 or bool(opp_meta),
+        "interventie":  bool(opp_meta) or any(i["type"] in ("handelingsplan","opp") for i in interventies),
+        "evaluatie":    bool(opp_meta.get("evaluatie")) or len(rapporten) >= 2,
+        "documentatie": len(notities) > 0 and len(rapporten) > 0,
+    }
+    cyclus_compleet = all(cyclus_check.values())
+    cyclus_score    = sum(1 for v in cyclus_check.values() if v)
+
+    return {
+        "leerling":          leerling,
+        "opp_meta":          opp_meta,
+        "ondersteuningsbehoeftes": leerling.get("ondersteuningsbehoeftes") or [],
+        "cyclus_check":      cyclus_check,
+        "cyclus_compleet":   cyclus_compleet,
+        "cyclus_score":      cyclus_score,
+        "signalen":          signalen,
+        "notities_count":    len(notities),
+        "notities":          notities[-5:],   # Meest recente 5 voor preview
+        "interventies":      interventies,
+        "aanwezigheid": {
+            "totaal":  totaal_aaw,
+            "afwezig": afwezig_aaw,
+            "te_laat": te_laat_aaw,
+            "pct":     aaw_pct
+        },
+        "scores": scores,
+        "tijdlijn_items": len(tijdlijn),
+    }
+
+
+@app.get("/inspectie/groep/{groep}")
+async def haal_inspectie_groep_op(
+    groep: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Inspectieoverzicht voor een hele groep.
+    Toont per leerling de status van de ondersteuningscyclus.
+    Geeft een groepsrapportage die je direct aan de inspecteur kunt tonen.
+    """
+    import asyncio
+    token = credentials.credentials
+    ctx   = await get_school_context(user, token)
+
+    # Haal leerlingen op
+    if ctx["school_id"]:
+        leerlingen_data = await supabase_get("leerlingen", token, {
+            "groep":     f"eq.{groep}",
+            "school_id": f"eq.{ctx['school_id']}",
+            "select":    "id,voornaam,achternaam,groep,ondersteuningsbehoeftes,opp_meta"
+        })
+    else:
+        leerlingen_data = await supabase_get("leerlingen", token, {
+            "groep":         f"eq.{groep}",
+            "leerkracht_id": f"eq.{user['id']}",
+            "select":        "id,voornaam,achternaam,groep,ondersteuningsbehoeftes,opp_meta"
+        })
+
+    if not leerlingen_data:
+        raise HTTPException(status_code=404, detail=f"Geen leerlingen in groep {groep}.")
+
+    # Haal per leerling de meest recente documenten op
+    resultaten = []
+    async def verwerk(leerling: dict):
+        lid = leerling["id"]
+        try:
+            notitie_taak = supabase_get("leerling_notities", token, {
+                "leerling_id": f"eq.{lid}",
+                "order": "aangemaakt_op.desc", "limit": "1",
+                "select": "aangemaakt_op"
+            })
+            rapport_taak = supabase_get("rapporten", token, {
+                "leerling_id": f"eq.{lid}",
+                "order": "aangemaakt_op.desc", "limit": "1",
+                "select": "aangemaakt_op"
+            })
+            lvs_taak = supabase_get("lvs_profielen", token, {
+                "leerling_id": f"eq.{lid}",
+                "select": "tijdlijn"
+            })
+
+            n_res, r_res, l_res = await asyncio.gather(
+                notitie_taak, rapport_taak, lvs_taak,
+                return_exceptions=True
+            )
+
+            laatste_notitie = (n_res[0].get("aangemaakt_op","")[:10]
+                               if isinstance(n_res, list) and n_res else None)
+            laatste_rapport = (r_res[0].get("aangemaakt_op","")[:10]
+                               if isinstance(r_res, list) and r_res else None)
+            tijdlijn = ((l_res[0].get("tijdlijn") or [])
+                        if isinstance(l_res, list) and l_res else [])
+            signalen_count = sum(1 for t in tijdlijn
+                                 if t.get("sentiment") in ("aandacht","zorg"))
+
+            opp = leerling.get("opp_meta") or {}
+            heeft_ond = bool(leerling.get("ondersteuningsbehoeftes"))
+
+            # Cyclus volledigheid
+            cyclus = {
+                "signalering":  bool(laatste_notitie),
+                "documentatie": bool(laatste_rapport),
+                "opp":          bool(opp.get("uitstroombestemming")),
+            }
+            volledig = sum(1 for v in cyclus.values() if v)
+
+            resultaten.append({
+                "leerling_id":      lid,
+                "voornaam":         leerling.get("voornaam",""),
+                "groep":            leerling.get("groep",""),
+                "heeft_ondersteuning": heeft_ond,
+                "opp_aanwezig":     bool(opp.get("uitstroombestemming")),
+                "laatste_notitie":  laatste_notitie,
+                "laatste_rapport":  laatste_rapport,
+                "signalen_count":   signalen_count,
+                "cyclus":           cyclus,
+                "cyclus_volledig":  volledig,
+            })
+        except Exception as e:
+            logger.warning(f"Inspectie verwerk fout {leerling.get('voornaam')}: {e}")
+
+    groepjes = [leerlingen_data[i:i+8] for i in range(0, len(leerlingen_data), 8)]
+    for groepje in groepjes:
+        await asyncio.gather(*[verwerk(l) for l in groepje])
+
+    resultaten.sort(key=lambda l: (
+        -l.get("heeft_ondersteuning", 0),
+        l.get("voornaam","")
+    ))
+
+    met_ond  = [l for l in resultaten if l["heeft_ondersteuning"]]
+    opp_ok   = sum(1 for l in met_ond if l["opp_aanwezig"])
+    cyclus_3 = sum(1 for l in resultaten if l["cyclus_volledig"] == 3)
+
+    return {
+        "groep":        groep,
+        "leerlingen":   resultaten,
+        "totaal":       len(resultaten),
+        "met_ondersteuning": len(met_ond),
+        "opp_compleet": opp_ok,
+        "cyclus_volledig": cyclus_3,
+        "inspectie_gereed": (opp_ok >= len(met_ond) and len(met_ond) > 0)
+                            or len(met_ond) == 0
+    }
+
+
+@app.post("/inspectie/rapport/{groep}")
+async def genereer_inspectie_rapport(
+    groep: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Genereert een samenvattend inspectierapport voor de groep.
+    Beschrijft per leerling met ondersteuning de cyclus.
+    Bedoeld als bijlage bij een inspectiebezoek.
+    """
+    token = credentials.credentials
+
+    # Gebruik groep-overzicht als basis
+    overzicht = await haal_inspectie_groep_op(groep, user,
+        type("C", (), {"credentials": token})())
+
+    leerlingen = overzicht["leerlingen"]
+    met_ond    = [l for l in leerlingen if l["heeft_ondersteuning"]]
+
+    if not met_ond:
+        return {
+            "rapport": f"Groep {groep} heeft geen leerlingen met geregistreerde ondersteuningsbehoeftes.",
+            "groep":   groep
+        }
+
+    # Bouw prompt
+    regels = [
+        f"Groep {groep} — Inspectierapport ondersteuning",
+        f"Totaal leerlingen: {overzicht['totaal']}",
+        f"Leerlingen met ondersteuningsbehoefte: {overzicht['met_ondersteuning']}",
+        f"OPP aanwezig: {overzicht['opp_compleet']} van {overzicht['met_ondersteuning']}",
+        "",
+        "Per leerling met ondersteuning:"
+    ]
+
+    for l in met_ond[:10]:
+        naam = l.get("voornaam", "")
+        regels.append(f"\n{naam}:")
+
+        regels.append(f"  - Laatste notitie: {l.get('laatste_notitie') or 'ontbreekt'}")
+        regels.append(f"  - Laatste rapport: {l.get('laatste_rapport') or 'ontbreekt'}")
+        regels.append(f"  - OPP: {'aanwezig' if l['opp_aanwezig'] else 'ontbreekt'}")
+        regels.append(f"  - Signalen: {l.get('signalen_count', 0)}")
+
+    prompt = (
+        "Schrijf een formeel inspectierapport voor de onderwijsinspectie op basis van "
+        "de volgende gegevens over de ondersteuningscyclus in de groep.\n\n"
+        + "\n".join(regels)
+        + "\n\nHet rapport moet:\n"
+        "1. Aantonen dat de school handelt conform de cyclus: signaleren → analyseren → interveniëren → evalueren\n"
+        "2. Per leerling de status van de ondersteuning beschrijven\n"
+        "3. Professioneel en feitelijk zijn — voor de inspecteur\n"
+        "4. Ontbrekende documenten benoemen als aandachtspunt\n\n"
+        "Formele schrijfstijl. Maximaal twee A4."
+    )
+
+    try:
+        rapport = await roep_claude_aan(SYSTEM_PROMPT, prompt, max_tokens=1500)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generatie mislukt: {e}")
+
+    return {
+        "rapport":        rapport,
+        "groep":          groep,
+        "gegenereerd_op": datetime.now(timezone.utc).isoformat(),
+        "samenvatting":   overzicht
+    }
+
+
+# ══════════════════════════════════════════════════════════
 # CASCADE HELPER — tijdlijn bijwerken vanuit elke module
 # ══════════════════════════════════════════════════════════
 
