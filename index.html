@@ -519,9 +519,15 @@ function toonLogin() {
 function toonApp() {
   document.getElementById('login-scherm').style.display = 'none';
   document.getElementById('app-scherm').style.display = 'flex';
-  laadSchoolContext().then(() => laadLeerlingen());
-  // Toon globale leerling-selector
   document.getElementById('globale-leerling-selector').style.display = 'flex';
+  laadSchoolContext().then(function() {
+    laadLeerlingen();
+    // Toon IB-tab knop als gebruiker IB-er of directeur is
+    if (schoolContext && (schoolContext.is_ib || schoolContext.is_directeur)) {
+      const ibKnop = document.getElementById('tab-ib-knop');
+      if (ibKnop) ibKnop.style.display = '';
+    }
+  });
   setTimeout(() => {
     const aawTab = document.querySelector('.tab[onclick*="aanwezigheid"]');
     toonTab('aanwezigheid', aawTab);
@@ -652,6 +658,11 @@ async function laadSchoolContext() {
       naam:         data.naam
     };
     toonRolBadge();
+    // Toon IB-tab als de gebruiker IB-er of directeur is
+    if (schoolContext.is_ib || schoolContext.is_directeur) {
+      const ibKnop = document.getElementById('tab-ib-knop');
+      if (ibKnop) ibKnop.style.display = '';
+    }
   } catch(e) { console.error('School context laden mislukt:', e); }
 }
 
@@ -1348,6 +1359,7 @@ function toonTab(tab, knop) {
     'tab-inhoud',
     'tab-lvs',
     'tab-aanwezigheid',
+    'tab-ib',
   ];
   alleContainers.forEach(id => {
     const el = document.getElementById(id);
@@ -1379,8 +1391,21 @@ function toonTab(tab, knop) {
     if (notitiesEl) { notitiesEl.style.display = 'flex'; notitiesEl.classList.add('actief'); }
     if (typeof notitieRender === 'function') notitieRender();
 
+
+  } else if (tab === 'ib') {
+    if (lvsEl) lvsEl.style.display = 'none';
+    if (aawEl) aawEl.style.display = 'none';
+    if (tabInhoud) tabInhoud.style.display = 'none';
+    const notElIb = document.getElementById('tab-notities');
+    if (notElIb) notElIb.classList.remove('actief');
+    const ibEl = document.getElementById('tab-ib');
+    if (ibEl) ibEl.style.display = 'block';
+    ibLaad();
+
   } else {
     // Rapport, OPP, handelingsplan — in tab-inhoud
+    const ibElHide = document.getElementById('tab-ib');
+    if (ibElHide) ibElHide.style.display = 'none';
     const inhoud = document.getElementById('tab-inhoud');
     if (inhoud) { inhoud.style.display = ''; inhoud.style.flex = '1'; }
     const sectieEl = document.getElementById('tab-' + tab);
@@ -1494,6 +1519,7 @@ function toonTab(tab, knop) {
   <button class="tab" onclick="toonTab('notities',this)">Notities</button>
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
   <button class="tab" onclick="toonTab('rapport',this)">Rapport</button>
+  <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0;height:100%">
 <div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
@@ -1748,6 +1774,59 @@ function toonTab(tab, knop) {
 </div><!-- einde tab-inhoud -->
 
 
+
+<!-- ── IB-Dashboard Tab ── -->
+<div class="sectie" id="tab-ib" style="height:100%;overflow:hidden">
+  <div style="display:flex;height:100%;overflow:hidden">
+
+    <!-- Hoofd paneel -->
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+
+      <!-- Header -->
+      <div style="padding:14px 20px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0">
+        <div style="font-family:Georgia,serif;font-size:18px;color:var(--t);margin-bottom:4px">IB-overzicht</div>
+        <div style="font-size:12px;color:var(--tz)">Alle leerlingen met ondersteuning — status OPP, signalen en documenten.</div>
+      </div>
+
+      <!-- Statistieken balk -->
+      <div id="ib-stats-balk" style="display:none;padding:10px 20px;border-bottom:1px solid var(--warmrand);background:var(--warm);display:flex;gap:20px;flex-wrap:wrap;flex-shrink:0"></div>
+
+      <!-- Filters -->
+      <div style="padding:8px 20px;border-bottom:1px solid var(--warmrand);display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;background:#fff">
+        <select id="ib-filter-groep" onchange="ibFiltereer()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+          <option value="">Alle groepen</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+        </select>
+        <select id="ib-filter-urgentie" onchange="ibFiltereer()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+          <option value="">Alle urgentie</option>
+          <option value="hoog">Hoog — actie vereist</option>
+          <option value="aandacht">Aandacht</option>
+          <option value="normaal">Normaal</option>
+        </select>
+        <select id="ib-filter-opp" onchange="ibFiltereer()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+          <option value="">Alle OPP-statussen</option>
+          <option value="verlopen">OPP verlopen</option>
+          <option value="ontbreekt">OPP ontbreekt</option>
+          <option value="actueel">OPP actueel</option>
+        </select>
+        <button onclick="ibLaad()" style="padding:5px 14px;background:#4a7a4a;color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">↺ Vernieuwen</button>
+      </div>
+
+      <!-- Leerlingenlijst -->
+      <div id="ib-lijst" style="flex:1;overflow-y:auto;padding:12px 20px">
+        <div style="color:var(--tz);font-size:12px">Dashboard laden…</div>
+      </div>
+
+    </div>
+
+    <!-- Detail-paneel rechts -->
+    <div id="ib-detail-paneel" style="display:none;width:380px;flex-shrink:0;border-left:1px solid var(--warmrand);overflow-y:auto;background:#fff">
+      <div id="ib-detail-inhoud"></div>
+    </div>
+
+  </div>
+</div><!-- einde tab-ib -->
 
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- LVS — Leerlingvolgsysteem                             -->
@@ -3499,6 +3578,276 @@ function dossierKopieerOverdracht() {
     const knop = document.querySelector('[onclick="dossierKopieerOverdracht()"]');
     if (knop) { knop.textContent = '✓ Gekopieerd'; setTimeout(function() { knop.textContent = 'Kopieer'; }, 2000); }
   });
+}
+
+// ── IB-Dashboard (moat 3) ──────────────────────────────────
+
+let _ibData = [];        // Volledige dataset voor filtering
+let _ibGefilterd = [];   // Huidige gefilterde weergave
+
+async function ibLaad() {
+  const lijst = document.getElementById('ib-lijst');
+  const stats = document.getElementById('ib-stats-balk');
+  if (!lijst) return;
+
+  lijst.innerHTML = '<div style="color:var(--tz);font-size:12px">Dashboard laden…</div>';
+
+  try {
+    const res = await fetch(API_BASE + '/ib/dashboard', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+
+    if (res.status === 403) {
+      lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:20px 0">Het IB-dashboard is alleen beschikbaar voor IB-ers en directeuren. Vraag de directeur om je rol aan te passen.</div>';
+      return;
+    }
+    if (!res.ok) throw new Error('Status ' + res.status);
+
+    const data = await res.json();
+    _ibData = data.leerlingen || [];
+    ibRenderStats(data.samenvatting || {});
+    ibFiltereer();
+
+  } catch(e) {
+    lijst.innerHTML = '<div style="color:#991b1b;font-size:12px">Dashboard laden mislukt: ' + e.message + '</div>';
+  }
+}
+
+function ibRenderStats(sam) {
+  const el = document.getElementById('ib-stats-balk');
+  if (!el) return;
+  el.style.display = 'flex';
+
+  const items = [
+    [sam.totaal || 0,            'leerlingen totaal'],
+    [sam.met_ondersteuning || 0, 'met ondersteuning'],
+    [sam.hoge_urgentie || 0,     'hoge urgentie',    sam.hoge_urgentie > 0 ? '#991b1b' : null],
+    [sam.opp_verlopen || 0,      'OPP verlopen',     sam.opp_verlopen > 0 ? '#c07000' : null],
+    [sam.opp_ontbreekt || 0,     'OPP ontbreekt',    sam.opp_ontbreekt > 0 ? '#c07000' : null],
+    [sam.opp_actueel || 0,       'OPP actueel',      '#2d6a2d'],
+  ];
+
+  el.innerHTML = items.map(function(item) {
+    const [n, l, kleur] = item;
+    return '<div style="text-align:center;padding:0 8px">'
+      + '<div style="font-size:20px;font-weight:500;font-family:Georgia,serif;color:' + (kleur || 'var(--t)') + '">' + n + '</div>'
+      + '<div style="font-size:10px;color:var(--tz);letter-spacing:.04em">' + l.toUpperCase() + '</div>'
+      + '</div>';
+  }).join('<div style="width:1px;background:var(--warmrand)"></div>');
+}
+
+function ibFiltereer() {
+  const groep    = (document.getElementById('ib-filter-groep')    || {}).value || '';
+  const urgentie = (document.getElementById('ib-filter-urgentie') || {}).value || '';
+  const opp      = (document.getElementById('ib-filter-opp')      || {}).value || '';
+
+  _ibGefilterd = _ibData.filter(function(l) {
+    if (groep    && l.groep        !== groep)    return false;
+    if (urgentie && l.urgentie     !== urgentie) return false;
+    if (opp      && l.opp_status   !== opp)      return false;
+    return true;
+  });
+
+  ibRenderLijst(_ibGefilterd);
+}
+
+function ibRenderLijst(lijst) {
+  const el = document.getElementById('ib-lijst');
+  if (!el) return;
+
+  if (!lijst.length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:20px 0">Geen leerlingen gevonden met de geselecteerde filters.</div>';
+    return;
+  }
+
+  const urgentieKleur = {
+    hoog:     { rand: '#fca5a5', bg: '#fff5f5', icoon: '⚠', kleur: '#991b1b' },
+    aandacht: { rand: '#fcd34d', bg: '#fffbeb', icoon: '!',  kleur: '#92400e' },
+    normaal:  { rand: '#e0e0e0', bg: '#fff',    icoon: '',   kleur: '#555' },
+  };
+  const oppKleur = {
+    actueel:   { tekst: '#2d6a2d', bg: '#e8f5e9', label: 'OPP actueel' },
+    verlopen:  { tekst: '#991b1b', bg: '#fff5f5', label: 'OPP verlopen' },
+    ontbreekt: { tekst: '#92400e', bg: '#fffbeb', label: 'OPP ontbreekt' },
+  };
+
+  let html = '';
+
+  // Groepeer per groep voor overzicht
+  const groepen = {};
+  lijst.forEach(function(l) {
+    const g = l.groep || '?';
+    if (!groepen[g]) groepen[g] = [];
+    groepen[g].push(l);
+  });
+
+  Object.keys(groepen).sort(function(a,b) {
+    return parseInt(a) - parseInt(b);
+  }).forEach(function(g) {
+    html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;padding:10px 0 5px">'
+      + 'GROEP ' + g + ' <span style="font-weight:400">(' + groepen[g].length + ')</span></div>';
+
+    groepen[g].forEach(function(l) {
+      const uk  = urgentieKleur[l.urgentie] || urgentieKleur.normaal;
+      const ok  = oppKleur[l.opp_status]   || oppKleur.ontbreekt;
+      const behoeftes = (l.ondersteuningsbehoeftes || []).slice(0, 2).join(', ');
+
+      html += '<div class="ib-item" data-id="' + l.leerling_id + '" style="padding:10px 12px;border:1px solid ' + uk.rand + ';background:' + uk.bg + ';margin-bottom:6px;cursor:pointer">';
+
+      // Naam rij
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+      if (uk.icoon) html += '<span style="font-size:12px;font-weight:700;color:' + uk.kleur + ';flex-shrink:0">' + uk.icoon + '</span>';
+      html += '<span style="font-size:13px;font-weight:600;color:var(--t)">' + l.naam + '</span>';
+      html += '<span style="margin-left:auto;font-size:10px;padding:2px 8px;background:' + ok.bg + ';color:' + ok.tekst + ';border:1px solid ' + ok.bg + ';font-weight:500">' + ok.label + '</span>';
+      html += '</div>';
+
+      // Info rij
+      html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
+      if (behoeftes) {
+        html += '<span style="font-size:11px;color:var(--tz)">🏷 ' + behoeftes + (l.ondersteuningsbehoeftes.length > 2 ? ' +' + (l.ondersteuningsbehoeftes.length - 2) : '') + '</span>';
+      }
+      if (l.signalen_count > 0) {
+        html += '<span style="font-size:11px;color:#c07000">⚡ ' + l.signalen_count + ' signaal' + (l.signalen_count > 1 ? 'en' : '') + '</span>';
+      }
+      if (l.laatste_rapport_datum) {
+        html += '<span style="font-size:11px;color:var(--tz)">📄 ' + new Date(l.laatste_rapport_datum).toLocaleDateString('nl-NL') + '</span>';
+      }
+      if (l.opp_uitstroom) {
+        html += '<span style="font-size:11px;color:#1565c0">→ ' + l.opp_uitstroom.slice(0, 40) + '</span>';
+      }
+      html += '</div>';
+
+      html += '</div>';
+    });
+  });
+
+  el.innerHTML = html;
+  // Event delegation voor klikken op leerlingen
+  el.querySelectorAll('.ib-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      ibToonDetail(item.dataset.id);
+    });
+    item.addEventListener('mouseover', function() { item.style.opacity = '.85'; });
+    item.addEventListener('mouseout',  function() { item.style.opacity = '1'; });
+  });
+}
+
+async function ibToonDetail(leerlingId) {
+  const paneel = document.getElementById('ib-detail-paneel');
+  const inhoud = document.getElementById('ib-detail-inhoud');
+  if (!paneel || !inhoud) return;
+
+  paneel.style.display = 'block';
+  inhoud.innerHTML = '<div style="padding:16px;color:var(--tz);font-size:12px">Laden…</div>';
+
+  try {
+    const res = await fetch(API_BASE + '/ib/leerling/' + leerlingId + '/volledig', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+
+    const l          = data.leerling || {};
+    const documenten = data.documenten || [];
+    const berichten  = data.oudercontact || [];
+    const lvs        = data.lvs || {};
+    const tijdlijn   = lvs.tijdlijn || [];
+
+    let html = '';
+
+    // Header
+    html += '<div style="padding:14px 16px;border-bottom:1px solid var(--warmrand);display:flex;align-items:center;justify-content:space-between">';
+    html += '<div><div style="font-size:15px;font-weight:600;color:var(--t)">' + (l.voornaam || '') + '</div>';
+    html += '<div style="font-size:11px;color:var(--tz)">Groep ' + (l.groep || '?') + '</div></div>';
+    html += '<button id="ib-sluit-knop" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--tz);padding:4px">✕</button>';
+    html += '</div>';
+
+    // Ondersteuningsbehoeftes
+    const behoeftes = l.ondersteuningsbehoeftes || [];
+    if (behoeftes.length) {
+      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
+      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">ONDERSTEUNING</div>';
+      html += behoeftes.map(function(b) {
+        return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 9px;background:#e8f0fe;color:#1a3a8a;font-size:11px">' + b + '</span>';
+      }).join('');
+      html += '</div>';
+    }
+
+    // OPP status
+    const opp = l.opp_meta || {};
+    html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
+    html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">OPP</div>';
+    if (opp.uitstroombestemming) {
+      html += '<div style="font-size:12px;color:var(--t);margin-bottom:4px">→ ' + opp.uitstroombestemming + '</div>';
+      html += '<div style="font-size:11px;color:var(--tz)">Opgesteld: ' + (opp.opp_datum || '—') + '</div>';
+    } else {
+      html += '<div style="font-size:12px;color:#92400e">Geen OPP geregistreerd</div>';
+    }
+    html += '</div>';
+
+    // Recente signalen uit tijdlijn
+    const signalen = tijdlijn.filter(function(t) {
+      return t.sentiment === 'aandacht' || t.sentiment === 'zorg';
+    }).slice(0, 5);
+    if (signalen.length) {
+      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
+      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">RECENTE SIGNALEN</div>';
+      signalen.forEach(function(s) {
+        const kleur = s.sentiment === 'zorg' ? '#991b1b' : '#92400e';
+        html += '<div style="padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:11px">';
+        html += '<span style="color:' + kleur + ';font-weight:600">' + s.datum + '</span> — ' + s.tekst;
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Documenten
+    if (documenten.length) {
+      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
+      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">DOCUMENTEN (' + documenten.length + ')</div>';
+      documenten.slice(0, 5).forEach(function(d) {
+        const datum = new Date(d.aangemaakt_op).toLocaleDateString('nl-NL');
+        html += '<div style="padding:4px 0;font-size:11px;color:var(--tm);border-bottom:1px solid #f5f5f5">📄 ' + datum + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Oudercontact
+    if (berichten.length) {
+      html += '<div style="padding:10px 16px">';
+      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">OUDERCONTACT (' + berichten.length + ')</div>';
+      berichten.slice(0, 3).forEach(function(b) {
+        const datum = new Date(b.verstuurd_op).toLocaleDateString('nl-NL');
+        html += '<div style="padding:4px 0;font-size:11px;color:var(--tm);border-bottom:1px solid #f5f5f5">✉ ' + datum + ' — ' + (b.onderwerp || '') + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Navigeer naar LVS van deze leerling
+    html += '<div style="padding:12px 16px;border-top:1px solid var(--warmrand)">';
+    html += '<div style="padding:12px 16px;border-top:1px solid var(--warmrand)">';
+    html += '<button id="ib-naar-lvs-knop" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Open in LVS →</button>';
+
+
+    inhoud.innerHTML = html;
+    // Voeg event listeners toe
+    const sluitKnop = inhoud.querySelector('#ib-sluit-knop');
+    if (sluitKnop) sluitKnop.addEventListener('click', function() { document.getElementById('ib-detail-paneel').style.display='none'; });
+    const lvsKnop = inhoud.querySelector('#ib-naar-lvs-knop');
+    if (lvsKnop) lvsKnop.addEventListener('click', function() { ibNaarLeerling(leerlingId); });
+  } catch(e) {
+    inhoud.innerHTML = '<div style="padding:16px;color:#991b1b;font-size:12px">Laden mislukt: ' + e.message + '</div>';
+  }
+}
+
+function ibNaarLeerling(leerlingId) {
+  const leerling = leerlingen.find(function(l) { return l.id === leerlingId; });
+  if (leerling) {
+    stelLeerlingIn(leerling);
+    const lvsTab = document.querySelector('.tab[onclick*="lvs"]');
+    toonTab('lvs', lvsTab);
+    if (lvsTab) lvsTab.click();
+  }
 }
 
 // ── Schoolbrede Benchmarking (moat 2) ──────────────────────

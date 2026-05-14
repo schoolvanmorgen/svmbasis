@@ -3429,6 +3429,289 @@ async def draag_bij_aan_benchmark(
 
 
 # ══════════════════════════════════════════════════════════
+# IB-DASHBOARD — moat 3
+#
+# De IB-er is de sleutelfiguur voor verspreiding:
+# - Werkt gemiddeld op 2-3 scholen tegelijk
+# - Heeft inzicht nodig in ALLE leerlingen met ondersteuning
+# - Beslist mee over aanschaf van tools
+#
+# Dit dashboard geeft de IB-er wat ze nergens anders heeft:
+# - Overzicht van alle leerlingen met ondersteuningsbehoefte
+# - Status van elk OPP en handelingsplan
+# - Wanneer documenten verlopen
+# - Welke leerlingen nieuwe signalen hebben
+# - Exporteerbaar voor inspectie
+# ══════════════════════════════════════════════════════════
+
+@app.get("/ib/dashboard")
+async def haal_ib_dashboard_op(
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Het IB-dashboard: overzicht van alle leerlingen met ondersteuning.
+
+    Beschikbaar voor rollen: ib, directeur.
+    Haalt schoolbreed alle leerlingen op met:
+    - Ondersteuningsbehoeftes
+    - OPP status (aanwezig, verlopen, ontbreekt)
+    - Meest recente handelingsplan
+    - Actieve signalen uit de LVS-tijdlijn
+    - Laatste rapport en notitie
+    """
+    import asyncio
+    from datetime import date, timedelta
+
+    token = credentials.credentials
+    ctx   = await get_school_context(user, token)
+
+    if not ctx["is_ib"]:
+        raise HTTPException(status_code=403, detail="Alleen beschikbaar voor IB-ers en directeuren.")
+    if not ctx["school_id"]:
+        raise HTTPException(status_code=400, detail="Koppel eerst een school om het IB-dashboard te gebruiken.")
+
+    vandaag = date.today()
+
+    # Haal alle leerlingen van de school op met OPP-meta
+    alle_leerlingen = await supabase_get("leerlingen", token, {
+        "school_id": f"eq.{ctx['school_id']}",
+        "select":    "id,voornaam,achternaam,groep,ondersteuningsbehoeftes,opp_meta",
+        "order":     "groep.asc,voornaam.asc"
+    })
+
+    if not alle_leerlingen:
+        return {"leerlingen": [], "samenvatting": {"totaal": 0, "met_ondersteuning": 0}}
+
+    # Filter: alleen leerlingen met ondersteuning OF met OPP
+    met_ondersteuning = [
+        l for l in alle_leerlingen
+        if (l.get("ondersteuningsbehoeftes") and len(l["ondersteuningsbehoeftes"]) > 0)
+        or l.get("opp_meta")
+    ]
+
+    if not met_ondersteuning:
+        return {
+            "leerlingen":  [],
+            "alle_leerlingen": len(alle_leerlingen),
+            "samenvatting": {
+                "totaal":           len(alle_leerlingen),
+                "met_ondersteuning": 0,
+                "opp_aanwezig":      0,
+                "opp_verlopen":      0,
+                "actieve_signalen":  0
+            }
+        }
+
+    # Haal per leerling parallel de status op
+    async def haal_leerling_status(leerling: dict) -> dict:
+        lid  = leerling["id"]
+        naam = leerling.get("voornaam", "")
+        if leerling.get("achternaam"):
+            naam += " " + leerling["achternaam"]
+
+        try:
+            # Parallel: laatste rapport, notitie, handelingsplan, LVS-tijdlijn
+            rapport_taak = supabase_get("rapporten", token, {
+                "leerling_id": f"eq.{lid}",
+                "order":       "aangemaakt_op.desc",
+                "limit":       "1",
+                "select":      "aangemaakt_op,rapport_data"
+            })
+            notitie_taak = supabase_get("leerling_notities", token, {
+                "leerling_id": f"eq.{lid}",
+                "order":       "aangemaakt_op.desc",
+                "limit":       "1",
+                "select":      "aangemaakt_op"
+            })
+            hp_taak = supabase_get("rapporten", token, {
+                "leerling_id": f"eq.{lid}",
+                "order":       "aangemaakt_op.desc",
+                "limit":       "1",
+                "select":      "aangemaakt_op,rapport_data",
+                "rapport_data->>type": "eq.handelingsplan"
+            })
+            lvs_taak = supabase_get("lvs_profielen", token, {
+                "leerling_id": f"eq.{lid}",
+                "select":      "tijdlijn"
+            })
+
+            rapport_res, notitie_res, hp_res, lvs_res = await asyncio.gather(
+                rapport_taak, notitie_taak, hp_taak, lvs_taak,
+                return_exceptions=True
+            )
+
+            def veilig(r):
+                return r if isinstance(r, list) else []
+
+            rapport  = veilig(rapport_res)[0]  if veilig(rapport_res)  else None
+            notitie  = veilig(notitie_res)[0]  if veilig(notitie_res)  else None
+            lvs      = veilig(lvs_res)[0]       if veilig(lvs_res)      else None
+
+            # OPP-status bepalen
+            opp_meta    = leerling.get("opp_meta") or {}
+            opp_datum   = opp_meta.get("opp_datum")
+            opp_status  = "ontbreekt"
+            opp_verlopen = False
+
+            if opp_datum:
+                try:
+                    opp_d   = date.fromisoformat(opp_datum.replace(" ", "T")[:10])
+                    dagen_oud = (vandaag - opp_d).days
+                    if dagen_oud > 365:
+                        opp_status   = "verlopen"
+                        opp_verlopen = True
+                    else:
+                        opp_status = "actueel"
+                except Exception:
+                    opp_status = "actueel"
+
+            # Actieve signalen tellen
+            signalen_count = 0
+            if lvs:
+                tijdlijn = lvs.get("tijdlijn") or []
+                grens    = (vandaag - timedelta(days=30)).strftime("%-d %b %Y")
+                signalen_count = sum(
+                    1 for item in tijdlijn
+                    if item.get("sentiment") in ("aandacht", "zorg")
+                    and item.get("datum", "") >= grens
+                )
+
+            # Laatste rapport datum
+            laatste_rapport_datum = None
+            laatste_rapport_tekst = None
+            if rapport:
+                laatste_rapport_datum = rapport.get("aangemaakt_op", "")[:10]
+                rd = rapport.get("rapport_data", {}) or {}
+                laatste_rapport_tekst = (
+                    rd.get("rapportcommentaar") or
+                    rd.get("leerresultaten") or ""
+                )[:120]
+
+            # Laatste notitie datum
+            laatste_notitie_datum = None
+            if notitie:
+                laatste_notitie_datum = notitie.get("aangemaakt_op", "")[:10]
+
+            # Urgentie bepalen
+            urgentie = "normaal"
+            if opp_verlopen:
+                urgentie = "hoog"
+            elif signalen_count >= 2:
+                urgentie = "hoog"
+            elif signalen_count == 1 or opp_status == "ontbreekt":
+                urgentie = "aandacht"
+
+            return {
+                "leerling_id":            lid,
+                "naam":                   naam,
+                "voornaam":               leerling.get("voornaam", ""),
+                "groep":                  leerling.get("groep", ""),
+                "ondersteuningsbehoeftes": leerling.get("ondersteuningsbehoeftes") or [],
+                "opp_status":             opp_status,
+                "opp_uitstroom":          opp_meta.get("uitstroombestemming", ""),
+                "opp_datum":              opp_datum,
+                "laatste_rapport_datum":  laatste_rapport_datum,
+                "laatste_rapport_tekst":  laatste_rapport_tekst,
+                "laatste_notitie_datum":  laatste_notitie_datum,
+                "signalen_count":         signalen_count,
+                "urgentie":               urgentie
+            }
+        except Exception as e:
+            logger.warning(f"IB-dashboard fout voor {leerling.get('voornaam', lid)}: {e}")
+            return {
+                "leerling_id": lid,
+                "naam":        leerling.get("voornaam", ""),
+                "groep":       leerling.get("groep", ""),
+                "urgentie":    "normaal",
+                "fout":        True
+            }
+
+    # Verwerk in batches van 8
+    resultaten = []
+    groepjes = [met_ondersteuning[i:i+8] for i in range(0, len(met_ondersteuning), 8)]
+    for groepje in groepjes:
+        batch = await asyncio.gather(*[haal_leerling_status(l) for l in groepje])
+        resultaten.extend(batch)
+
+    # Sorteer: hoog urgentie eerst, dan aandacht, dan normaal, dan per groep
+    urgentie_volgorde = {"hoog": 0, "aandacht": 1, "normaal": 2}
+    resultaten.sort(key=lambda l: (
+        urgentie_volgorde.get(l.get("urgentie", "normaal"), 9),
+        l.get("groep", ""),
+        l.get("naam", "")
+    ))
+
+    # Samenvatting
+    samenvatting = {
+        "totaal":            len(alle_leerlingen),
+        "met_ondersteuning": len(met_ondersteuning),
+        "opp_actueel":       sum(1 for r in resultaten if r.get("opp_status") == "actueel"),
+        "opp_verlopen":      sum(1 for r in resultaten if r.get("opp_status") == "verlopen"),
+        "opp_ontbreekt":     sum(1 for r in resultaten if r.get("opp_status") == "ontbreekt"),
+        "hoge_urgentie":     sum(1 for r in resultaten if r.get("urgentie") == "hoog"),
+        "actieve_signalen":  sum(r.get("signalen_count", 0) for r in resultaten)
+    }
+
+    return {
+        "leerlingen":  resultaten,
+        "samenvatting": samenvatting,
+        "school_id":   ctx["school_id"]
+    }
+
+
+@app.get("/ib/leerling/{leerling_id}/volledig")
+async def haal_ib_leerling_volledig_op(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Volledig IB-dossier voor één leerling: alle OPP's, handelingsplannen,
+    signalen en contactmomenten met ouders. Voor gebruik tijdens
+    leerlingbesprekingen en bij inspectie.
+    """
+    import asyncio
+    token = credentials.credentials
+    ctx   = await get_school_context(user, token)
+
+    if not ctx["is_ib"]:
+        raise HTTPException(status_code=403, detail="Alleen beschikbaar voor IB-ers en directeuren.")
+
+    leerling = await _controleer_leerling_toegang(leerling_id, user, token, ctx)
+
+    # Haal alles op
+    opp_taak = supabase_get("rapporten", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "order":       "aangemaakt_op.desc",
+        "select":      "id,aangemaakt_op,rapport_data,leerkracht_id"
+    })
+    berichten_taak = supabase_get("ouder_berichten", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "order":       "verstuurd_op.desc",
+        "select":      "onderwerp,verstuurd_op,bericht_type,ouder_email"
+    })
+    lvs_taak = supabase_get("lvs_profielen", token, {
+        "leerling_id": f"eq.{leerling_id}",
+        "select":      "tijdlijn,scores"
+    })
+
+    opp_res, berichten_res, lvs_res = await asyncio.gather(
+        opp_taak, berichten_taak, lvs_taak, return_exceptions=True
+    )
+
+    def veilig(r):
+        return r if isinstance(r, list) else []
+
+    return {
+        "leerling":          leerling,
+        "documenten":        veilig(opp_res),
+        "oudercontact":      veilig(berichten_res),
+        "lvs":               veilig(lvs_res)[0] if veilig(lvs_res) else None,
+    }
+
+
+# ══════════════════════════════════════════════════════════
 # CASCADE HELPER — tijdlijn bijwerken vanuit elke module
 # ══════════════════════════════════════════════════════════
 
