@@ -19,28 +19,29 @@
   --r:#3a5a3a;--rl:#e8f0e8;
   /* Grijs palet */
   --grijs:#f4f6f4;--wit:#fff;
-  --t:#2a3a2a;--tm:#4a5a4a;--tz:#7a8a7a;--rand:#c4cfc4;
-  --warm:#eef3ee;--warmrand:#c4d4c4;
+  --t:#2a3a2a;--tm:#4a5a4a;--tz:#7a8a7a;--rand:#d0d8d0;
+  --warm:#f0f5f0;--warmrand:#d8e4d8;
   --oranje:#5a8a3a;--donker:#2a3a2a;
+  --radius:8px;--radius-lg:12px;--shadow:0 1px 6px rgba(0,0,0,.07);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;min-width:0}
 html,body{overflow:hidden;height:100%}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#2a3a2a;height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-header{border-bottom:1px solid #4a7a4a;padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:sticky;top:0;z-index:100}
+header{border-bottom:1px solid #e0e8e0;box-shadow:0 1px 8px rgba(0,0,0,.06);padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:sticky;top:0;z-index:100}
 .logo{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#2a3a2a;letter-spacing:.08em;text-transform:uppercase;position:absolute;left:50%;transform:translateX(-50%)}
 .logo em{color:var(--t);font-style:normal}
-.badge{font-size:10px;background:var(--gl);color:var(--g);padding:2px 10px;border-radius:0;font-weight:500;border:1px solid #e0e0e0}
+.badge{font-size:10px;background:var(--gl);color:var(--g);padding:3px 10px;border-radius:20px;font-weight:500;border:1px solid #c8dcc8}
 @media(min-width:768px){header{height:60px;padding:0 2rem}.logo{font-size:20px}}
 
 
-.leerlingen-sidebar{padding:0;border-right:1px solid #c4cfc4;background:#fff;width:200px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
-.leerling-item{padding:9px 14px;border-radius:0;cursor:pointer;border-left:2px solid transparent;transition:all .12s}
+.leerlingen-sidebar{padding:0;border-right:1px solid #e8ede8;background:#fafcfa;width:210px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
+.leerling-item{padding:8px 12px;border-radius:7px;cursor:pointer;border-left:2px solid transparent;transition:all .12s;margin:2px 6px}
 .leerling-item:hover{background:#f8f8f8}
 .leerling-item.actief{background:#f8f8f8;border-left-color:#4a7a4a}
 .leerling-naam{font-size:12px;font-weight:500;color:#2a3a2a;letter-spacing:.01em}
 .leerling-meta{font-size:10px;color:var(--tz);margin-top:1px}
-.hist-item{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:0;cursor:pointer;font-size:11px;color:var(--t)}
+.hist-item{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:11px;color:var(--t)}
 .hist-item:hover{background:var(--warm)}
 
 .app{display:flex;flex-direction:column;width:100%;min-height:calc(100vh - 56px)}
@@ -58,42 +59,42 @@ header{border-bottom:1px solid #4a7a4a;padding:0 1.5rem;height:48px;display:flex
 .vlabel{font-size:10px;font-weight:700;color:#888;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 .rij2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .nwrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
-input[type=text]{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:#2a3a2a;background:#fff;outline:none;transition:border-color .15s}
+input[type=text]{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:7px;padding:10px 12px;font-size:13px;color:#2a3a2a;background:#fff;outline:none;transition:border-color .15s}
 input:focus{border-color:#4a7a4a;box-shadow:none}
 input::placeholder{color:var(--tz)}
-select{width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+select{width:100%;border:1px solid #ccc;border-bottom:2px solid #4a7a4a;border-radius:7px;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;outline:none;transition:all .15s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9690' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
 select:focus{border-color:var(--t);box-shadow:none}
-textarea{font-family:inherit;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;border-radius:0;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;resize:none;min-height:60px;outline:none;line-height:1.7;transition:border-color .15s}
+textarea{font-family:inherit;width:100%;border:1px solid #ccc;border-bottom:2px solid #4a7a4a;border-radius:7px;padding:10px 12px;font-size:13px;color:var(--t);background:#fff;resize:none;min-height:60px;outline:none;line-height:1.7;transition:all .15s}
 textarea:focus{border-color:var(--t);box-shadow:none}
 textarea::placeholder{color:var(--tz);font-size:12px}
 .teller{position:absolute;bottom:9px;right:11px;font-size:10px;color:var(--tz);pointer-events:none}
 .nwrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
-.mic-knop{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:0;border:none;background:var(--gm);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;transition:background .2s,transform .2s;z-index:2}
+.mic-knop{position:absolute;bottom:10px;right:10px;width:36px;height:36px;border-radius:50%;border:none;background:var(--gm);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:none;transition:background .2s,transform .2s;z-index:2}
 .mic-knop:hover{background:var(--g);transform:scale(1.08)}
 .mic-knop.luistert{background:#4a7a4a;animation:pulserood 1s infinite}
 @keyframes pulserood{0%,100%{box-shadow:none}50%{box-shadow:none}}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-size:11px;padding:4px 10px;border-radius:0;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer;font-family:inherit;transition:all .12s;letter-spacing:.02em}
+.chip{font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid #ccc;background:#fff;color:#333;cursor:pointer;font-family:inherit;transition:all .12s;letter-spacing:.02em}
 .chip:hover{border-color:#4a7a4a;color:#3a5a3a;background:#eef3ee}
 
-.genknop{width:100%;background:#4a7a4a;color:#fff;border:none;border-radius:0;padding:14px;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;-webkit-tap-highlight-color:transparent}
+.genknop{width:100%;background:#4a7a4a;color:#fff;border:none;border-radius:8px;padding:13px;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.04em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 8px rgba(74,122,74,.25)}
 .genknop:hover:not(:disabled){background:#333}
 .genknop:disabled{background:#ccc;color:#888;cursor:not-allowed}
-.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:0;animation:rondjes .7s linear infinite;display:none}
+.spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:rondjes .7s linear infinite;display:none}
 @keyframes rondjes{to{transform:rotate(360deg)}}
 
 .leeg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;opacity:.35;text-align:center}
-.leeg-c{width:56px;height:56px;border:2px dashed var(--rand);border-radius:0;display:flex;align-items:center;justify-content:center;font-size:24px}
+.leeg-c{width:56px;height:56px;border:2px dashed var(--rand);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px}
 .leeg-t{font-size:12px;color:var(--tz);max-width:180px;line-height:1.6}
 
 .naambalk{font-family:inherit;font-size:18px;font-weight:600;letter-spacing:-.01em;padding-bottom:12px;border-bottom:2px solid #4a7a4a;color:#2a3a2a;margin-bottom:4px}
 
-.kaart{border:1px solid #e0e0e0;border-top:2px solid #4a7a4a;border-radius:0;overflow:hidden;background:#fff}
+.kaart{border:1px solid #e8ede8;border-top:3px solid #4a7a4a;border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .ktop{display:flex;align-items:center;gap:8px;padding:10px 15px;border-bottom:1px solid var(--warmrand)}
-.dot{width:7px;height:7px;border-radius:0;flex-shrink:0}
+.dot{width:7px;height:7px;border-radius:7px;flex-shrink:0}
 .knaam{font-size:10px;font-weight:600;letter-spacing:.05em;flex:1}
-.mtag{font-size:10px;padding:2px 9px;border-radius:0;font-weight:500}
+.mtag{font-size:10px;padding:2px 9px;border-radius:7px;font-weight:500}
 .kbody{padding:14px 16px;font-size:13px;line-height:1.8;color:var(--tm)}
 
 .tg .ktop{background:#f5f5f5}.tg .dot{background:var(--gm)}.tg .knaam{color:var(--g)}.tg .mtag{background:#e0e0e0;color:var(--g)}
@@ -101,53 +102,53 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .ta .ktop{background:#f8f8f8}.ta .dot{background:#888}.ta .knaam{color:var(--a)}.ta .mtag{background:#ddd;color:var(--a)}
 .tdk .ktop{background:var(--grijs)}.tdk .dot{background:#666}.tdk .knaam{color:#555}.tdk .mtag{background:var(--rand);color:#555}
 
-.rblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
+.rblok{border:1px solid var(--warmrand);border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.05)}
 .rtop{display:flex;align-items:center;justify-content:space-between;padding:11px 15px;background:#222}
 .rtitel{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:#f5f5f5}
-.kknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:0;padding:3px 10px;cursor:pointer;font-family:inherit;transition:background .15s}
+.kknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;transition:background .15s}
 .kknop:hover{background:rgba(255,255,255,.28)}
 .rtext{padding:16px;font-size:13px;line-height:1.9;color:var(--tm);font-style:italic}
 
-.pedblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
+.pedblok{border:1px solid var(--warmrand);border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.05)}
 .pedtop{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;background:#222}
 .pedtitel{font-family:Georgia,'Times New Roman',serif;font-size:13px;color:#f5f5f5}
 .pedsub{font-size:9px;color:#888;margin-top:1px}
-.pedknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:0;padding:3px 10px;cursor:pointer;font-family:inherit}
+.pedknop{font-size:10px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit}
 .pedknop:disabled{opacity:.45;cursor:not-allowed}
 .pedbody{padding:10px 11px;display:flex;flex-direction:column;gap:7px}
 .pedwacht{text-align:center;padding:14px;font-size:11px;color:var(--tz)}
-.prioblok{background:#f8f8f8;border:1px solid #ddd;border-radius:0;padding:10px 13px;font-size:11px;color:#222;line-height:1.65}
+.prioblok{background:#f8f8f8;border:1px solid #ddd;border-radius:7px;padding:10px 13px;font-size:11px;color:#222;line-height:1.65}
 .priolabel{font-size:9px;font-weight:600;letter-spacing:.05em;color:#333;margin-bottom:3px}
-.theorie{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff}
+.theorie{border:1px solid var(--warmrand);border-radius:7px;overflow:hidden;background:#fff}
 .theotop{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--grijs);border-bottom:1px solid var(--warmrand)}
 .theonaam{font-size:10px;font-weight:600;color:var(--tm);flex:1}
 .theoauteur{font-size:9px;color:var(--tz)}
 .theobody{padding:9px 11px;font-size:11px;line-height:1.65;color:var(--tm)}
 
-.ouderblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:#fff;box-shadow:none}
+.ouderblok{border:1px solid var(--warmrand);border-radius:10px;overflow:hidden;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.05)}
 .oudertop{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#f5f5f5;border-bottom:1px solid #e8e8e8}
 .oudertitel{font-size:11px;font-weight:600;color:var(--b);letter-spacing:.03em}
 .ouderbody{padding:11px 13px;display:flex;flex-direction:column;gap:7px}
 .emailrij{display:flex;gap:7px}
 .emailrij input{flex:1}
-.deelknop{padding:9px 14px;background:var(--b);color:#fff;border:none;border-radius:0;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s}
+.deelknop{padding:9px 14px;background:var(--b);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s}
 .deelknop:hover{background:#222}
 
-.oudermail-invoer{flex:1;min-width:160px;font-size:12px;padding:7px 10px;border:1.5px solid var(--rand);border-radius:0;outline:none;font-family:inherit;transition:border-color .15s,max-width .25s}
+.oudermail-invoer{flex:1;min-width:160px;font-size:12px;padding:7px 10px;border:1.5px solid var(--rand);border-radius:7px;outline:none;font-family:inherit;transition:border-color .15s,max-width .25s}
 .oudermail-invoer:focus{border-color:var(--t);box-shadow:none}
 .deelok{font-size:11px;color:var(--g);display:none}
 
-.feedblok{border:1px solid var(--warmrand);border-radius:0;overflow:hidden;background:var(--grijs);display:none}
+.feedblok{border:1px solid var(--warmrand);border-radius:7px;overflow:hidden;background:var(--grijs);display:none}
 .feedtop{display:flex;align-items:center;gap:7px;padding:9px 13px;border-bottom:1px solid var(--warmrand)}
 .feedtitel{font-size:10px;font-weight:600;color:var(--tm);letter-spacing:.04em}
 .feedbody{padding:11px 13px;display:flex;flex-direction:column;gap:7px}
 .feedduimen{display:flex;gap:6px}
-.dknop{padding:6px 14px;border-radius:0;border:1px solid var(--rand);background:#fff;font-size:11px;cursor:pointer;font-family:inherit;color:var(--tm);transition:all .15s}
+.dknop{padding:6px 14px;border-radius:7px;border:1px solid var(--rand);background:#fff;font-size:11px;cursor:pointer;font-family:inherit;color:var(--tm);transition:all .15s}
 .dknop.ok{background:var(--gl);border-color:var(--t);color:var(--g)}
 .dknop.matig{background:var(--al);border-color:#888;color:var(--a)}
-.feedverstuur{font-size:11px;padding:7px 14px;border-radius:0;background:var(--gm);color:#fff;border:none;cursor:pointer}
+.feedverstuur{font-size:11px;padding:7px 14px;border-radius:7px;background:var(--gm);color:#fff;border:none;cursor:pointer}
 
-.fout{background:var(--rl);border:1px solid #ccc;border-radius:0;padding:13px;font-size:12px;color:var(--r);line-height:1.6}
+.fout{background:var(--rl);border:1px solid #ccc;border-radius:7px;padding:13px;font-size:12px;color:var(--r);line-height:1.6}
 
 @media(max-width:768px){
   .app{grid-template-columns:1fr}
@@ -158,17 +159,17 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 
 .tab{padding:12px 14px;font-size:12px;font-weight:500;letter-spacing:.04em;color:#888;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:inherit;text-transform:uppercase}
 .tab:hover{color:var(--tm)}
-.tab.actief{color:#3a5a3a;border-bottom-color:#4a7a4a}
+.tab.actief{color:#3a5a3a;border-bottom-color:#4a7a4a;font-weight:600}
 .sectie{display:none}.sectie.actief{display:grid;height:100%;overflow:hidden}#tab-notities.actief{display:flex!important;flex-direction:column;height:100%}
 .sectie-vol{display:none}.sectie-vol.actief{display:flex}
 
 
 
 .ondersteuning-wrap{position:relative;margin-bottom:0}
-.ondersteuning-knop{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:9px 13px;font-size:13px;color:var(--t);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;text-align:left;transition:border-color .15s}
+.ondersteuning-knop{width:100%;border:1.5px solid var(--rand);border-radius:7px;padding:9px 13px;font-size:13px;color:var(--t);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;text-align:left;transition:border-color .15s}
 .ondersteuning-knop:focus{border-color:var(--t);outline:none;box-shadow:none}
 .ondersteuning-knop .pijl{font-size:10px;color:var(--tz)}
-.ondersteuning-dropdown{display:none;position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--rand);border-radius:0;z-index:1000;overflow:hidden;box-shadow:none}
+.ondersteuning-dropdown{display:none;position:absolute;top:calc(100% + 5px);left:0;right:0;background:#fff;border:1.5px solid var(--rand);border-radius:7px;z-index:1000;overflow:hidden;box-shadow:none}
 .ondersteuning-dropdown.open{display:block}
 .od-item{display:flex;align-items:center;gap:9px;padding:10px 13px;cursor:pointer;font-size:12px;color:var(--tm);border-bottom:1px solid var(--warmrand)}
 .od-item:last-child{border-bottom:none}
@@ -177,9 +178,9 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .od-item label{cursor:pointer;flex:1;line-height:1.4}
 .od-item .od-sub{font-size:10px;color:var(--tz);display:block;margin-top:1px}
 .tags-rij{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-height:0}
-.od-check-item{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12px;color:var(--t);cursor:pointer;border-radius:0}
+.od-check-item{display:flex;align-items:center;gap:8px;padding:5px 10px;font-size:12px;color:var(--t);cursor:pointer;border-radius:6px}
 .od-check-item input{accent-color:#4a7a4a;width:14px;height:14px;cursor:pointer}
-.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:0;background:#f5f5f5;color:#4a5a4a;border:1px solid #c4cfc4}
+.od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 11px;border-radius:20px;background:#eef3ee;color:#4a5a4a;border:1px solid #c4d4c4}
 .od-tag-x{cursor:pointer;font-size:10px;opacity:.6}
 .od-tag-x:hover{opacity:1}
 
@@ -213,16 +214,16 @@ body{padding-bottom:64px}
 @media(min-width:768px){.leerlingen-sidebar{display:flex}}
 
 /* ── Kaart styling verbetering voor mobiel ── */
-.kaart{border-radius:0;overflow:hidden;background:#fff;border:1px solid var(--rand);margin-bottom:10px}
+.kaart{border-radius:7px;overflow:hidden;background:#fff;border:1px solid var(--rand);margin-bottom:10px}
 .kbody{padding:12px 14px;font-size:14px;line-height:1.75}
 .ktop{padding:10px 12px}
 .knaam{font-size:10px}
 
 /* ── Leerling modal verbetering ── */
-#leerling-modal > div{width:calc(100% - 32px);max-width:360px;border-radius:0;padding:20px}
+#leerling-modal > div{width:calc(100% - 32px);max-width:360px;border-radius:7px;padding:20px}
 
 /* ── Login scherm verbetering ── */
-#login-scherm > div:last-child{width:calc(100% - 32px);max-width:360px;border-radius:0;padding:24px}
+#login-scherm > div:last-child{width:calc(100% - 32px);max-width:360px;border-radius:7px;padding:24px}
 
 '
     + 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 30px;color:#2a3a2a;font-size:14px;line-height:1.7}'
@@ -230,7 +231,7 @@ body{padding-bottom:64px}
     + '.meta{font-size:12px;color:#888;margin-bottom:30px}'
     + '.sectie{margin-bottom:22px;page-break-inside:avoid}'
     + '.sectie-titel{font-size:10px;font-weight:700;letter-spacing:.08em;color:#3a5a3a;margin-bottom:6px;text-transform:uppercase}'
-    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#333;background:#f8f8f8;border-left:3px solid #4a7a4a;padding:10px 14px;border-radius:0'
+    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#333;background:#f8f8f8;border-left:3px solid #4a7a4a;padding:10px 14px;border-radius:6px'
     + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}'
     + '
 
@@ -238,26 +239,26 @@ body{padding-bottom:64px}
 .aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
 .aaw-datum{font-family:Georgia,serif;font-size:18px;color:var(--t)}
 .aaw-datum-nav{display:flex;align-items:center;gap:8px}
-.aaw-datum-knop{background:none;border:1.5px solid var(--rand);border-radius:0;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.aaw-datum-knop{background:none;border:1.5px solid var(--rand);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s}
 .aaw-datum-knop:hover{border-color:var(--t);color:var(--t)}
 .aaw-stats{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
-.aaw-stat{flex:1;min-width:80px;background:#fff;border:1px solid var(--rand);border-radius:0;padding:10px 12px;text-align:center}
+.aaw-stat{flex:1;min-width:80px;background:#fff;border:1px solid var(--rand);border-radius:8px;padding:10px 12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .aaw-stat-getal{font-family:Georgia,serif;font-size:24px;font-weight:700}
 .aaw-stat-label{font-size:10px;color:var(--tz);margin-top:2px;font-weight:500;letter-spacing:.04em}
-.aaw-zoek{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:11px 14px;font-size:14px;color:var(--t);background:#fff;outline:none;margin-bottom:1rem;font-family:inherit}
+.aaw-zoek{width:100%;border:1.5px solid var(--rand);border-radius:7px;padding:11px 14px;font-size:14px;color:var(--t);background:#fff;outline:none;margin-bottom:1rem;font-family:inherit}
 .aaw-zoek:focus{border-color:var(--t)}
 .aaw-lijst{display:flex;flex-direction:column;gap:8px}
-.aaw-item{background:#fff;border:1.5px solid var(--rand);border-radius:0;overflow:hidden;transition:border-color .15s}
+.aaw-item{background:#fff;border:1.5px solid var(--rand);border-radius:7px;overflow:hidden;transition:border-color .15s}
 .aaw-item.aanwezig{border-color:#e8e8e8}
 .aaw-item.afwezig{border-color:#e8e8e8}
 .aaw-item.laat{border-color:#e8e8e8}
 .aaw-item-top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
-.aaw-avatar{width:38px;height:38px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
+.aaw-avatar{width:38px;height:38px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
 .aaw-info{flex:1}
 .aaw-naam{font-size:14px;font-weight:500;color:var(--t)}
 .aaw-status-tekst{font-size:11px;color:var(--tz);margin-top:1px}
 .aaw-knoppen{display:flex;gap:6px;flex-shrink:0}
-.aaw-knop{width:36px;height:36px;border-radius:0;border:2px solid var(--rand);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.aaw-knop{width:36px;height:36px;border-radius:7px;border:2px solid var(--rand);background:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;-webkit-tap-highlight-color:transparent}
 .aaw-knop:active{transform:scale(.92)}
 .aaw-knop.aanwezig-knop.actief{background:#f5f5f5;border-color:#333}
 .aaw-knop.afwezig-knop.actief{background:#f5f5f5;border-color:#333}
@@ -265,17 +266,17 @@ body{padding-bottom:64px}
 .aaw-item-extra{display:none;padding:0 14px 12px;border-top:1px solid var(--rand);background:#f8f8f8}
 .aaw-item-extra.open{display:block}
 .aaw-extra-label{font-size:10px;font-weight:600;color:var(--tz);letter-spacing:.05em;margin:10px 0 5px}
-.aaw-opmerking{width:100%;border:1.5px solid var(--rand);border-radius:0;padding:8px 10px;font-size:13px;color:var(--t);background:#fff;outline:none;resize:none;min-height:60px;font-family:inherit;line-height:1.5}
+.aaw-opmerking{width:100%;border:1.5px solid var(--rand);border-radius:7px;padding:8px 10px;font-size:13px;color:var(--t);background:#fff;outline:none;resize:none;min-height:60px;font-family:inherit;line-height:1.5}
 .aaw-opmerking:focus{border-color:var(--t)}
 .aaw-reden-knoppen{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-.aaw-reden{padding:5px 12px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:11px;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
+.aaw-reden{padding:5px 12px;border-radius:7px;border:1.5px solid var(--rand);background:#fff;font-size:11px;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .15s}
 .aaw-reden.actief{border-color:var(--t);background:var(--gl);color:var(--g)}
 .aaw-acties{display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap}
-.aaw-actie-knop{flex:1;padding:11px;border-radius:0;border:1.5px solid var(--rand);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;min-width:120px}
+.aaw-actie-knop{flex:1;padding:11px;border-radius:7px;border:1.5px solid var(--rand);background:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;min-width:120px}
 .aaw-actie-knop:hover{border-color:var(--t);color:var(--t)}
 .aaw-actie-knop.prim{background:var(--gm);color:#fff;border-color:var(--t)}
 .aaw-actie-knop.prim:hover{background:var(--g)}
-.aaw-export-balk{background:var(--gl);border:1px solid #e0e0e0;border-radius:0;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
+.aaw-export-balk{background:var(--gl);border:1px solid #e0e0e0;border-radius:7px;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
 .aaw-export-balk.zichtbaar{display:block}
 
 
@@ -285,24 +286,24 @@ body{padding-bottom:64px}
 .lvs-sidebar-titel{font-size:13px;font-weight:600;color:var(--t);margin-bottom:2px}
 .lvs-sidebar-meta{font-size:10px;color:var(--tz);letter-spacing:.04em;text-transform:uppercase}
 .lvs-zoek{padding:8px 10px;border-bottom:1px solid var(--warmrand)}
-.lvs-zoek input{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;box-sizing:border-box}
+.lvs-zoek input{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;box-sizing:border-box}
 .lvs-zoek input:focus{border-color:var(--t)}
 .lvs-lijst{flex:1;overflow-y:auto;padding:6px}
-.lvs-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:0;cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:all .15s}
+.lvs-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:7px;cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:all .15s}
 .lvs-item:hover{background:var(--gl)}
 .lvs-item.actief{background:var(--gl);border-color:rgba(212,80,15,.25)}
-.lvs-av{width:32px;height:32px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:#fff}
+.lvs-av{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;color:#fff}
 .lvs-item-info{flex:1;min-width:0}
 .lvs-item-naam{font-size:12px;font-weight:500;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lvs-item-groep{font-size:10px;color:var(--tz);margin-top:1px}
 .lvs-footer{padding:10px 12px;border-top:1px solid var(--warmrand)}
-.lvs-add{width:100%;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.lvs-add{width:100%;background:var(--gm);color:#fff;border:none;border-radius:7px;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
 .lvs-hoofd{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .lvs-profiel{padding:14px 18px;border-bottom:1px solid var(--warmrand);background:#fff;display:flex;align-items:center;gap:12px;flex-shrink:0}
-.lvs-profiel-av{width:44px;height:44px;border-radius:0;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0}
+.lvs-profiel-av{width:44px;height:44px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;flex-shrink:0}
 .lvs-profiel-naam{font-size:17px;font-weight:600;color:var(--t)}
 .lvs-profiel-meta{font-size:11px;color:var(--tz);margin-top:2px}
-.lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:0;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .gp-vak-btn{padding:6px 12px;font-size:12px;font-weight:500;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)}
 .gp-vak-btn.actief{background:#4a7a4a;color:#fff;border-color:#4a7a4a}
 .gp-vak-btn:hover:not(.actief){background:var(--warm)}
@@ -322,35 +323,35 @@ body{padding-bottom:64px}
 .lvs-inhoud{flex:1;overflow-y:auto;padding:16px 18px}
 .lvs-sectie-titel{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--tz);text-transform:uppercase;margin-bottom:10px;margin-top:4px}
 .lvs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.lvs-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:13px}
+.lvs-kaart{background:#fff;border:1px solid var(--warmrand);border-radius:7px;padding:13px}
 .lvs-domein-label{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--tz);margin-bottom:6px;text-transform:uppercase}
 .lvs-score{font-size:30px;font-weight:700;line-height:1;margin-bottom:5px;color:var(--t)}
 .lvs-trend{font-size:11px;display:flex;align-items:center;gap:3px}
 .lvs-omhoog{color:#333}
 .lvs-omlaag{color:var(--r)}
 .lvs-gelijk{color:var(--tz)}
-.lvs-radar-wrap{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:14px;display:flex;justify-content:center;margin-bottom:14px}
+.lvs-radar-wrap{background:#fff;border:1px solid var(--warmrand);border-radius:7px;padding:14px;display:flex;justify-content:center;margin-bottom:14px}
 .lvs-tijdlijn{display:flex;flex-direction:column;gap:0}
 .lvs-tl-item{display:flex;gap:12px;padding-bottom:14px;position:relative}
 .lvs-tl-item::before{content:'';position:absolute;left:13px;top:26px;bottom:0;width:1px;background:var(--warmrand)}
 .lvs-tl-item:last-child::before{display:none}
-.lvs-tl-dot{width:26px;height:26px;border-radius:0;background:var(--grijs);border:2px solid var(--rand);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;z-index:1}
+.lvs-tl-dot{width:26px;height:26px;border-radius:7px;background:var(--grijs);border:2px solid var(--rand);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;z-index:1}
 .lvs-tl-dot.rapport{border-color:var(--t);background:var(--gl)}
 .lvs-tl-dot.notitie{border-color:var(--b);background:var(--bl)}
 .lvs-tl-inhoud{flex:1;padding-top:2px}
 .lvs-tl-datum{font-size:10px;color:var(--tz);margin-bottom:3px}
-.lvs-tl-tekst{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:9px 11px;font-size:12px;line-height:1.6;color:var(--tm)}
-.lvs-notitie-form{background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:10px;display:flex;flex-direction:column;gap:5px}
-.lvs-textarea{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:8px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;min-height:80px;resize:vertical;line-height:1.6;box-sizing:border-box}
+.lvs-tl-tekst{background:#fff;border:1px solid var(--warmrand);border-radius:7px;padding:9px 11px;font-size:12px;line-height:1.6;color:var(--tm)}
+.lvs-notitie-form{background:#fff;border:1px solid var(--warmrand);border-radius:7px;padding:10px;display:flex;flex-direction:column;gap:5px}
+.lvs-textarea{width:100%;background:var(--grijs);border:1px solid var(--rand);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--t);font-family:inherit;outline:none;min-height:80px;resize:vertical;line-height:1.6;box-sizing:border-box}
 .lvs-textarea:focus{border-color:var(--t)}
 .lvs-scores-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.lvs-score-input{background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 8px;font-size:12px;color:var(--t);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
+.lvs-score-input{background:var(--grijs);border:1px solid var(--rand);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--t);font-family:inherit;outline:none;width:100%;box-sizing:border-box}
 .lvs-score-input:focus{border-color:var(--t)}
 .lvs-balk-wrap{margin-bottom:7px}
 .lvs-balk-label{display:flex;justify-content:space-between;font-size:11px;color:var(--tz);margin-bottom:3px}
-.lvs-balk{height:5px;background:var(--grijs);border-radius:0;overflow:hidden}
-.lvs-balk-fill{height:100%;border-radius:0;transition:width .8s ease}
-.lvs-tag{display:inline-block;padding:2px 7px;border-radius:0;font-size:10px;font-weight:500;margin:2px}
+.lvs-balk{height:5px;background:var(--grijs);border-radius:7px;overflow:hidden}
+.lvs-balk-fill{height:100%;border-radius:7px;transition:width .8s ease}
+.lvs-tag{display:inline-block;padding:2px 7px;border-radius:7px;font-size:10px;font-weight:500;margin:2px}
 .lvs-tag-oranje{background:#eef3ee;color:#3a5a3a;border:1px solid #c4cfc4}
 .lvs-tag-groen{background:#f5f5f5;color:#222;border:1px solid rgba(29,158,117,.2)}
 .lvs-tag-blauw{background:#e8f0e8;color:#3a5a3a;border:1px solid #c4cfc4}
@@ -1000,7 +1001,7 @@ async function toonRapportTrend(leerlingId) {
         + '</div>'
       : '';
 
-    trendEl.style.cssText = 'display:block;background:' + k.bg + ';border:1px solid ' + k.rand + ';padding:10px 12px;margin-bottom:8px;border-radius:0';
+    trendEl.style.cssText = 'display:block;background:' + k.bg + ';border:1px solid ' + k.rand + ';padding:10px 12px;margin-bottom:8px;border-radius:8px';
     trendEl.innerHTML = periodeHtml
       + '<div style="font-size:11px;font-weight:700;color:' + k.tekst + ';margin-bottom:3px">'
       + k.icoon + ' Trendanalyse: ' + (trend.kern || '')
@@ -1490,9 +1491,9 @@ function toonTab(tab, knop) {
     <div style="font-family:Georgia,serif;font-size:28px;color:var(--donker)">School van <span style="color:var(--oranje)">morgen</span></div>
     <div style="font-size:13px;color:var(--tz);margin-top:4px">Administratie voor basisscholen</div>
   </div>
-  <div style="background:#fff;border:1px solid var(--rand);border-radius:0;padding:28px;width:340px;display:flex;flex-direction:column;gap:12px">
-    <input id="login-email" type="email" placeholder="E-mailadres" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
-    <input id="login-ww" type="password" placeholder="Wachtwoord" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')inloggen()">
+  <div style="background:#fff;border:1px solid var(--rand);border-radius:7px;padding:28px;width:340px;display:flex;flex-direction:column;gap:12px">
+    <input id="login-email" type="email" placeholder="E-mailadres" style="width:100%;border:1.5px solid var(--rand);border-radius:7px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
+    <input id="login-ww" type="password" placeholder="Wachtwoord" style="width:100%;border:1.5px solid var(--rand);border-radius:7px;padding:10px 12px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')inloggen()">
 
     <!-- Rol selector -->
     <div>
@@ -1515,13 +1516,13 @@ function toonTab(tab, knop) {
     </div>
 
     <div id="login-fout" style="font-size:12px;color:#4a5a4a;min-height:16px"></div>
-    <button onclick="inloggen()" style="background:var(--oranje);color:#fff;border:none;border-radius:0;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">Inloggen</button>
+    <button onclick="inloggen()" style="background:var(--oranje);color:#fff;border:none;border-radius:7px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">Inloggen</button>
     <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
       <div style="flex:1;height:1px;background:var(--warmrand)"></div>
       <span style="font-size:11px;color:var(--tz)">of</span>
       <div style="flex:1;height:1px;background:var(--warmrand)"></div>
     </div>
-    <button onclick="registreren()" style="background:transparent;color:var(--tm);border:1px solid var(--rand);border-radius:0;padding:9px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">Nieuw account aanmaken</button>
+    <button onclick="registreren()" style="background:transparent;color:var(--tm);border:1px solid var(--rand);border-radius:7px;padding:9px;font-size:13px;cursor:pointer;font-family:inherit;width:100%">Nieuw account aanmaken</button>
     <div style="font-size:10px;color:var(--tz);text-align:center;line-height:1.5">
       Je gegevens worden AVG-conform opgeslagen op Europese servers.<br>
       Leerlingdata is alleen voor jou zichtbaar.
@@ -1708,11 +1709,11 @@ function toonTab(tab, knop) {
   <div style="flex-shrink:0;padding:10px 12px 8px;border-bottom:1px solid var(--warmrand)">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div class="vlabel" style="margin-bottom:0">LEERLINGEN</div>
-      <button onclick="uitloggen()" style="background:transparent;color:var(--tz);border:1px solid var(--rand);border-radius:0;padding:2px 7px;font-size:10px;cursor:pointer;font-family:inherit">Uitloggen</button>
+      <button onclick="uitloggen()" style="background:transparent;color:var(--tz);border:1px solid var(--rand);border-radius:6px;padding:2px 7px;font-size:10px;cursor:pointer;font-family:inherit">Uitloggen</button>
     </div>
     <div style="display:flex;gap:4px">
-      <button onclick="openLeerlingModal()" style="flex:1;background:var(--oranje);color:#fff;border:none;border-radius:0;padding:5px 4px;font-size:10px;cursor:pointer;font-family:inherit">+ Leerling</button>
-      <button onclick="openImportModal()" style="flex:1;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;border-radius:0;padding:5px 4px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:600">↑ Klas</button>
+      <button onclick="openLeerlingModal()" style="flex:1;background:var(--oranje);color:#fff;border:none;border-radius:6px;padding:5px 4px;font-size:10px;cursor:pointer;font-family:inherit">+ Leerling</button>
+      <button onclick="openImportModal()" style="flex:1;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;border-radius:6px;padding:5px 4px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:600">↑ Klas</button>
     </div>
   </div>
 
@@ -1751,7 +1752,7 @@ function toonTab(tab, knop) {
     </div>
     <div>
       <div class="vlabel">LEERLING</div>
-      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:0;margin-bottom:6px;font-size:12px">
+      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:7px;margin-bottom:6px;font-size:12px">
         <span style="font-weight:600;color:var(--gm)">●</span>
         <span class="alb-naam" style="font-weight:500;color:var(--donker)"></span>
         <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer">Wisselen</button>
@@ -1808,7 +1809,7 @@ function toonTab(tab, knop) {
     </div>
     <div>
       <div class="vlabel">LEERLING</div>
-      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:0;margin-bottom:6px;font-size:12px">
+      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:7px;margin-bottom:6px;font-size:12px">
         <span style="font-weight:600;color:var(--gm)">●</span>
         <span class="alb-naam" style="font-weight:500;color:var(--donker)"></span>
         <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer">Wisselen</button>
@@ -2732,11 +2733,11 @@ function bouwProgressieSectie(naam) {
   const huidigScores = profielData?.scores || {};
 
   return `
-    <div style="background:var(--warm);border:0.5px solid var(--warmrand);border-radius:0;overflow:hidden">
+    <div style="background:var(--warm);border:0.5px solid var(--warmrand);border-radius:7px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--warmrand)">
         <div style="font-size:10px;font-weight:500;letter-spacing:.06em;color:var(--tz);text-transform:uppercase">Progressie per rapportageperiode</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${LVS_DOMEINEN.map(d => `<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--tm)"><span style="width:8px;height:8px;border-radius:0;background:${d.kleur};display:inline-block"></span>${d.l}</span>`).join('')}
+          ${LVS_DOMEINEN.map(d => `<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--tm)"><span style="width:8px;height:8px;border-radius:7px;background:${d.kleur};display:inline-block"></span>${d.l}</span>`).join('')}
         </div>
       </div>
       <div style="padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
@@ -2757,7 +2758,7 @@ function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
   const subKleur = isHuidig ? 'color:#3a5a3a;font-weight:500' : 'color:var(--tz)';
 
   if (!scores && !isHuidig) {
-    return `<div style="background:#fff;${rand};border-radius:0;padding:10px 12px;opacity:.5">
+    return `<div style="background:#fff;${rand};border-radius:7px;padding:10px 12px;opacity:.5">
       <div style="font-size:11px;font-weight:500;color:var(--t);margin-bottom:2px">${label}</div>
       <div style="font-size:10px;color:var(--tz);margin-bottom:10px">Nog niet beschikbaar</div>
       <div style="height:80px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--tz);font-style:italic">—</div>
@@ -2775,7 +2776,7 @@ function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
     const niveau = cito ? cito.niveau : '—';
     return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1">
       <div style="font-size:9px;font-weight:500;color:${cito ? cito.kleur : 'var(--tz)'}">${niveau}</div>
-      <div style="width:100%;height:${hoogte}px;background:${d.kleur};border-radius:0;min-height:3px"></div>
+      <div style="width:100%;height:${hoogte}px;background:${d.kleur};border-radius:7px;min-height:3px"></div>
       <div style="font-size:9px;color:var(--tz);text-align:center">${d.l.slice(0,3)}</div>
     </div>`;
   }).join('');
@@ -2786,12 +2787,12 @@ function bouwPeriodeBlok(label, tijdlijnItem, huidigScores, isHuidig) {
     return `<div style="display:flex;align-items:center;justify-content:space-between">
       <span style="font-size:10px;color:var(--tz)">${d.l}</span>
       ${lbl
-        ? `<span style="font-size:10px;font-weight:500;color:${lbl.kleur};background:${lbl.bg};border-radius:0;padding:1px 7px">${lbl.tekst}</span>`
+        ? `<span style="font-size:10px;font-weight:500;color:${lbl.kleur};background:${lbl.bg};border-radius:7px;padding:1px 7px">${lbl.tekst}</span>`
         : `<span style="font-size:10px;color:var(--tz)">—</span>`}
     </div>`;
   }).join('');
 
-  return `<div style="background:#fff;${rand};border-radius:0;padding:10px 12px">
+  return `<div style="background:#fff;${rand};border-radius:7px;padding:10px 12px">
     <div style="font-size:11px;font-weight:500;color:var(--t);margin-bottom:2px">${label}</div>
     <div style="font-size:10px;${subKleur};margin-bottom:10px">${datum || '—'}</div>
     <div style="display:flex;align-items:flex-end;gap:3px;height:80px;margin-bottom:8px">${staven}</div>
@@ -2808,7 +2809,7 @@ function toonResultaten(data, naam, groep) {
   // ── Rapport header ─────────────────────────────────────────
   const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'long',year:'numeric'});
   const header = document.createElement('div');
-  header.style.cssText = 'background:#fff;border:1px solid var(--warmrand);border-radius:0;padding:16px 18px;margin-bottom:8px';
+  header.style.cssText = 'background:#fff;border:1px solid var(--warmrand);border-radius:7px;padding:16px 18px;margin-bottom:8px';
   header.innerHTML = `
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
@@ -2817,19 +2818,19 @@ function toonResultaten(data, naam, groep) {
         </div>
         <div style="font-size:11px;color:var(--tz);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span>Gegenereerd op ${datum}</span>
-          <span style="display:inline-flex;align-items:center;gap:3px;color:#222;background:#f5f5f5;border:0.5px solid #ddd;border-radius:0;padding:2px 7px;font-weight:500">
+          <span style="display:inline-flex;align-items:center;gap:3px;color:#222;background:#f5f5f5;border:0.5px solid #ddd;border-radius:6px;padding:2px 7px;font-weight:500">
             🛡 AVG-gecheckt — naam geanonimiseerd verzonden
           </span>
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button onclick="allesKopierenRapport()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
+        <button onclick="allesKopierenRapport()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
           📋 Alles kopiëren
         </button>
-        <button onclick="downloadPDF()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:0;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
+        <button onclick="downloadPDF()" style="display:flex;align-items:center;gap:5px;background:var(--grijs);border:1px solid var(--rand);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--tm);white-space:nowrap">
           ⬇ PDF
         </button>
-        ${window._huidigeLeerlingId ? `<button onclick="slaRapportOpVanuitHeader()" style="display:flex;align-items:center;gap:5px;background:var(--gm);border:none;border-radius:0;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;white-space:nowrap">
+        ${window._huidigeLeerlingId ? `<button onclick="slaRapportOpVanuitHeader()" style="display:flex;align-items:center;gap:5px;background:var(--gm);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;white-space:nowrap">
           💾 Opslaan
         </button>` : ''}
       </div>
@@ -2949,7 +2950,7 @@ function toonResultaten(data, naam, groep) {
   duimen.appendChild(btnGoed);
   duimen.appendChild(btnMatig);
   const feedTxt = document.createElement('textarea');
-  feedTxt.style.cssText = 'height:65px;font-size:11px;border:1px solid var(--rand);border-radius:0;padding:8px 10px;width:100%;outline:none';
+  feedTxt.style.cssText = 'height:65px;font-size:11px;border:1px solid var(--rand);border-radius:7px;padding:8px 10px;width:100%;outline:none';
   feedTxt.id = 'feedtekst';
   feedTxt.placeholder = 'Wat kan er beter? (optioneel)';
   const feedVerstuur = document.createElement('button');
@@ -3277,7 +3278,7 @@ function toonFout(msg) {
   const r = document.getElementById('resultaat');
   const isPrivacy = msg && msg.includes('Privacycheck');
   if (r) r.innerHTML = isPrivacy
-    ? `<div style="background:#f5f5f5;border:1px solid #ddd;border-radius:0;padding:16px;display:flex;gap:12px;align-items:flex-start">
+    ? `<div style="background:#f5f5f5;border:1px solid #ddd;border-radius:7px;padding:16px;display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:22px;flex-shrink:0">🔒</div>
         <div>
           <div style="font-size:13px;font-weight:500;color:#222;margin-bottom:6px">Privacycheck geblokkeerd</div>
