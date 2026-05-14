@@ -526,12 +526,23 @@ function toonApp() {
     if (schoolContext && (schoolContext.is_ib || schoolContext.is_directeur)) {
       const ibKnop = document.getElementById('tab-ib-knop');
       if (ibKnop) ibKnop.style.display = '';
+      const inspKnop = document.getElementById('tab-inspectie-knop');
+      if (inspKnop) inspKnop.style.display = '';
     }
   });
   setTimeout(() => {
     const aawTab = document.querySelector('.tab[onclick*="aanwezigheid"]');
     toonTab('aanwezigheid', aawTab);
   }, 50);
+  // Vertraagd IB/Inspectie tabs tonen (na schoolContext laden)
+  setTimeout(function() {
+    if (schoolContext && (schoolContext.is_ib || schoolContext.is_directeur)) {
+      const ibKnop = document.getElementById('tab-ib-knop');
+      if (ibKnop) ibKnop.style.display = '';
+      const inspKnop = document.getElementById('tab-inspectie-knop');
+      if (inspKnop) inspKnop.style.display = '';
+    }
+  }, 2000);
 }
 
 // ── Globale Leerling Selector (GLS) ─────────────────────────────────────
@@ -4718,6 +4729,8 @@ function aawToonLeerlingToevoegen() {
   if (!aawLijst) return;
   const wrap = document.getElementById('aaw-toevoeg-wrap') || aawLijst;
   wrap.style.display = 'block';
+  // Scroll naar het formulier
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
   wrap.innerHTML = `
     <div style="max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
 
@@ -4799,7 +4812,8 @@ async function aawVoegLeerlingToe(doorGaan) {
   }
   if (foutEl) foutEl.style.display = 'none';
 
-  const knop = document.querySelector('#aaw-lijst button[onclick="aawVoegLeerlingToe()"]');
+  const knop = document.querySelector('#aaw-toevoeg-wrap button[onclick="aawVoegLeerlingToe()"]')
+    || document.querySelector('#aaw-lijst button[onclick="aawVoegLeerlingToe()"]');
   if (knop) { knop.textContent = 'Bezig…'; knop.disabled = true; }
 
   try {
