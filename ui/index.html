@@ -1419,7 +1419,6 @@ function toonTab(tab, knop) {
     'tab-inhoud',
     'tab-lvs',
     'tab-aanwezigheid',
-    'tab-notities',
     'tab-ib',
     'tab-inspectie',
   ];
@@ -1435,29 +1434,21 @@ function toonTab(tab, knop) {
   if (notEl) { notEl.style.display = 'none'; notEl.classList.remove('actief'); }
 
   // ── 3. Toon alleen de gevraagde tab ───────────────────
-  // Display-map per tab — flex voor layout-containers, block voor sectie-divs
-  const tabDisplay = {
-    'tab-aanwezigheid': 'flex',
-    'tab-lvs':          'flex',
-    'tab-notities':     'flex',
-    'tab-ib':           'block',
-    'tab-inspectie':    'block',
-    'tab-inhoud':       'block',
-  };
   const toon = (id, disp) => {
     const el = document.getElementById(id);
-    if (el) {
-      el.style.display = disp || tabDisplay[id] || 'block';
-      el.classList.add('actief');
-    }
+    if (el) { el.style.display = disp || 'block'; el.classList.add('actief'); }
   };
 
   if (tab === 'lvs') {
-    toon('tab-lvs', 'flex');
+    const lvsTabEl = document.getElementById('tab-lvs');
+    if (lvsTabEl) { lvsTabEl.style.display = 'flex'; lvsTabEl.style.height = 'calc(100vh - 108px)'; }
+    if (typeof lvsInit === 'function') lvsInit();
     if (typeof lvsInit === 'function') lvsInit();
 
   } else if (tab === 'aanwezigheid') {
-    toon('tab-aanwezigheid', 'flex');
+    const aawTabEl = document.getElementById('tab-aanwezigheid');
+    if (aawTabEl) { aawTabEl.style.display = 'flex'; aawTabEl.style.height = 'calc(100vh - 108px)'; }
+    aawInit();
     if (typeof aawInit === 'function') aawInit();
 
   } else if (tab === 'notities') {
@@ -1626,8 +1617,7 @@ function toonTab(tab, knop) {
   <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
   <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
 </div>
-<div id="tab-wrapper" style="flex:1;position:relative;overflow:hidden;min-height:0">
-<div id="tab-inhoud" style="position:absolute;inset:0;overflow:hidden">
+<div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0;height:100%">
 <div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
   <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0">
 
@@ -1882,7 +1872,7 @@ function toonTab(tab, knop) {
 
 
 <!-- ── IB-Dashboard Tab ── -->
-<div class="sectie" id="tab-ib" style="position:absolute;inset:0;overflow:hidden;display:none">
+<div class="sectie" id="tab-ib" style="height:100%;overflow:hidden;display:none">
   <div style="display:flex;height:100%;overflow:hidden">
 
     <!-- Hoofd paneel -->
@@ -1935,7 +1925,7 @@ function toonTab(tab, knop) {
 </div><!-- einde tab-ib -->
 
 <!-- ── Inspectie Tab (als sub van IB, of standalone) ── -->
-<div class="sectie" id="tab-inspectie" style="position:absolute;inset:0;overflow:hidden;display:none">
+<div class="sectie" id="tab-inspectie" style="height:100%;overflow:hidden;display:none">
   <div style="display:flex;flex-direction:column;height:100%;overflow:hidden">
 
     <!-- Header -->
@@ -1994,7 +1984,7 @@ function toonTab(tab, knop) {
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- LVS — Leerlingvolgsysteem                             -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="tab-lvs" style="display:none;position:absolute;inset:0;overflow:hidden;background:#fff">
+<div id="tab-lvs" style="display:none;width:100%;overflow:hidden;background:#fff">
   <div style="display:flex;height:100%;overflow:hidden">
 
     <!-- Zijbalk leerlingen -->
@@ -2387,7 +2377,7 @@ function toonTab(tab, knop) {
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- Aanwezigheidsregistratie                              -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="tab-aanwezigheid" style="display:none;position:absolute;inset:0;overflow:hidden;background:#f8f8f8;flex-direction:column">
+<div id="tab-aanwezigheid" style="display:none;width:100%;overflow:hidden;background:#f8f8f8;flex-direction:column">
 
   <!-- Balk 1: datum + navigatie -->
   <div style="background:#fff;border-bottom:1px solid var(--warmrand);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:16px;flex-wrap:wrap">
@@ -2443,7 +2433,7 @@ function toonTab(tab, knop) {
 
 </div>
 
-<div class="sectie" id="tab-notities" style="position:absolute;inset:0">
+<div class="sectie" id="tab-notities" style="height:100%">
   <div style="display:flex;height:100%;overflow:hidden">
 
     <!-- Zijbalk leerlingen -->
@@ -2490,7 +2480,6 @@ function toonTab(tab, knop) {
     </div>
   </div>
 </div><!-- einde tab-notities -->
-</div><!-- einde tab-wrapper -->
 
 
 
