@@ -1434,17 +1434,17 @@ function toonTab(tab, knop) {
   if (notEl) { notEl.style.display = 'none'; notEl.classList.remove('actief'); }
 
   // ── 3. Toon alleen de gevraagde tab ───────────────────
-  const toon = id => {
+  const toon = (id, disp) => {
     const el = document.getElementById(id);
-    if (el) { el.style.display = 'block'; el.classList.add('actief'); }
+    if (el) { el.style.display = disp || 'block'; el.classList.add('actief'); }
   };
 
   if (tab === 'lvs') {
-    toon('tab-lvs');
+    toon('tab-lvs', 'flex');
     if (typeof lvsInit === 'function') lvsInit();
 
   } else if (tab === 'aanwezigheid') {
-    toon('tab-aanwezigheid');
+    toon('tab-aanwezigheid', 'flex');
     if (typeof aawInit === 'function') aawInit();
 
   } else if (tab === 'notities') {
@@ -4698,7 +4698,7 @@ function mobieltoonTab(tab, knop) {
   } else if (tab === 'aanwezigheid') {
     if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
     if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl2) { aawEl2.style.display = 'block'; aawInit(); }
+    if (aawEl2) { aawEl2.style.display = 'flex'; aawInit(); }
   } else if (tab === 'rapport') {
     if (lvsEl) lvsEl.style.cssText = 'display:none';
     if (aawEl2) aawEl2.style.cssText = 'display:none';
