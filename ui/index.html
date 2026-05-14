@@ -28,7 +28,7 @@
 html,body{width:100%;min-width:0}
 html,body{overflow:hidden;height:100%}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#2a3a2a;height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-header{border-bottom:1px solid #e0e8e0;box-shadow:0 1px 8px rgba(0,0,0,.06);padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:relative;z-index:100}
+header{border-bottom:1px solid #e0e8e0;box-shadow:0 1px 8px rgba(0,0,0,.06);padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:relative;z-index:100;flex-shrink:0}
 .logo{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#2a3a2a;letter-spacing:.08em;text-transform:uppercase;position:absolute;left:50%;transform:translateX(-50%)}
 .logo em{color:var(--t);font-style:normal}
 .badge{font-size:10px;background:var(--gl);color:var(--g);padding:3px 10px;border-radius:20px;font-weight:500;border:1px solid #c8dcc8}
@@ -1409,80 +1409,49 @@ function sluitLeerlingModal() {
 window.addEventListener('DOMContentLoaded', initAuth);
 
 function toonTab(tab, knop) {
-  // ── 1. Reset tab-knoppen ──────────────────────────────
+  // Reset knoppen
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
 
-  // ── 2. Verberg ALLES expliciet via inline style ───────
-  // Zet alle mogelijke containers op none — geen CSS-afhankelijkheid
-  const alleContainers = [
-    'tab-inhoud',
-    'tab-lvs',
-    'tab-aanwezigheid',
-    'tab-ib',
-    'tab-inspectie',
-  ];
-  alleContainers.forEach(id => {
-    const el = document.getElementById(id);
+  // Verberg alle containers
+  ['tab-inhoud','tab-lvs','tab-aanwezigheid','tab-ib','tab-inspectie'].forEach(function(id) {
+    var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
-  // Verberg ook de sectie-divs binnen tab-inhoud
-  document.querySelectorAll('.sectie, .sectie-vol').forEach(s => {
-    s.classList.remove('actief');
-  });
-  const notEl = document.getElementById('tab-notities');
+  document.querySelectorAll('.sectie,.sectie-vol').forEach(function(s) { s.classList.remove('actief'); });
+  var notEl = document.getElementById('tab-notities');
   if (notEl) { notEl.style.display = 'none'; notEl.classList.remove('actief'); }
 
-  // ── 3. Toon alleen de gevraagde tab ───────────────────
-  const toon = (id, disp) => {
-    const el = document.getElementById(id);
-    if (el) { el.style.display = disp || 'block'; el.classList.add('actief'); }
-  };
-
-  if (tab === 'lvs') {
-    const lvsTabEl = document.getElementById('tab-lvs');
-    if (lvsTabEl) { lvsTabEl.style.display = 'flex'; lvsTabEl.style.height = '100%'; }
-    if (typeof lvsInit === 'function') lvsInit();
-    if (typeof lvsInit === 'function') lvsInit();
-
-  } else if (tab === 'aanwezigheid') {
-    const aawTabEl = document.getElementById('tab-aanwezigheid');
-    if (aawTabEl) { aawTabEl.style.display = 'flex'; aawTabEl.style.height = '100%'; }
-    aawInit();
+  // Toon gevraagde tab
+  if (tab === 'aanwezigheid') {
+    var el = document.getElementById('tab-aanwezigheid');
+    if (el) el.style.display = 'flex';
     if (typeof aawInit === 'function') aawInit();
 
   } else if (tab === 'notities') {
-    const notitiesEl = document.getElementById('tab-notities');
-    if (notitiesEl) { notitiesEl.style.display = 'flex'; notitiesEl.classList.add('actief'); }
+    var el2 = document.getElementById('tab-notities');
+    if (el2) { el2.style.display = 'flex'; el2.classList.add('actief'); }
     if (typeof notitieRender === 'function') notitieRender();
 
-
-  } else if (tab === 'inspectie') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    const notElInsp = document.getElementById('tab-notities');
-    if (notElInsp) notElInsp.classList.remove('actief');
-    const inspEl = document.getElementById('tab-inspectie');
-    if (inspEl) inspEl.style.display = 'block';
+  } else if (tab === 'lvs') {
+    var el3 = document.getElementById('tab-lvs');
+    if (el3) el3.style.display = 'flex';
+    if (typeof lvsInit === 'function') lvsInit();
 
   } else if (tab === 'ib') {
-    if (lvsEl) lvsEl.style.display = 'none';
-    if (aawEl) aawEl.style.display = 'none';
-    if (tabInhoud) tabInhoud.style.display = 'none';
-    const notElIb = document.getElementById('tab-notities');
-    if (notElIb) notElIb.classList.remove('actief');
-    const ibEl = document.getElementById('tab-ib');
-    if (ibEl) ibEl.style.display = 'block';
-    ibLaad();
+    var el4 = document.getElementById('tab-ib');
+    if (el4) el4.style.display = 'block';
+    if (typeof ibLaad === 'function') ibLaad();
+
+  } else if (tab === 'inspectie') {
+    var el5 = document.getElementById('tab-inspectie');
+    if (el5) el5.style.display = 'block';
 
   } else {
-    // Rapport, OPP, handelingsplan — in tab-inhoud
-    const ibElHide = document.getElementById('tab-ib');
-    if (ibElHide) ibElHide.style.display = 'none';
-    const inhoud = document.getElementById('tab-inhoud');
-    if (inhoud) { inhoud.style.display = ''; inhoud.style.flex = '1'; }
-    const sectieEl = document.getElementById('tab-' + tab);
+    // rapport, opp, handelingsplan — in tab-inhoud
+    var inhoud = document.getElementById('tab-inhoud');
+    if (inhoud) inhoud.style.display = 'block';
+    var sectieEl = document.getElementById('tab-' + tab);
     if (sectieEl) sectieEl.classList.add('actief');
   }
 }
@@ -1984,7 +1953,7 @@ function toonTab(tab, knop) {
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- LVS — Leerlingvolgsysteem                             -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="tab-lvs" style="display:none;width:100%;overflow:hidden;background:#fff">
+<div id="tab-lvs" style="display:none;flex:1;min-height:0;overflow:hidden;background:#fff">
   <div style="display:flex;height:100%;overflow:hidden">
 
     <!-- Zijbalk leerlingen -->
@@ -2377,7 +2346,7 @@ function toonTab(tab, knop) {
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- Aanwezigheidsregistratie                              -->
 <!-- ══════════════════════════════════════════════════════ -->
-<div id="tab-aanwezigheid" style="display:none;width:100%;overflow:hidden;background:#f8f8f8;flex-direction:column">
+<div id="tab-aanwezigheid" style="display:none;flex:1;min-height:0;overflow:hidden;background:#f8f8f8;flex-direction:column">
 
   <!-- Balk 1: datum + navigatie -->
   <div style="background:#fff;border-bottom:1px solid var(--warmrand);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:16px;flex-wrap:wrap">
@@ -2433,7 +2402,7 @@ function toonTab(tab, knop) {
 
 </div>
 
-<div class="sectie" id="tab-notities" style="height:100%">
+<div class="sectie" id="tab-notities" style="flex:1;min-height:0">
   <div style="display:flex;height:100%;overflow:hidden">
 
     <!-- Zijbalk leerlingen -->
