@@ -1839,7 +1839,7 @@ function toonTab(tab, knop) {
             <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
               <button onclick="dossierLaadSamenvatting()" id="dossier-samenvatting-knop"
                 style="padding:6px 12px;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
-                ✦ AI-samenvatting
+                Samenvatten
               </button>
               <button onclick="dossierGenereerOverdracht()" id="dossier-overdracht-knop"
                 style="padding:6px 12px;background:#4a7a4a;color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
@@ -3426,7 +3426,7 @@ async function dossierLaadSamenvatting() {
     tekst.textContent = 'Samenvatting mislukt: ' + e.message;
     balk.style.background = '#fff5f5';
   } finally {
-    knop.textContent = '✦ AI-samenvatting';
+    knop.textContent = 'Samenvatten';
     knop.disabled = false;
   }
 }
