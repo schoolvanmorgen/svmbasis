@@ -2671,6 +2671,386 @@ async def haal_volledig_profiel_op(
 
 
 # ══════════════════════════════════════════════════════════
+# LEERLINGDOSSIER OVER TIJD — moat 1
+# Het volledige dossier van een leerling, schoolbreed en
+# over meerdere schooljaren. Dit is de kern van de langetermijn-
+# waarde: elk jaar dat een school de software gebruikt, wordt
+# dit dossier rijker en waardevoller.
+# ══════════════════════════════════════════════════════════
+
+@app.get("/dossier/{leerling_id}")
+async def haal_dossier_op(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Het volledige leerlingdossier — alle data over alle schooljaren.
+
+    Verschil met /leerlingen/{id}/volledig:
+    - Haalt data op van ALLE leraren die ooit met deze leerling hebben gewerkt
+      (mits ze op dezelfde school zitten)
+    - Groepeert per schooljaar
+    - Berekent een ontwikkelingslijn over tijd
+    - Geeft een AI-samenvatting van de totale ontwikkeling
+
+    Dit is de kern van moat 1: het dossier wordt waardevoller
+    naarmate de leerling langer op de school zit.
+    """
+    import asyncio
+    from datetime import date
+
+    token = credentials.credentials
+    ctx   = await get_school_context(user, token)
+
+    # Toegangscheck — eigen leerling of schoolbreed
+    leerling = await _controleer_leerling_toegang(leerling_id, user, token, ctx)
+
+    # Bepaal scope: schoolbreed of eigen
+    school_id = ctx.get("school_id")
+
+    # Haal alle leerkrachten op die ooit met deze leerling hebben gewerkt
+    if school_id:
+        # Schoolbrede query — alle leraren op deze school
+        alle_leraren = await supabase_get("leerkrachten_scholen", token, {
+            "school_id": f"eq.{school_id}",
+            "select":    "leerkracht_id,voornaam"
+        })
+        leraar_ids = [l["leerkracht_id"] for l in (alle_leraren or [])]
+        leraar_namen = {l["leerkracht_id"]: l.get("voornaam", "Onbekend") for l in (alle_leraren or [])}
+    else:
+        leraar_ids   = [user["id"]]
+        leraar_namen = {user["id"]: "Jij"}
+
+    ids_filter = "(" + ",".join(leraar_ids) + ")" if leraar_ids else f"({user['id']})"
+
+    # Haal alle data parallel op — geen limiet, want dit is het volledige dossier
+    rapporten_taak = supabase_get("rapporten", token, {
+        "leerling_id":   f"eq.{leerling_id}",
+        "leerkracht_id": f"in.{ids_filter}",
+        "order":         "aangemaakt_op.asc",
+        "select":        "id,aangemaakt_op,rapport_data,leerkracht_id"
+    })
+    notities_taak = supabase_get("leerling_notities", token, {
+        "leerling_id":   f"eq.{leerling_id}",
+        "leerkracht_id": f"in.{ids_filter}",
+        "order":         "aangemaakt_op.asc",
+        "select":        "id,tekst,aangemaakt_op,type,leerkracht_id"
+    })
+    lvs_taak = supabase_get("lvs_profielen", token, {
+        "leerling_id":   f"eq.{leerling_id}",
+        "leerkracht_id": f"in.{ids_filter}",
+        "order":         "bijgewerkt_op.desc",
+        "select":        "*"
+    })
+    toetsen_taak = supabase_get("toetsresultaten", token, {
+        "leerling_id":   f"eq.{leerling_id}",
+        "leerkracht_id": f"in.{ids_filter}",
+        "order":         "afname_datum.asc",
+        "select":        "*"
+    })
+    aanwezigheid_taak = supabase_get("aanwezigheid", token, {
+        "leerling_id":   f"eq.{leerling_id}",
+        "leerkracht_id": f"in.{ids_filter}",
+        "order":         "datum.asc",
+        "select":        "datum,status"
+    })
+
+    rapporten_res, notities_res, lvs_res, toetsen_res, aanwezigheid_res = await asyncio.gather(
+        rapporten_taak, notities_taak, lvs_taak, toetsen_taak, aanwezigheid_taak,
+        return_exceptions=True
+    )
+
+    def veilig(r):
+        return r if isinstance(r, list) else []
+
+    rapporten    = veilig(rapporten_res)
+    notities     = veilig(notities_res)
+    lvs_profielen = veilig(lvs_res)
+    toetsen      = veilig(toetsen_res)
+    aanwezigheid = veilig(aanwezigheid_res)
+
+    # ── Groepeer alles per schooljaar ──────────────────────
+    # Schooljaar loopt van augustus t/m juli
+    def bepaal_schooljaar(datum_str: str) -> str:
+        try:
+            d = date.fromisoformat(datum_str[:10])
+            if d.month >= 8:
+                return f"{d.year}-{d.year + 1}"
+            else:
+                return f"{d.year - 1}-{d.year}"
+        except Exception:
+            return "onbekend"
+
+    schooljaren: dict = {}
+
+    for r in rapporten:
+        sj = bepaal_schooljaar(r.get("aangemaakt_op", ""))
+        if sj not in schooljaren:
+            schooljaren[sj] = {"rapporten": [], "notities": [], "toetsen": [], "aanwezigheid": []}
+        schooljaren[sj]["rapporten"].append({
+            "id":           r.get("id"),
+            "datum":        r.get("aangemaakt_op", "")[:10],
+            "leerkracht":   leraar_namen.get(r.get("leerkracht_id"), "Onbekend"),
+            "rapport_data": r.get("rapport_data", {})
+        })
+
+    for n in notities:
+        sj = bepaal_schooljaar(n.get("aangemaakt_op", ""))
+        if sj not in schooljaren:
+            schooljaren[sj] = {"rapporten": [], "notities": [], "toetsen": [], "aanwezigheid": []}
+        schooljaren[sj]["notities"].append({
+            "datum":      n.get("aangemaakt_op", "")[:10],
+            "tekst":      n.get("tekst", ""),
+            "type":       n.get("type", ""),
+            "leerkracht": leraar_namen.get(n.get("leerkracht_id"), "Onbekend")
+        })
+
+    for t in toetsen:
+        sj = bepaal_schooljaar(t.get("afname_datum", ""))
+        if sj not in schooljaren:
+            schooljaren[sj] = {"rapporten": [], "notities": [], "toetsen": [], "aanwezigheid": []}
+        schooljaren[sj]["toetsen"].append(t)
+
+    for a in aanwezigheid:
+        sj = bepaal_schooljaar(a.get("datum", ""))
+        if sj not in schooljaren:
+            schooljaren[sj] = {"rapporten": [], "notities": [], "toetsen": [], "aanwezigheid": []}
+        schooljaren[sj]["aanwezigheid"].append(a)
+
+    # ── Bereken aanwezigheidsstatistieken per schooljaar ──
+    for sj, data in schooljaren.items():
+        aaw = data["aanwezigheid"]
+        if aaw:
+            totaal    = len(aaw)
+            afwezig   = sum(1 for a in aaw if a.get("status") == "afwezig")
+            te_laat   = sum(1 for a in aaw if a.get("status") == "laat")
+            data["aanwezigheid_samenvatting"] = {
+                "totaal_dagen":      totaal,
+                "afwezig":           afwezig,
+                "te_laat":           te_laat,
+                "aanwezigheid_pct":  round((totaal - afwezig) / totaal * 100) if totaal else 100
+            }
+
+    # ── Meest recente LVS-profiel ──────────────────────────
+    huidig_lvs = lvs_profielen[0] if lvs_profielen else None
+
+    # ── Bouw tijdlijn van alle schooljaren ─────────────────
+    # Gesorteerd van oud naar nieuw
+    tijdlijn_schooljaren = sorted(schooljaren.keys(), key=lambda s: s[:4] if s != "onbekend" else "0")
+
+    return {
+        "leerling":             leerling,
+        "schooljaren":          {sj: schooljaren[sj] for sj in tijdlijn_schooljaren},
+        "tijdlijn_schooljaren": tijdlijn_schooljaren,
+        "huidig_lvs":           huidig_lvs,
+        "totaal_notities":      len(notities),
+        "totaal_rapporten":     len(rapporten),
+        "totaal_toetsen":       len(toetsen),
+        "eerste_registratie":   notities[0]["aangemaakt_op"][:10] if notities else None,
+        "leraren":              list(set(leraar_namen.values()))
+    }
+
+
+@app.get("/dossier/{leerling_id}/samenvatting")
+async def genereer_dossier_samenvatting(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Genereert een AI-samenvatting van het volledige dossier van een leerling.
+    Beschrijft de ontwikkeling over alle schooljaren in begrijpelijke taal.
+    Bedoeld als introductie voor een nieuwe leraar of IB-er.
+    """
+    token = credentials.credentials
+    ctx   = await get_school_context(user, token)
+
+    # Hergebruik het dossier endpoint
+    dossier_res = await haal_dossier_op(leerling_id, user,
+        type('Creds', (), {'credentials': token})())
+
+    leerling    = dossier_res["leerling"]
+    schooljaren = dossier_res["schooljaren"]
+
+    if not schooljaren:
+        return {"samenvatting": None, "reden": "Geen data beschikbaar."}
+
+    # Bouw context voor Claude
+    naam  = leerling.get("voornaam", "")
+    groep = leerling.get("groep", "")
+    regels = [f"Leerling: {naam}, huidige groep: {groep}"]
+    regels.append(f"In de software geregistreerd over {len(schooljaren)} schoolja(a)r(en).")
+
+    for sj, data in schooljaren.items():
+        regels.append(f"\nSchooljaar {sj}:")
+
+        if data["rapporten"]:
+            for r in data["rapporten"][:2]:
+                rd = r.get("rapport_data", {})
+                commentaar = rd.get("rapportcommentaar") or rd.get("leerresultaten") or ""
+                if commentaar:
+                    regels.append(f"  Rapport ({r['datum']}): {str(commentaar)[:200]}")
+        if data["notities"]:
+            regels.append(f"  {len(data['notities'])} notities van leerkracht(en).")
+            for n in data["notities"][:3]:
+                regels.append(f"  - {n['tekst'][:100]}")
+        if data.get("aanwezigheid_samenvatting"):
+            s = data["aanwezigheid_samenvatting"]
+            regels.append(f"  Aanwezigheid: {s['aanwezigheid_pct']}% ({s['afwezig']} keer afwezig, {s['te_laat']} keer te laat)")
+
+    dossier_tekst = "\n".join(regels)
+
+
+    prompt = (
+        f"Je analyseert het volledige schooldossier van een leerling voor een nieuwe leraar of IB-er.\n\n"
+        f"{dossier_tekst}\n\n"
+        "Schrijf een beknopte introductie (3-5 alinea's) die:\n"
+        "1. De algehele ontwikkeling over de schooljaren beschrijft\n"
+        "2. Sterke punten benoemt die consistent zichtbaar zijn\n"
+        "3. Aandachtspunten benoemt die terugkeren\n"
+        "4. Concrete tips geeft voor de huidige leraar op basis van wat eerder werkte\n\n"
+        "Schrijf in de tweede persoon richting de leraar. Warm maar professioneel."
+    )
+    try:
+        samenvatting = await roep_claude_aan(SYSTEM_PROMPT, prompt, max_tokens=800)
+    except Exception as e:
+        logger.warning(f"Dossier samenvatting mislukt: {e}")
+        return {"samenvatting": None, "reden": "Generatie mislukt."}
+
+    # Sla de samenvatting op in de LVS-tijdlijn
+    try:
+        datum_nl = datetime.now(timezone.utc).strftime("%-d %b %Y")
+        await _voeg_tijdlijn_toe(
+            leerling_id=leerling_id,
+            leerkracht_id=user["id"],
+            token=token,
+            item={
+                "type":      "rapport",
+                "datum":     datum_nl,
+                "tekst":     f"Dossier samenvatting gegenereerd ({len(schooljaren)} schooljaren).",
+                "sentiment": "neutraal",
+                "bron":      "dossier"
+            }
+        )
+    except Exception:
+        pass
+
+    return {
+        "samenvatting":    samenvatting,
+        "schooljaren":     list(schooljaren.keys()),
+        "totaal_notities": dossier_res["totaal_notities"],
+        "totaal_rapporten": dossier_res["totaal_rapporten"],
+        "leraren":         dossier_res["leraren"]
+    }
+
+
+@app.post("/dossier/{leerling_id}/overdracht")
+async def genereer_overdrachtsrapport(
+    leerling_id: str,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Genereert een overdrachtsrapport voor de volgende leraar.
+    Bedoeld voor gebruik aan het einde van het schooljaar.
+    Vat het huidige schooljaar samen en geeft concrete handvatten
+    mee voor de ontvangende leraar.
+    """
+    token = credentials.credentials
+    ctx   = await get_school_context(user, token)
+
+    leerling = await _controleer_leerling_toegang(leerling_id, user, token, ctx)
+    naam     = leerling.get("voornaam", "")
+    groep    = leerling.get("groep", "")
+
+    # Haal het huidige schooljaar op
+    from datetime import date
+    vandaag = date.today()
+    huidig_sj = (
+        f"{vandaag.year}-{vandaag.year+1}" if vandaag.month >= 8
+        else f"{vandaag.year-1}-{vandaag.year}"
+    )
+
+    # Haal alle data van dit schooljaar op
+    notities_data  = await supabase_get("leerling_notities", token, {
+        "leerling_id":  f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "order":        "aangemaakt_op.desc",
+        "select":       "tekst,aangemaakt_op,type",
+        "limit":        "20"
+    })
+    rapporten_data = await supabase_get("rapporten", token, {
+        "leerling_id":  f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "order":        "aangemaakt_op.desc",
+        "select":       "rapport_data,aangemaakt_op",
+        "limit":        "3"
+    })
+    lvs_data = await supabase_get("lvs_profielen", token, {
+        "leerling_id":  f"eq.{leerling_id}",
+        "leerkracht_id": f"eq.{user['id']}",
+        "select":       "scores,tijdlijn"
+    })
+
+    notities   = notities_data or []
+    rapporten  = rapporten_data or []
+    lvs        = lvs_data[0] if lvs_data else {}
+
+    notities_tekst = "\n".join([f"- {n['tekst'][:150]}" for n in notities[:8]])
+
+
+    rapport_tekst = ""
+    if rapporten:
+        rd = rapporten[0].get("rapport_data", {})
+        rapport_tekst = "\n".join([
+            f"{k}: {str(v)[:200]}"
+            for k, v in rd.items()
+            if v and k in ["leerresultaten", "werkhouding", "sociaal_emotioneel", "doelen", "aandachtspunten"]
+        ])
+
+    prompt = (
+        f"Je schrijft een overdrachtsrapport voor de volgende leraar van {naam} (groep {groep}).\n"
+        f"Dit rapport is bedoeld voor de leraar die {naam} volgend schooljaar ontvangt.\n\n"
+        f"Notities van dit schooljaar:\n{notities_tekst or 'Geen notities beschikbaar.'}\n\n"
+        f"Meest recente rapport:\n{rapport_tekst or 'Geen rapport beschikbaar.'}\n\n"
+        "Schrijf een overdrachtsrapport met deze secties:\n"
+        f"1. Wie is {naam}? (karakter, sterke punten, wat geeft energie)\n"
+        "2. Wat heeft aandacht nodig? (concrete aandachtspunten voor volgend jaar)\n"
+        "3. Wat werkte goed? (aanpak en interventies die effect hadden)\n"
+        "4. Concrete tips voor de nieuwe leraar\n\n"
+        "Schrijf warm, concreet en praktisch. Maximaal één A4. "
+        f"Dit is een document dat de nieuwe leraar op dag één leest."
+    )
+    try:
+        overdracht = await roep_claude_aan(SYSTEM_PROMPT, prompt, max_tokens=1000)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Generatie mislukt: {e}")
+
+    # Sla op als rapport-type "overdracht"
+    try:
+        await supabase_post("rapporten", token, {
+            "leerling_id":   leerling_id,
+            "leerkracht_id": user["id"],
+            "rapport_data":  {
+                "type":        "overdracht",
+                "schooljaar":  huidig_sj,
+                "inhoud":      overdracht,
+                "gegenereerd": datetime.now(timezone.utc).isoformat()
+            }
+        })
+    except Exception:
+        pass
+
+    return {
+        "overdracht":  overdracht,
+        "leerling":    naam,
+        "groep":       groep,
+        "schooljaar":  huidig_sj
+    }
+
+
+# ══════════════════════════════════════════════════════════
 # PROACTIEVE SIGNALERING — stilte-alerts
 # ══════════════════════════════════════════════════════════
 
