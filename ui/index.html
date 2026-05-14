@@ -520,9 +520,18 @@ function toonApp() {
   document.getElementById('login-scherm').style.display = 'none';
   document.getElementById('app-scherm').style.display = 'flex';
   document.getElementById('globale-leerling-selector').style.display = 'flex';
+  // Toon IB/Inspectie direct op basis van geselecteerde rol bij inloggen
+  // (vóór schoolContext laden — zodat tabs meteen zichtbaar zijn)
+  if (_geselecteerdeRol === 'ib' || _geselecteerdeRol === 'directeur') {
+    const ibKnop = document.getElementById('tab-ib-knop');
+    if (ibKnop) ibKnop.style.display = '';
+    const inspKnop = document.getElementById('tab-inspectie-knop');
+    if (inspKnop) inspKnop.style.display = '';
+  }
+
   laadSchoolContext().then(function() {
     laadLeerlingen();
-    // Toon IB-tab knop als gebruiker IB-er of directeur is
+    // Sync met schoolContext (kan anders zijn als rol in metadata wijkt)
     if (schoolContext && (schoolContext.is_ib || schoolContext.is_directeur)) {
       const ibKnop = document.getElementById('tab-ib-knop');
       if (ibKnop) ibKnop.style.display = '';
@@ -695,13 +704,52 @@ function toonRolBadge() {
   }
 }
 
+let _geselecteerdeRol = 'leerkracht';
+
+function loginSetRol(rol) {
+  _geselecteerdeRol = rol;
+  const uitleg = {
+    leerkracht: 'Leerkracht: toegang tot eigen groep en leerlingen.',
+    ib:         'IB-er: ziet alle leerlingen van de school, IB-dashboard en inspectieoverzicht.',
+    directeur:  'Directeur: volledige toegang inclusief schoolbeheer en benchmark.'
+  };
+  const knoppen = ['leerkracht', 'ib', 'directeur'];
+  knoppen.forEach(function(r) {
+    const knop = document.getElementById('rol-' + r);
+    if (!knop) return;
+    if (r === rol) {
+      knop.style.background = '#4a7a4a';
+      knop.style.color      = '#fff';
+      knop.style.fontWeight = '600';
+    } else {
+      knop.style.background = '#fff';
+      knop.style.color      = '#888';
+      knop.style.fontWeight = '400';
+    }
+  });
+  const uitlegEl = document.getElementById('rol-uitleg');
+  if (uitlegEl) uitlegEl.textContent = uitleg[rol] || '';
+}
+
 async function inloggen() {
-  const email = document.getElementById('login-email').value.trim();
+  const email     = document.getElementById('login-email').value.trim();
   const wachtwoord = document.getElementById('login-ww').value;
-  const fout = document.getElementById('login-fout');
+  const fout      = document.getElementById('login-fout');
   fout.textContent = '';
-  const { error } = await sb.auth.signInWithPassword({ email, password: wachtwoord });
-  if (error) fout.textContent = 'Inloggen mislukt: ' + error.message;
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: wachtwoord });
+  if (error) { fout.textContent = 'Inloggen mislukt: ' + error.message; return; }
+
+  // Sla de geselecteerde rol op in user_metadata
+  if (_geselecteerdeRol !== 'leerkracht' || !data.user?.user_metadata?.rol) {
+    try {
+      await sb.auth.updateUser({
+        data: { rol: _geselecteerdeRol }
+      });
+    } catch(e) {
+      console.warn('Rol opslaan mislukt (stil):', e);
+    }
+  }
 }
 
 async function registreren() {
@@ -712,7 +760,7 @@ async function registreren() {
   fout.style.color = '#000';
   if (!email) { fout.textContent = 'Vul een e-mailadres in.'; return; }
   if (wachtwoord.length < 8) { fout.textContent = 'Wachtwoord moet minimaal 8 tekens zijn.'; return; }
-  const { error } = await sb.auth.signUp({ email, password: wachtwoord });
+  const { error } = await sb.auth.signUp({ email, password: wachtwoord, options: { data: { rol: _geselecteerdeRol || 'leerkracht' } } });
   if (error) {
     // Account bestaat al — probeer dan direct in te loggen
     if (error.message.toLowerCase().includes('already') || error.message.toLowerCase().includes('registered')) {
@@ -1442,9 +1490,30 @@ function toonTab(tab, knop) {
     <div style="font-family:Georgia,serif;font-size:28px;color:var(--donker)">School van <span style="color:var(--oranje)">morgen</span></div>
     <div style="font-size:13px;color:var(--tz);margin-top:4px">Administratie voor basisscholen</div>
   </div>
-  <div style="background:#fff;border:1px solid var(--rand);border-radius:0;padding:28px;width:320px;display:flex;flex-direction:column;gap:12px">
+  <div style="background:#fff;border:1px solid var(--rand);border-radius:0;padding:28px;width:340px;display:flex;flex-direction:column;gap:12px">
     <input id="login-email" type="email" placeholder="E-mailadres" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none">
     <input id="login-ww" type="password" placeholder="Wachtwoord" style="width:100%;border:1.5px solid var(--rand);border-radius:0;padding:10px 12px;font-size:13px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')inloggen()">
+
+    <!-- Rol selector -->
+    <div>
+      <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;margin-bottom:6px">IK LOG IN ALS</div>
+      <div style="display:flex;gap:0;border:1px solid var(--rand)">
+        <button id="rol-leerkracht" onclick="loginSetRol('leerkracht')"
+          style="flex:1;padding:8px 4px;border:none;border-right:1px solid var(--rand);background:#4a7a4a;color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">
+          Leerkracht
+        </button>
+        <button id="rol-ib" onclick="loginSetRol('ib')"
+          style="flex:1;padding:8px 4px;border:none;border-right:1px solid var(--rand);background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit">
+          IB-er
+        </button>
+        <button id="rol-directeur" onclick="loginSetRol('directeur')"
+          style="flex:1;padding:8px 4px;border:none;background:#fff;color:#888;font-size:11px;cursor:pointer;font-family:inherit">
+          Directeur
+        </button>
+      </div>
+      <div id="rol-uitleg" style="font-size:10px;color:var(--tz);margin-top:4px;line-height:1.5">Leerkracht: toegang tot eigen groep en leerlingen.</div>
+    </div>
+
     <div id="login-fout" style="font-size:12px;color:#4a5a4a;min-height:16px"></div>
     <button onclick="inloggen()" style="background:var(--oranje);color:#fff;border:none;border-radius:0;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">Inloggen</button>
     <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
