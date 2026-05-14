@@ -1792,6 +1792,7 @@ function toonTab(tab, knop) {
         <button class="lvs-tab actief" onclick="lvsToonTab('profiel',this)">Profiel</button>
         <button class="lvs-tab" onclick="lvsToonTab('tijdlijn',this)">Tijdlijn</button>
         <button class="lvs-tab" onclick="lvsToonTab('dossier',this)">Dossier</button>
+        <button class="lvs-tab" onclick="lvsToonTab('benchmark',this)">Benchmark</button>
         <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Notitie toevoegen</button>
         <button class="lvs-tab" onclick="lvsToonTab('toetsimport',this)">Toetsimport</button>
       </div>
@@ -1817,6 +1818,36 @@ function toonTab(tab, knop) {
         <div id="lvs-domeinen">
           <div style="color:var(--tz);font-size:12px;padding:16px 18px">Selecteer een leerling.</div>
         </div>
+      </div>
+
+      <!-- Benchmark sub-tab: vergelijking met landelijk en netwerk -->
+      <div id="lvs-tab-benchmark" class="lvs-inhoud" style="display:none;flex:1;overflow-y:auto">
+
+        <div style="padding:14px 18px;background:var(--warm);border-bottom:1px solid var(--warmrand)">
+          <div style="font-family:Georgia,serif;font-size:15px;color:var(--t);margin-bottom:4px">Groepsbenchmark</div>
+          <div style="font-size:11px;color:var(--tz);line-height:1.6">Vergelijk de scores van je groep met landelijke CITO-normen. Hoe meer scholen meedoen, hoe rijker de vergelijking.</div>
+        </div>
+
+        <!-- Groep kiezen -->
+        <div style="padding:12px 18px;border-bottom:1px solid var(--warmrand);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <select id="benchmark-groep" onchange="benchmarkLaad()"
+            style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+            <option value="">Kies groep…</option>
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+          </select>
+          <button onclick="benchmarkLaad()" style="padding:6px 14px;background:#4a7a4a;color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Vergelijk</button>
+          <button onclick="benchmarkBijdragen()" id="benchmark-bijdragen-knop"
+            style="padding:6px 14px;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit"
+            title="Draag anonieme gemiddelden bij aan het schoolnetwerk">↑ Bijdragen aan netwerk</button>
+          <div id="benchmark-bijdrage-balk" style="display:none;font-size:11px;color:#2d6a2d;padding:4px 0"></div>
+        </div>
+
+        <!-- Resultaten -->
+        <div id="benchmark-resultaten" style="padding:16px 18px">
+          <div style="color:var(--tz);font-size:12px">Kies een groep om de benchmark te zien.</div>
+        </div>
+
       </div>
 
       <!-- Tab: Tijdlijn -->
@@ -3470,6 +3501,188 @@ function dossierKopieerOverdracht() {
   });
 }
 
+// ── Schoolbrede Benchmarking (moat 2) ──────────────────────
+
+const VAKGEBIED_LABELS = {
+  lezen:'Lezen (DMT)', avi:'AVI', dmt:'DMT', rekenen:'Rekenen',
+  rekenen_basis:'Rekenen basisbew.', spelling:'Spelling',
+  taalverzorging:'Taalverzorging', woordenschat:'Woordenschat',
+  begrijpend:'Begrijpend lezen', begrijpend_luis:'Begrijpend luisteren',
+  engels:'Engels', sociaal:'Sociaal-emotioneel', executief:'Exec. functies',
+  groeimeter:'Groeimeter', werkhouding:'Werkhouding'
+};
+
+async function benchmarkLaad() {
+  const groep = document.getElementById('benchmark-groep').value;
+  if (!groep) return;
+
+  const resultaten = document.getElementById('benchmark-resultaten');
+  if (resultaten) resultaten.innerHTML = '<div style="color:var(--tz);font-size:12px">Benchmark laden…</div>';
+
+  try {
+    const res = await fetch(API_BASE + '/benchmark/groep/' + groep, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+
+    if (!data.beschikbaar) {
+      if (resultaten) resultaten.innerHTML = '<div style="color:var(--tz);font-size:12px">' + (data.reden || 'Geen data beschikbaar.') + '</div>';
+      return;
+    }
+
+    benchmarkRender(data);
+  } catch(e) {
+    if (resultaten) resultaten.innerHTML = '<div style="color:#991b1b;font-size:12px">Benchmark laden mislukt: ' + e.message + '</div>';
+  }
+}
+
+function benchmarkRender(data) {
+  const el = document.getElementById('benchmark-resultaten');
+  if (!el) return;
+
+  const vakgebieden = data.vakgebieden || {};
+  if (!Object.keys(vakgebieden).length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:12px">Geen scores beschikbaar voor groep ' + data.groep + '.</div>';
+    return;
+  }
+
+  // Header
+  let html = '<div style="margin-bottom:14px">';
+  html += '<div style="font-size:12px;color:var(--tm);margin-bottom:4px">Groep ' + data.groep + ' · ' + data.aantal_leerlingen + ' leerlingen</div>';
+  if (data.netwerk_actief) {
+    html += '<div style="font-size:11px;color:#4a7a4a;background:#f0faf0;padding:5px 10px;border:1px solid #c0e0c0;display:inline-block">✓ Netwerkbenchmark actief — vergelijking met andere scholen beschikbaar</div>';
+  } else {
+    html += '<div style="font-size:11px;color:var(--tz)">Alleen landelijke normen beschikbaar. Draag bij aan het netwerk om ook met andere scholen te vergelijken.</div>';
+  }
+  html += '</div>';
+
+  // Legenda
+  html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:10px">';
+  html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:8px;background:#4a7a4a;border-radius:2px"></div> Jouw groep</div>';
+  html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:8px;background:#ddd;border-radius:2px"></div> Landelijk gemiddelde</div>';
+  if (data.netwerk_actief) {
+    html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:8px;background:#2196f3;border-radius:2px;opacity:.6"></div> Netwerk gemiddelde</div>';
+  }
+  html += '</div>';
+
+  // Vakgebieden
+  const gesorteerd = Object.entries(vakgebieden).sort((a, b) => {
+    const volgorde = ['lezen','avi','dmt','rekenen','rekenen_basis','spelling','taalverzorging','woordenschat','begrijpend','begrijpend_luis','engels','sociaal','executief','groeimeter','werkhouding'];
+    return volgorde.indexOf(a[0]) - volgorde.indexOf(b[0]);
+  });
+
+  gesorteerd.forEach(function([vak, info]) {
+    const label       = VAKGEBIED_LABELS[vak] || vak;
+    const eigen       = info.eigen_gemiddelde;
+    const landelijk   = info.landelijk_gemiddelde;
+    const netwerk     = info.netwerk_gemiddelde;
+    const verschilL   = info.verschil_landelijk;
+
+    const verschilKleur = verschilL === null ? '#888'
+      : verschilL >= 5  ? '#2e7d32'
+      : verschilL >= 0  ? '#4a7a4a'
+      : verschilL >= -5 ? '#e65100'
+      : '#c62828';
+
+    const verschilTekst = verschilL === null ? ''
+      : (verschilL >= 0 ? '+' : '') + verschilL;
+
+    // Balkbreedte: score als % van 100
+    const eigenBalk    = Math.min(Math.max(eigen, 0), 100);
+    const landelijkBalk = landelijk ? Math.min(Math.max(landelijk, 0), 100) : null;
+    const netwerkBalk  = netwerk ? Math.min(Math.max(netwerk, 0), 100) : null;
+
+    html += '<div style="margin-bottom:12px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+    html += '<div style="font-size:11px;color:#444;width:140px;flex-shrink:0">' + label + '</div>';
+    html += '<div style="flex:1;display:flex;flex-direction:column;gap:3px">';
+
+    // Eigen balk
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<div style="flex:1;height:10px;background:#f0f0f0;border-radius:3px;overflow:hidden">';
+    html += '<div style="height:100%;width:' + eigenBalk + '%;background:#4a7a4a;border-radius:3px;transition:width .4s"></div>';
+    html += '</div>';
+    html += '<div style="width:40px;text-align:right;font-size:11px;font-weight:600;color:#2a3a2a">' + eigen + '</div>';
+    if (verschilTekst) {
+      html += '<div style="width:36px;text-align:right;font-size:10px;font-weight:600;color:' + verschilKleur + '">' + verschilTekst + '</div>';
+    }
+    html += '</div>';
+
+    // Landelijk balk
+    if (landelijkBalk !== null) {
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">';
+      html += '<div style="height:100%;width:' + landelijkBalk + '%;background:#ddd;border-radius:3px"></div>';
+      html += '</div>';
+      html += '<div style="width:40px;text-align:right;font-size:10px;color:#888">' + landelijk + '</div>';
+      html += '<div style="width:36px"></div>';
+      html += '</div>';
+    }
+
+    // Netwerk balk
+    if (netwerkBalk !== null) {
+      html += '<div style="display:flex;align-items:center;gap:8px">';
+      html += '<div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">';
+      html += '<div style="height:100%;width:' + netwerkBalk + '%;background:#2196f3;border-radius:3px;opacity:.6"></div>';
+      html += '</div>';
+      html += '<div style="width:40px;text-align:right;font-size:10px;color:#2196f3">' + netwerk + '</div>';
+      if (info.netwerk_scholen) {
+        html += '<div style="width:36px;text-align:right;font-size:9px;color:#aaa">' + info.netwerk_scholen + 'sch.</div>';
+      }
+      html += '</div>';
+    }
+
+    html += '</div></div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+async function benchmarkBijdragen() {
+  const groep = document.getElementById('benchmark-groep').value;
+  if (!groep) { alert('Kies eerst een groep.'); return; }
+
+  const bevestiging = confirm(
+    'Wil je de geanonimiseerde gemiddelde scores van groep ' + groep + ' bijdragen aan het schoolnetwerk?\n\n' +
+    'Er worden nooit individuele leerlingscores gedeeld — alleen anonieme gemiddelden per vakgebied.\n\n' +
+    'Andere scholen kunnen dan ook hun scores met jullie vergelijken.'
+  );
+  if (!bevestiging) return;
+
+  const knop = document.getElementById('benchmark-bijdragen-knop');
+  const balk = document.getElementById('benchmark-bijdrage-balk');
+  if (knop) { knop.textContent = 'Bijdragen…'; knop.disabled = true; }
+
+  try {
+    const res = await fetch(API_BASE + '/benchmark/bijdragen', {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ groep })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Status ' + res.status);
+    }
+    const data = await res.json();
+
+    if (balk) {
+      balk.style.display = 'block';
+      balk.textContent = '✓ ' + data.bijgedragen.length + ' vakgebieden bijgedragen aan het netwerk. Anoniem ID: ' + data.school_hash;
+    }
+    // Herlaad benchmark om netwerk-data te zien
+    setTimeout(benchmarkLaad, 500);
+  } catch(e) {
+    if (balk) {
+      balk.style.display = 'block';
+      balk.style.color = '#991b1b';
+      balk.textContent = 'Bijdragen mislukt: ' + e.message;
+    }
+  } finally {
+    if (knop) { knop.textContent = '↑ Bijdragen aan netwerk'; knop.disabled = false; }
+  }
+}
+
 function lvsRenderDomeinen() {
   if (!lvsHuidig) return;
   const l = lvsHuidig;
@@ -3693,6 +3906,10 @@ function lvsToonTab(naam, knop) {
   if (tabEl) tabEl.style.display = 'block';
   if (naam === 'profiel') { lvsRenderDomeinen(); lvsRenderRadar(); }
   if (naam === 'dossier' && lvsHuidig) { dossierLaad(lvsHuidig.id); }
+  if (naam === 'benchmark') {
+    const groepEl = document.getElementById('benchmark-groep');
+    if (groepEl && !groepEl.value && lvsHuidig) groepEl.value = lvsHuidig.groep || '';
+  }
 }
 
 function lvsGenereer() {
