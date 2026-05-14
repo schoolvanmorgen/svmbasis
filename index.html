@@ -1620,7 +1620,7 @@ function toonTab(tab, knop) {
 
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem;flex-shrink:0;z-index:90">
   <button class="tab actief" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
-  <button class="tab" onclick="toonTab('notities',this)">Notities</button>
+  <button class="tab" onclick="toonTab('notities',this)">Snelle notitie</button>
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
   <button class="tab" onclick="toonTab('rapport',this)">Rapport</button>
   <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
@@ -2035,8 +2035,7 @@ function toonTab(tab, knop) {
         <button class="lvs-tab actief" onclick="lvsToonTab('profiel',this)">Profiel</button>
         <button class="lvs-tab" onclick="lvsToonTab('tijdlijn',this)">Tijdlijn</button>
         <button class="lvs-tab" onclick="lvsToonTab('dossier',this)">Dossier</button>
-        <button class="lvs-tab" onclick="lvsToonTab('benchmark',this)">Benchmark</button>
-        <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Notitie toevoegen</button>
+        <button class="lvs-tab" onclick="lvsToonTab('notitie',this)">Observatie toevoegen</button>
       </div>
 
       <!-- Tab: Profiel -->
@@ -2060,17 +2059,7 @@ function toonTab(tab, knop) {
         <div id="lvs-domeinen">
           <div style="color:var(--tz);font-size:12px;padding:16px 18px">Selecteer een leerling.</div>
         </div>
-      </div>
-
-      <!-- Benchmark sub-tab: vergelijking met landelijk en netwerk -->
-      <div id="lvs-tab-benchmark" class="lvs-inhoud" style="display:none;flex:1;overflow-y:auto">
-
-        <div style="padding:14px 18px;background:var(--warm);border-bottom:1px solid var(--warmrand)">
-          <div style="font-family:Georgia,serif;font-size:15px;color:var(--t);margin-bottom:4px">Groepsbenchmark</div>
-          <div style="font-size:11px;color:var(--tz);line-height:1.6">Vergelijk de scores van je groep met landelijke CITO-normen. Hoe meer scholen meedoen, hoe rijker de vergelijking.</div>
-        </div>
-
-        <!-- Groep kiezen -->
+      </div>        <!-- Groep kiezen -->
         <div style="padding:12px 18px;border-bottom:1px solid var(--warmrand);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <select id="benchmark-groep" onchange="benchmarkLaad()"
             style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
