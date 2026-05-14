@@ -28,7 +28,7 @@
 html,body{width:100%;min-width:0}
 html,body{overflow:hidden;height:100%}body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#2a3a2a;height:100vh;font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
 
-header{border-bottom:1px solid #e0e8e0;box-shadow:0 1px 8px rgba(0,0,0,.06);padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:sticky;top:0;z-index:100}
+header{border-bottom:1px solid #e0e8e0;box-shadow:0 1px 8px rgba(0,0,0,.06);padding:0 1.5rem;height:48px;display:flex;align-items:center;justify-content:space-between;background:#fff;position:relative;z-index:100}
 .logo{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:#2a3a2a;letter-spacing:.08em;text-transform:uppercase;position:absolute;left:50%;transform:translateX(-50%)}
 .logo em{color:var(--t);font-style:normal}
 .badge{font-size:10px;background:var(--gl);color:var(--g);padding:3px 10px;border-radius:20px;font-weight:500;border:1px solid #c8dcc8}
@@ -1441,13 +1441,13 @@ function toonTab(tab, knop) {
 
   if (tab === 'lvs') {
     const lvsTabEl = document.getElementById('tab-lvs');
-    if (lvsTabEl) { lvsTabEl.style.display = 'flex'; lvsTabEl.style.height = 'calc(100vh - 108px)'; }
+    if (lvsTabEl) { lvsTabEl.style.display = 'flex'; lvsTabEl.style.height = '100%'; }
     if (typeof lvsInit === 'function') lvsInit();
     if (typeof lvsInit === 'function') lvsInit();
 
   } else if (tab === 'aanwezigheid') {
     const aawTabEl = document.getElementById('tab-aanwezigheid');
-    if (aawTabEl) { aawTabEl.style.display = 'flex'; aawTabEl.style.height = 'calc(100vh - 108px)'; }
+    if (aawTabEl) { aawTabEl.style.display = 'flex'; aawTabEl.style.height = '100%'; }
     aawInit();
     if (typeof aawInit === 'function') aawInit();
 
@@ -1617,7 +1617,7 @@ function toonTab(tab, knop) {
   <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
   <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
 </div>
-<div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0;height:100%">
+<div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0">
 <div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
   <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0">
 
