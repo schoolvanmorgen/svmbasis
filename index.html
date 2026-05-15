@@ -34,7 +34,6 @@ header{border-bottom:1px solid #e0e8e0;box-shadow:0 1px 8px rgba(0,0,0,.06);padd
 .badge{font-size:10px;background:var(--gl);color:var(--g);padding:3px 10px;border-radius:20px;font-weight:500;border:1px solid #c8dcc8}
 @media(min-width:768px){header{height:60px;padding:0 2rem}.logo{font-size:20px}}
 
-
 .leerlingen-sidebar{padding:0;border-right:1px solid #e8ede8;background:#fafcfa;width:210px;flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
 .leerling-item{padding:8px 12px;border-radius:7px;cursor:pointer;border-left:2px solid transparent;transition:all .12s;margin:2px 6px}
 .leerling-item:hover{background:#f8f8f8}
@@ -163,8 +162,6 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .sectie{display:none}.sectie.actief{display:grid;height:100%;overflow:hidden}#tab-notities.actief{display:flex!important;flex-direction:column;height:100%}
 .sectie-vol{display:none}.sectie-vol.actief{display:flex}
 
-
-
 .ondersteuning-wrap{position:relative;margin-bottom:0}
 .ondersteuning-knop{width:100%;border:1.5px solid var(--rand);border-radius:7px;padding:9px 13px;font-size:13px;color:var(--t);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-family:inherit;text-align:left;transition:border-color .15s}
 .ondersteuning-knop:focus{border-color:var(--t);outline:none;box-shadow:none}
@@ -183,13 +180,6 @@ textarea::placeholder{color:var(--tz);font-size:12px}
 .od-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 11px;border-radius:20px;background:#eef3ee;color:#4a5a4a;border:1px solid #c4d4c4}
 .od-tag-x{cursor:pointer;font-size:10px;opacity:.6}
 .od-tag-x:hover{opacity:1}
-
-
-
-
-
-
-
 
 /* ── Mobiele bottom nav ── */
 .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--warm);border-top:1px solid var(--warmrand);z-index:200;box-shadow:none}
@@ -279,7 +269,6 @@ body{padding-bottom:64px}
 .aaw-export-balk{background:var(--gl);border:1px solid #e0e0e0;border-radius:7px;padding:10px 14px;font-size:12px;color:var(--g);margin-bottom:1rem;display:none}
 .aaw-export-balk.zichtbaar{display:block}
 
-
 .lvs-wrap{display:flex;width:100%;height:100%;background:var(--grijs);overflow:hidden}
 .lvs-sidebar{width:220px;background:#fff;border-right:1px solid var(--warmrand);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
 .lvs-sidebar-header{padding:14px 14px 10px;border-bottom:1px solid var(--warmrand)}
@@ -304,17 +293,17 @@ body{padding-bottom:64px}
 .lvs-profiel-naam{font-size:17px;font-weight:600;color:var(--t)}
 .lvs-profiel-meta{font-size:11px;color:var(--tz);margin-top:2px}
 .lvs-gen-knop{margin-left:auto;background:var(--gm);color:#fff;border:none;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
-.gp-vak-btn{padding:6px 12px;font-size:12px;font-weight:500;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)}
+
 .gp-vak-btn.actief{background:#4a7a4a;color:#fff;border-color:#4a7a4a}
 .gp-vak-btn:hover:not(.actief){background:var(--warm)}
 .gp-niveaubalk{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:4px 0}
-.gp-niveau-knop{padding:6px 4px;font-size:11px;font-weight:500;border:1px solid var(--rand);border-right:none;background:#fff;cursor:pointer;font-family:inherit;color:var(--tz);text-align:center}
+
 .gp-niveau-knop:last-child{border-right:1px solid var(--rand)}
 .gp-niveau-knop.onafhankelijk.actief{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7}
 .gp-niveau-knop.basis.actief{background:#e3f2fd;color:#1565c0;border-color:#90caf9}
 .gp-niveau-knop.intensief.actief{background:#fff3e0;color:#e65100;border-color:#ffcc80}
 .gp-niveau-knop.individueel.actief{background:#fce4ec;color:#880e4f;border-color:#f48fb1}
-.gp-leerling-rij{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--rand);font-size:13px}
+
 .gp-leerling-naam{width:130px;flex-shrink:0;color:var(--donker);font-weight:500}
 .lvs-tabs{display:flex;padding:0 18px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0}
 .lvs-tab{padding:10px 12px;font-size:12px;font-weight:500;color:var(--tz);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit}
@@ -1576,8 +1565,6 @@ function toonTab(tab, knop) {
   </div>
 </header>
 
-
-
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem;flex-shrink:0;z-index:90">
   <button class="tab actief" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
   <button class="tab" onclick="toonTab('notities',this)">Snelle notitie</button>
@@ -1829,16 +1816,11 @@ function toonTab(tab, knop) {
 </div>
 </div><!-- einde tab-handelingsplan -->
 
-
 <!-- ══════════════════════════════════════════════════════ -->
 <!-- Aanwezigheidsregistratie tab                          -->
 <!-- ══════════════════════════════════════════════════════ -->
 
-
-
 </div><!-- einde tab-inhoud -->
-
-
 
 <!-- ── IB-Dashboard Tab ── -->
 <div class="sectie" id="tab-ib" style="height:100%;overflow:hidden;display:none">
@@ -2319,7 +2301,6 @@ function toonTab(tab, knop) {
   </div><!-- einde lvs-flex -->
 </div><!-- einde tab-lvs -->
 
-
 <div id="tab-aanwezigheid" style="display:none;flex:1;min-height:0;overflow:hidden;background:#f8f8f8;flex-direction:column">
 
   <!-- Balk 1: datum + navigatie -->
@@ -2428,9 +2409,6 @@ function toonTab(tab, knop) {
   </div>
 </div>
 
-
-
-
 <script>
 
 // ── Ondersteuning dropdown ────────────────────────────────
@@ -2468,11 +2446,6 @@ function verwijderTag(el) {
 
 function getGeselecteerdeBehoeftes() {
   return Array.from(document.querySelectorAll('#od-checklijst input[type=checkbox]:checked')).map(cb => cb.value);
-}
-
-function getInterventietekst(behoeftes) {
-  if (!behoeftes || behoeftes.length === 0) return '';
-  return behoeftes.map(b => b + ': ' + (INTERVENTIES[b] || '')).join('; ');
 }
 
 const VOORBEELDEN = {
@@ -3034,14 +3007,6 @@ async function roepAPIaan(prompt) {
   return volledig;
 }
 
-// ── Toggle oudermail veld ────────────────────────────────────
-function toggleOudermail(veldId, checkbox) {
-  const veld = document.getElementById(veldId);
-  if (!veld) return;
-  veld.style.display = checkbox.checked ? 'block' : 'none';
-  if (checkbox.checked) setTimeout(() => veld.focus(), 50);
-}
-
 // ── Delen met ouders via server (Resend) ─────────────────────
 async function deelMetOuders(knop) {
   const emailEl = document.getElementById('oudermail');
@@ -3226,8 +3191,6 @@ function verbergResultaten() {
   if (res) res.innerHTML = '';
   if (leeg) leeg.style.display = 'flex';
 }
-
-function resetStats() {}
 
 function downloadPDF() {
   const naam = document.getElementById('naam')?.value.trim() || '';
@@ -4059,7 +4022,6 @@ async function ibToonDetail(leerlingId) {
     html += '<div style="padding:12px 16px;border-top:1px solid var(--warmrand)">';
     html += '<button id="ib-naar-lvs-knop" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Open in LVS →</button>';
 
-
     inhoud.innerHTML = html;
     // Voeg event listeners toe
     const sluitKnop = inhoud.querySelector('#ib-sluit-knop');
@@ -4091,177 +4053,6 @@ const VAKGEBIED_LABELS = {
   engels:'Engels', sociaal:'Sociaal-emotioneel', executief:'Exec. functies',
   groeimeter:'Groeimeter', werkhouding:'Werkhouding'
 };
-
-async function benchmarkLaad() {
-  const groep = document.getElementById('benchmark-groep').value;
-  if (!groep) return;
-
-  const resultaten = document.getElementById('benchmark-resultaten');
-  if (resultaten) resultaten.innerHTML = '<div style="color:var(--tz);font-size:12px">Benchmark laden…</div>';
-
-  try {
-    const res = await fetch(API_BASE + '/benchmark/groep/' + groep, {
-      headers: { 'Authorization': 'Bearer ' + huidigToken }
-    });
-    if (!res.ok) throw new Error('Status ' + res.status);
-    const data = await res.json();
-
-    if (!data.beschikbaar) {
-      if (resultaten) resultaten.innerHTML = '<div style="color:var(--tz);font-size:12px">' + (data.reden || 'Geen data beschikbaar.') + '</div>';
-      return;
-    }
-
-    benchmarkRender(data);
-  } catch(e) {
-    if (resultaten) resultaten.innerHTML = '<div style="color:#991b1b;font-size:12px">Benchmark laden mislukt: ' + e.message + '</div>';
-  }
-}
-
-function benchmarkRender(data) {
-  const el = document.getElementById('benchmark-resultaten');
-  if (!el) return;
-
-  const vakgebieden = data.vakgebieden || {};
-  if (!Object.keys(vakgebieden).length) {
-    el.innerHTML = '<div style="color:var(--tz);font-size:12px">Geen scores beschikbaar voor groep ' + data.groep + '.</div>';
-    return;
-  }
-
-  // Header
-  let html = '<div style="margin-bottom:14px">';
-  html += '<div style="font-size:12px;color:var(--tm);margin-bottom:4px">Groep ' + data.groep + ' · ' + data.aantal_leerlingen + ' leerlingen</div>';
-  if (data.netwerk_actief) {
-    html += '<div style="font-size:11px;color:#4a7a4a;background:#f0faf0;padding:5px 10px;border:1px solid #c0e0c0;display:inline-block">✓ Netwerkbenchmark actief — vergelijking met andere scholen beschikbaar</div>';
-  } else {
-    html += '<div style="font-size:11px;color:var(--tz)">Alleen landelijke normen beschikbaar. Draag bij aan het netwerk om ook met andere scholen te vergelijken.</div>';
-  }
-  html += '</div>';
-
-  // Legenda
-  html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;font-size:10px">';
-  html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:8px;background:#4a7a4a;border-radius:2px"></div> Jouw groep</div>';
-  html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:8px;background:#ddd;border-radius:2px"></div> Landelijk gemiddelde</div>';
-  if (data.netwerk_actief) {
-    html += '<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:8px;background:#2196f3;border-radius:2px;opacity:.6"></div> Netwerk gemiddelde</div>';
-  }
-  html += '</div>';
-
-  // Vakgebieden
-  const gesorteerd = Object.entries(vakgebieden).sort((a, b) => {
-    const volgorde = ['lezen','avi','dmt','rekenen','rekenen_basis','spelling','taalverzorging','woordenschat','begrijpend','begrijpend_luis','engels','sociaal','executief','groeimeter','werkhouding'];
-    return volgorde.indexOf(a[0]) - volgorde.indexOf(b[0]);
-  });
-
-  gesorteerd.forEach(function([vak, info]) {
-    const label       = VAKGEBIED_LABELS[vak] || vak;
-    const eigen       = info.eigen_gemiddelde;
-    const landelijk   = info.landelijk_gemiddelde;
-    const netwerk     = info.netwerk_gemiddelde;
-    const verschilL   = info.verschil_landelijk;
-
-    const verschilKleur = verschilL === null ? '#888'
-      : verschilL >= 5  ? '#2e7d32'
-      : verschilL >= 0  ? '#4a7a4a'
-      : verschilL >= -5 ? '#e65100'
-      : '#c62828';
-
-    const verschilTekst = verschilL === null ? ''
-      : (verschilL >= 0 ? '+' : '') + verschilL;
-
-    // Balkbreedte: score als % van 100
-    const eigenBalk    = Math.min(Math.max(eigen, 0), 100);
-    const landelijkBalk = landelijk ? Math.min(Math.max(landelijk, 0), 100) : null;
-    const netwerkBalk  = netwerk ? Math.min(Math.max(netwerk, 0), 100) : null;
-
-    html += '<div style="margin-bottom:12px">';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
-    html += '<div style="font-size:11px;color:#444;width:140px;flex-shrink:0">' + label + '</div>';
-    html += '<div style="flex:1;display:flex;flex-direction:column;gap:3px">';
-
-    // Eigen balk
-    html += '<div style="display:flex;align-items:center;gap:8px">';
-    html += '<div style="flex:1;height:10px;background:#f0f0f0;border-radius:3px;overflow:hidden">';
-    html += '<div style="height:100%;width:' + eigenBalk + '%;background:#4a7a4a;border-radius:3px;transition:width .4s"></div>';
-    html += '</div>';
-    html += '<div style="width:40px;text-align:right;font-size:11px;font-weight:600;color:#2a3a2a">' + eigen + '</div>';
-    if (verschilTekst) {
-      html += '<div style="width:36px;text-align:right;font-size:10px;font-weight:600;color:' + verschilKleur + '">' + verschilTekst + '</div>';
-    }
-    html += '</div>';
-
-    // Landelijk balk
-    if (landelijkBalk !== null) {
-      html += '<div style="display:flex;align-items:center;gap:8px">';
-      html += '<div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">';
-      html += '<div style="height:100%;width:' + landelijkBalk + '%;background:#ddd;border-radius:3px"></div>';
-      html += '</div>';
-      html += '<div style="width:40px;text-align:right;font-size:10px;color:#888">' + landelijk + '</div>';
-      html += '<div style="width:36px"></div>';
-      html += '</div>';
-    }
-
-    // Netwerk balk
-    if (netwerkBalk !== null) {
-      html += '<div style="display:flex;align-items:center;gap:8px">';
-      html += '<div style="flex:1;height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden">';
-      html += '<div style="height:100%;width:' + netwerkBalk + '%;background:#2196f3;border-radius:3px;opacity:.6"></div>';
-      html += '</div>';
-      html += '<div style="width:40px;text-align:right;font-size:10px;color:#2196f3">' + netwerk + '</div>';
-      if (info.netwerk_scholen) {
-        html += '<div style="width:36px;text-align:right;font-size:9px;color:#aaa">' + info.netwerk_scholen + 'sch.</div>';
-      }
-      html += '</div>';
-    }
-
-    html += '</div></div></div>';
-  });
-
-  el.innerHTML = html;
-}
-
-async function benchmarkBijdragen() {
-  const groep = document.getElementById('benchmark-groep').value;
-  if (!groep) { alert('Kies eerst een groep.'); return; }
-
-  const bevestiging = confirm(
-    'Wil je de geanonimiseerde gemiddelde scores van groep ' + groep + ' bijdragen aan het schoolnetwerk?\n\n' +
-    'Er worden nooit individuele leerlingscores gedeeld — alleen anonieme gemiddelden per vakgebied.\n\n' +
-    'Andere scholen kunnen dan ook hun scores met jullie vergelijken.'
-  );
-  if (!bevestiging) return;
-
-  const knop = document.getElementById('benchmark-bijdragen-knop');
-  const balk = document.getElementById('benchmark-bijdrage-balk');
-  if (knop) { knop.textContent = 'Bijdragen…'; knop.disabled = true; }
-
-  try {
-    const res = await fetch(API_BASE + '/benchmark/bijdragen', {
-      method:  'POST',
-      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ groep })
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Status ' + res.status);
-    }
-    const data = await res.json();
-
-    if (balk) {
-      balk.style.display = 'block';
-      balk.textContent = '✓ ' + data.bijgedragen.length + ' vakgebieden bijgedragen aan het netwerk. Anoniem ID: ' + data.school_hash;
-    }
-    // Herlaad benchmark om netwerk-data te zien
-    setTimeout(benchmarkLaad, 500);
-  } catch(e) {
-    if (balk) {
-      balk.style.display = 'block';
-      balk.style.color = '#991b1b';
-      balk.textContent = 'Bijdragen mislukt: ' + e.message;
-    }
-  } finally {
-    if (knop) { knop.textContent = '↑ Bijdragen aan netwerk'; knop.disabled = false; }
-  }
-}
 
 function lvsRenderDomeinen() {
   if (!lvsHuidig) return;
@@ -4477,7 +4268,6 @@ function lvsClearNotitie() {
   LVS_DOMEINEN.forEach(d => { const el = document.getElementById('lvs-s-' + d.k); if (el) el.value = ''; });
 }
 
-
 function lvsToonTab(naam, knop) {
   document.querySelectorAll('.lvs-inhoud').forEach(el => { el.style.display = 'none'; });
   document.querySelectorAll('.lvs-tab').forEach(k => k.classList.remove('actief'));
@@ -4490,10 +4280,6 @@ function lvsToonTab(naam, knop) {
     const groepEl = document.getElementById('benchmark-groep');
     if (groepEl && !groepEl.value && lvsHuidig) groepEl.value = lvsHuidig.groep || '';
   }
-}
-
-function lvsGenereer() {
-  lvsNaarTab('rapport');
 }
 
 function lvsNaarTab(tab) {
@@ -4616,57 +4402,6 @@ function lvsRenderSignalenBalk(leerlingId) {
     + items
     + '</div>';
 }
-
-
-// ── Mobiele navigatie ────────────────────────────────────
-function mobieltoonTab(tab, knop) {
-  // Update bottom nav
-  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('actief'));
-  if (knop) knop.classList.add('actief');
-
-  // Verberg alles
-  const tabInhoud = document.getElementById('tab-inhoud');
-  const lvsEl = document.getElementById('tab-lvs');
-  const oppEl = document.getElementById('tab-opp-sectie');
-
-  const aawEl2 = document.getElementById('tab-aanwezigheid');
-
-  if (tab === 'lvs') {
-    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
-    if (aawEl2) aawEl2.style.cssText = 'display:none';
-    if (lvsEl) { lvsEl.style.display = 'block'; lvsInit(); }
-  } else if (tab === 'aanwezigheid') {
-    if (tabInhoud) tabInhoud.style.cssText = 'width:0;overflow:hidden;display:flex;flex-shrink:0';
-    if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl2) { aawEl2.style.display = 'flex'; aawInit(); }
-  } else if (tab === 'rapport') {
-    if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl2) aawEl2.style.cssText = 'display:none';
-    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
-    document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
-    const rapportEl = document.getElementById('tab-rapport');
-    if (rapportEl) rapportEl.classList.add('actief');
-  } else if (tab === 'opp') {
-    if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl2) aawEl2.style.cssText = 'display:none';
-    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
-    document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
-    const oppTabEl = document.getElementById('tab-opp');
-    if (oppTabEl) oppTabEl.classList.add('actief');
-  } else if (tab === 'notities') {
-    if (lvsEl) lvsEl.style.cssText = 'display:none';
-    if (aawEl2) aawEl2.style.cssText = 'display:none';
-    if (tabInhoud) tabInhoud.style.cssText = 'flex:1;overflow:hidden;display:flex;min-height:0';
-    document.querySelectorAll('.sectie').forEach(s => s.classList.remove('actief'));
-    const gesprek = document.getElementById('tab-notities');
-    if (gesprek) gesprek.style.display = 'grid';
-    if (typeof notitieRender === 'function') notitieRender();
-  }
-
-  // Scroll naar boven
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
 
 // ══════════════════════════════════════════════════════════
 // AANWEZIGHEIDSREGISTRATIE
@@ -5156,15 +4891,7 @@ function aawExporteer() {
   const a = document.createElement('a'); a.href = url; a.download = 'aanwezigheid-groep' + (aawGeselecteerdeKlas||'') + '-' + sleutel + '.csv'; a.click();
 }
 
-function aawFilter(zoek) { aawRender(); }
-
-const MINUTEN_PER_RAPPORT = 25;
-function laadStats() { return {}; }
-function slaStats() {}
-function updateStatsBalk() {}
 function resetStats() {}
-function registreerRapport() {}
-
 
 // ══════════════════════════════════════════════════════════
 // TOETSREGISTRATIE — LVS uitbreiding
@@ -5203,220 +4930,15 @@ function csvParseRegel(regel, scheiding) {
   return delen;
 }
 
-async function toetsImportCSV(csvTekst) {
-  if (!huidigToken || !csvTekst.trim()) { alert('Plak eerst CSV-inhoud in het veld.'); return; }
-  const scheiding = csvDetecteerScheidingsteken(csvTekst);
-  const regels = csvTekst.trim().split('\n');
-  const headerRegel = regels[0].toLowerCase();
-  // Sla header-rij over als die kolomnamen bevat
-  const startRij = (headerRegel.includes('vakgebied') || headerRegel.includes('leerling') || headerRegel.includes('score')) ? 1 : 0;
-  const vakMap = {
-    'lezen':'lezen','avi':'avi','dmt':'dmt',
-    'rekenen':'rekenen','rekenen-wiskunde':'rekenen','rekenen wiskunde':'rekenen',
-    'rekenen basis':'rekenen_basis','rekenen basisbewerkingen':'rekenen_basis','rekenen_basis':'rekenen_basis',
-    'spelling':'spelling','taalverzorging':'taalverzorging',
-    'woordenschat':'woordenschat',
-    'begrijpend':'begrijpend','begrijpend lezen':'begrijpend',
-    'begrijpend luisteren':'begrijpend_luis','begrijpend_luis':'begrijpend_luis',
-    'engels':'engels',
-    'sociaal':'sociaal','sociaal-emotioneel':'sociaal',
-    'executief':'executief','executieve functies':'executief',
-    'groeimeter':'groeimeter',
-    'werkhouding':'werkhouding'
-  };
-  const toetsen = [];
-  const overgeslagen = [];
-
-  for (let i = startRij; i < regels.length; i++) {
-    const regel = regels[i].trim();
-    if (!regel) continue;
-    const delen = csvParseRegel(regel, scheiding);
-    if (delen.length < 3) { overgeslagen.push({ rij: i+1, reden: 'Te weinig kolommen' }); continue; }
-    const [leerlingnummer, vakRaw, scoreRaw, niveauRaw, datumRaw] = delen;
-    const vak = vakMap[vakRaw.toLowerCase().trim()];
-    const score = parseInt(scoreRaw);
-    if (!vak) { overgeslagen.push({ rij: i+1, reden: `Onbekend vakgebied '${vakRaw}'` }); continue; }
-    if (isNaN(score) || score < 0 || score > 100) { overgeslagen.push({ rij: i+1, reden: `Ongeldige score '${scoreRaw}'` }); continue; }
-    const leerling = leerlingen.find(l =>
-      l.leerlingnummer === leerlingnummer.trim() ||
-      l.voornaam?.toLowerCase() === leerlingnummer.toLowerCase().trim()
-    );
-    if (!leerling) { overgeslagen.push({ rij: i+1, reden: `Leerling '${leerlingnummer}' niet gevonden` }); continue; }
-    const geldigNiveau = ['I','II','III','IV','V'].includes((niveauRaw || '').trim().toUpperCase()) ? niveauRaw.trim().toUpperCase() : null;
-    toetsen.push({ leerling_id: leerling.id, vakgebied: vak, score, niveau: geldigNiveau, afname_datum: datumRaw?.trim() || null, bron: 'csv' });
-  }
-
-  if (!toetsen.length) {
-    const redenen = overgeslagen.slice(0,5).map(o => `Rij ${o.rij}: ${o.reden}`).join('\n');
-    alert('Geen geldige rijen gevonden.\n\n' + redenen + (overgeslagen.length > 5 ? '\n...' : ''));
-    return;
-  }
-
-  const knop = document.querySelector('#lvs-tab-toetsimport button');
-  const origTekst = knop ? knop.textContent : '';
-  if (knop) knop.textContent = 'Bezig met importeren (' + toetsen.length + ')...';
-
-  try {
-    const res = await fetch(API_BASE + '/toetsen/batch', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ toetsen })
-    });
-    if (!res.ok) throw new Error('Server fout: ' + res.status);
-    const data = await res.json();
-    let bericht = data.geimporteerd + ' toetsen succesvol geimporteerd.';
-    if (overgeslagen.length) bericht += '\n' + overgeslagen.length + ' rijen overgeslagen.';
-    if (data.fouten > 0) bericht += '\n' + data.fouten + ' serverfouten.';
-    alert(bericht);
-    document.getElementById('lvs-csv-invoer').value = '';
-    if (lvsHuidig) lvsSelecteer(lvsHuidig.id);
-  } catch(e) {
-    alert('Import mislukt: ' + e.message);
-  } finally {
-    if (knop) knop.textContent = origTekst;
-  }
-}
-
 // ══════════════════════════════════════════════════════════
 // GROEPSPLAN
 // ══════════════════════════════════════════════════════════
-
-let gpHuidigVak = 'lezen';
-let gpData = {};
 
 // Niveau-kleuren en labels op één plek — geen herhaling meer door de code
 const GP_NIVEAUS = ['onafhankelijk','basis','intensief','individueel'];
 const GP_NIVEAU_LABELS = {onafhankelijk:'Onafh.',basis:'Basis',intensief:'Intensief',individueel:'Individ.'};
 const GP_NIVEAU_KLEUREN = {onafhankelijk:'#e8f5e9',basis:'#e3f2fd',intensief:'#fff3e0',individueel:'#fce4ec'};
 const GP_NIVEAU_TEKST = {onafhankelijk:'#2e7d32',basis:'#1565c0',intensief:'#e65100',individueel:'#880e4f'};
-let gpOpslaanBezig = false;
-
-function gpSelecteerVak(vak, knop) {
-  gpHuidigVak = vak;
-  document.querySelectorAll('.gp-vak-btn').forEach(k => k.classList.remove('actief'));
-  if (knop) knop.classList.add('actief');
-  gpRenderTabel();
-}
-
-async function gpLaad() {
-  const groep = document.getElementById('gp-groep').value;
-  const schooljaar = document.getElementById('gp-schooljaar').value;
-  if (!groep || !huidigToken) return;
-  const el = document.getElementById('gp-resultaat');
-  el.innerHTML = '<div class="leeg"><div class="leeg-t">Laden...</div></div>';
-  try {
-    const res = await fetch(API_BASE + '/groepsplan?groep=' + encodeURIComponent(groep) + '&schooljaar=' + encodeURIComponent(schooljaar), {
-      headers: { 'Authorization': 'Bearer ' + huidigToken }
-    });
-    if (!res.ok) throw new Error('Status ' + res.status);
-    const data = await res.json();
-    gpData = {};
-    (data.rijen || []).forEach(r => {
-      if (!gpData[r.leerling_id]) gpData[r.leerling_id] = {};
-      gpData[r.leerling_id][r.vakgebied] = r.instructieniveau;
-    });
-    document.getElementById('gp-notities').value = data.notities || '';
-    gpRenderTabel();
-  } catch(e) {
-    el.innerHTML = '<div class="leeg"><div class="leeg-t">Laden mislukt: ' + e.message + '</div></div>';
-  }
-}
-
-function gpRenderTabel() {
-  const groep = document.getElementById('gp-groep').value;
-  const el = document.getElementById('gp-resultaat');
-  if (!groep) {
-    el.innerHTML = '<div class="leeg"><div class="leeg-c">&#x1F4CB;</div><div class="leeg-t">Kies een groep</div></div>';
-    return;
-  }
-  const klasLeerlingen = leerlingen.filter(l => l.groep === groep).sort((a,b) => a.voornaam.localeCompare(b.voornaam, 'nl'));
-  if (!klasLeerlingen.length) {
-    el.innerHTML = '<div class="leeg"><div class="leeg-t">Geen leerlingen gevonden in groep ' + groep + '</div></div>';
-    return;
-  }
-
-  // Voortgangstelling per niveau bovenaan
-  const telling = {onafhankelijk:0, basis:0, intensief:0, individueel:0, geen:0};
-  klasLeerlingen.forEach(l => {
-    const n = (gpData[l.id] || {})[gpHuidigVak];
-    if (n && telling[n] !== undefined) telling[n]++; else telling.geen++;
-  });
-  const totaal = klasLeerlingen.length;
-
-  let html = '<div style="padding:16px">';
-  // Samenvatting bovenaan
-  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
-  GP_NIVEAUS.forEach(n => {
-    const pct = totaal ? Math.round(telling[n] / totaal * 100) : 0;
-    html += '<div style="background:' + GP_NIVEAU_KLEUREN[n] + ';color:' + GP_NIVEAU_TEKST[n] + ';padding:4px 10px;font-size:11px;font-weight:500;border-radius:4px">'
-      + GP_NIVEAU_LABELS[n] + ': ' + telling[n] + ' (' + pct + '%)</div>';
-  });
-  if (telling.geen) html += '<div style="background:#f5f5f5;color:#888;padding:4px 10px;font-size:11px;border-radius:4px">Nog in te delen: ' + telling.geen + '</div>';
-  html += '</div>';
-
-  // Kolomkoppen
-  html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--rand)">';
-  html += '<div style="width:140px;flex-shrink:0;font-size:10px;font-weight:700;color:#888;letter-spacing:.05em">LEERLING</div>';
-  html += '<div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:0">';
-  GP_NIVEAUS.forEach(n => {
-    html += '<div style="font-size:10px;color:#888;text-align:center;font-weight:700;letter-spacing:.04em">' + n.toUpperCase().slice(0,6) + '.</div>';
-  });
-  html += '</div></div>';
-
-  // Leerlingrijen — gebruik data-attributen i.p.v. inline onclick met id-strings
-  klasLeerlingen.forEach(l => {
-    const huidig = (gpData[l.id] || {})[gpHuidigVak] || '';
-    html += '<div class="gp-leerling-rij" data-leerling-id="' + l.id + '">';
-    html += '<div class="gp-leerling-naam">' + l.voornaam + '</div>';
-    html += '<div class="gp-niveaubalk" style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:0">';
-    GP_NIVEAUS.forEach(n => {
-      const isActief = huidig === n;
-      const achtergrond = isActief ? GP_NIVEAU_KLEUREN[n] : '';
-      const kleur = isActief ? GP_NIVEAU_TEKST[n] : '';
-      const rand = isActief ? '2px solid ' + GP_NIVEAU_TEKST[n] : '1px solid var(--rand)';
-      html += '<button class="gp-niveau-knop" data-niveau="' + n + '" style="padding:7px 2px;font-size:11px;font-weight:' + (isActief ? '600' : '400') + ';border:' + rand + ';border-right:none;background:' + achtergrond + ';color:' + (kleur || 'var(--tz)') + ';cursor:pointer;font-family:inherit;text-align:center">'
-        + GP_NIVEAU_LABELS[n] + '</button>';
-    });
-    html += '</div></div>';
-  });
-
-  html += '</div>';
-  el.innerHTML = html;
-
-  // Event delegation — één listener op de container i.p.v. per-knop onclick
-  el.onclick = function(e) {
-    const knop = e.target.closest('.gp-niveau-knop');
-    if (!knop) return;
-    const rij = knop.closest('.gp-leerling-rij');
-    const leerlingId = rij.dataset.leerlingId;
-    const niveau = knop.dataset.niveau;
-    gpStelNiveauIn(leerlingId, niveau, knop);
-  };
-}
-
-function gpStelNiveauIn(leerlingId, niveau, knop) {
-  if (!gpData[leerlingId]) gpData[leerlingId] = {};
-  // Toggle: klik op actief niveau verwijdert de indeling
-  if (gpData[leerlingId][gpHuidigVak] === niveau) {
-    gpData[leerlingId][gpHuidigVak] = '';
-  } else {
-    gpData[leerlingId][gpHuidigVak] = niveau;
-  }
-  // Herrender alleen de knoppen van deze rij — niet de hele tabel
-  const balk = knop.closest('.gp-niveaubalk');
-  const huidig = gpData[leerlingId][gpHuidigVak];
-  balk.querySelectorAll('.gp-niveau-knop').forEach(k => {
-    const n = k.dataset.niveau;
-    const isActief = huidig === n;
-    k.style.background = isActief ? GP_NIVEAU_KLEUREN[n] : '';
-    k.style.color = isActief ? GP_NIVEAU_TEKST[n] : 'var(--tz)';
-    k.style.border = isActief ? '2px solid ' + GP_NIVEAU_TEKST[n] : '1px solid var(--rand)';
-    k.style.borderRight = 'none';
-    k.style.fontWeight = isActief ? '600' : '400';
-  });
-  // Werk de samenvatting bij zonder herrender
-  gpWerkSamenvattingBij(leerlingId);
-}
 
 function gpWerkSamenvattingBij() {
   const groep = document.getElementById('gp-groep').value;
@@ -5439,262 +4961,7 @@ function gpWerkSamenvattingBij() {
   samenvatting.innerHTML = html;
 }
 
-async function gpSuggestie() {
-  const groep    = document.getElementById('gp-groep').value;
-  const vak      = gpHuidigVak;
-  const balk     = document.getElementById('gp-suggestie-balk');
-  const knop     = document.getElementById('gp-suggestie-knop');
-
-  if (!groep) {
-    alert('Kies eerst een groep.');
-    return;
-  }
-
-  if (knop) { knop.textContent = 'Laden…'; knop.disabled = true; }
-  if (balk) balk.style.display = 'none';
-
-  try {
-    const res = await fetch(
-      API_BASE + '/groepsplan/suggestie/' + groep + '?vakgebied=' + vak,
-      { headers: { 'Authorization': 'Bearer ' + huidigToken } }
-    );
-    if (!res.ok) throw new Error('Status ' + res.status);
-    const data = await res.json();
-
-    const suggesties   = data.suggesties || [];
-    const zonderScore  = data.zonder_score || [];
-
-    if (!suggesties.length && !zonderScore.length) {
-      if (balk) {
-        balk.style.display = 'block';
-        balk.style.background = '#fff5f5';
-        balk.style.borderColor = '#fca5a5';
-        balk.style.color = '#991b1b';
-        balk.textContent = 'Geen leerlingen gevonden in groep ' + groep + '.';
-      }
-      return;
-    }
-
-    if (!suggesties.length) {
-      if (balk) {
-        balk.style.display = 'block';
-        balk.textContent = 'Geen LVS-scores beschikbaar voor ' + gpHuidigVak + ' in groep ' + groep + '. Registreer eerst toetsresultaten in het LVS.';
-      }
-      return;
-    }
-
-    // ── Pas gpData aan op basis van de suggesties ──────────
-    // Overschrijf ALLEEN leerlingen zonder bestaande indeling
-    // Leerlingen die al ingedeeld zijn blijven ongewijzigd
-    let nieuw = 0;
-    let overgeslagen = 0;
-    suggesties.forEach(function(s) {
-      if (!gpData[s.leerling_id]) gpData[s.leerling_id] = {};
-      const bestaand = gpData[s.leerling_id][vak];
-      if (!bestaand) {
-        gpData[s.leerling_id][vak] = s.niveau;
-        nieuw++;
-      } else {
-        overgeslagen++;
-      }
-    });
-
-    // Herrender de tabel
-    gpRenderTabel();
-
-    // Toon samenvatting
-    if (balk) {
-      balk.style.display     = 'block';
-      balk.style.background  = '#f0faf0';
-      balk.style.borderColor = '#c0e0c0';
-      balk.style.color       = '#2d6a2d';
-
-      const niveauTelling = { onafhankelijk:0, basis:0, intensief:0, individueel:0 };
-      suggesties.forEach(function(s) { if (niveauTelling[s.niveau] !== undefined) niveauTelling[s.niveau]++; });
-
-      let tekst = '↗ Suggestie toegepast voor ' + nieuw + ' leerling' + (nieuw !== 1 ? 'en' : '') + ' ';
-      tekst += '(' + Object.entries(niveauTelling).filter(([,v]) => v > 0).map(([k,v]) => GP_NIVEAU_LABELS[k] + ': ' + v).join(', ') + ').';
-      if (overgeslagen > 0) tekst += ' ' + overgeslagen + ' leerling' + (overgeslagen !== 1 ? 'en' : '') + ' al ingedeeld — niet gewijzigd.';
-      if (zonderScore.length > 0) tekst += ' ' + zonderScore.length + ' leerling' + (zonderScore.length !== 1 ? 'en' : '') + ' zonder LVS-score voor dit vak: ' + zonderScore.map(function(l) { return l.voornaam; }).join(', ') + '.';
-      balk.textContent = tekst;
-      setTimeout(function() { balk.style.display = 'none'; }, 10000);
-    }
-
-  } catch(e) {
-    if (balk) {
-      balk.style.display = 'block';
-      balk.style.background = '#fff5f5';
-      balk.style.borderColor = '#fca5a5';
-      balk.style.color = '#991b1b';
-      balk.textContent = 'Suggestie laden mislukt: ' + e.message;
-    }
-  } finally {
-    if (knop) { knop.textContent = '↗ Suggestie uit LVS'; knop.disabled = false; }
-  }
-}
-
-async function gpOpslaan() {
-  if (gpOpslaanBezig) return;  // Voorkom dubbel opslaan
-  const groep = document.getElementById('gp-groep').value;
-  const schooljaar = document.getElementById('gp-schooljaar').value;
-  if (!groep || !huidigToken) { alert('Kies eerst een groep.'); return; }
-  gpOpslaanBezig = true;
-  document.getElementById('gp-spin').style.display = 'block';
-  document.getElementById('gp-ktekst').textContent = 'Opslaan...';
-  const rijen = [];
-  Object.entries(gpData).forEach(([lid, vakken]) => {
-    Object.entries(vakken).forEach(([vak, niveau]) => {
-      if (niveau) rijen.push({ leerling_id: lid, vakgebied: vak, instructieniveau: niveau });
-    });
-  });
-  try {
-    const res = await fetch(API_BASE + '/groepsplan', {
-      method: 'PUT',
-      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groep, schooljaar, rijen, notities: document.getElementById('gp-notities').value })
-    });
-    if (!res.ok) {
-      const fout = await res.json().catch(() => ({}));
-      throw new Error(fout.detail || 'Status ' + res.status);
-    }
-    document.getElementById('gp-ktekst').textContent = '✓ Opgeslagen';
-    setTimeout(() => { document.getElementById('gp-ktekst').textContent = 'Opslaan'; }, 2500);
-  } catch(e) {
-    document.getElementById('gp-ktekst').textContent = 'Mislukt — probeer opnieuw';
-    setTimeout(() => { document.getElementById('gp-ktekst').textContent = 'Opslaan'; }, 3000);
-    console.error('Groepsplan opslaan:', e);
-  } finally {
-    document.getElementById('gp-spin').style.display = 'none';
-    gpOpslaanBezig = false;
-  }
-}
-
-function gpExportPrint() {
-  const groep = document.getElementById('gp-groep').value;
-  const schooljaar = document.getElementById('gp-schooljaar').value;
-  if (!groep) { alert('Kies eerst een groep.'); return; }
-  const vakken = ['lezen','rekenen','spelling','begrijpend','sociaal','werkhouding'];
-  const klasLeerlingen = leerlingen.filter(l => l.groep === groep).sort((a,b) => a.voornaam.localeCompare(b.voornaam,'nl'));
-  if (!klasLeerlingen.length) { alert('Geen leerlingen gevonden in deze groep.'); return; }
-  const notities = document.getElementById('gp-notities').value;
-  const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'long',year:'numeric'});
-
-  let tabelHtml = '<table><thead><tr><th>Leerling</th>';
-  vakken.forEach(v => { tabelHtml += '<th>' + v.charAt(0).toUpperCase() + v.slice(1) + '</th>'; });
-  tabelHtml += '</tr></thead><tbody>';
-  klasLeerlingen.forEach((l,i) => {
-    tabelHtml += '<tr' + (i % 2 === 0 ? '' : ' class="alt"') + '><td class="naam">' + l.voornaam + '</td>';
-    vakken.forEach(v => {
-      const n = (gpData[l.id] || {})[v] || '';
-      tabelHtml += '<td class="niveau ' + n + '">' + (n ? n.charAt(0).toUpperCase() + n.slice(1) : '') + '</td>';
-    });
-    tabelHtml += '</tr>';
-  });
-  tabelHtml += '</tbody></table>';
-
-  // Legenda
-  let legenda = '<div class="legenda"><strong>Instructieniveaus:</strong>';
-  GP_NIVEAUS.forEach(n => {
-    legenda += '<span class="legenda-item ' + n + '">' + n.charAt(0).toUpperCase() + n.slice(1) + '</span>';
-  });
-  legenda += '</div>';
-
-  const html = `<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<title>Groepsplan groep ${groep} — ${schooljaar}</title>
-<style>
-  @media print { @page { margin: 1.5cm; } }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; padding: 0; margin: 0; }
-  .header { margin-bottom: 16px; border-bottom: 2px solid #111; padding-bottom: 8px; }
-  .header h1 { font-size: 16px; margin: 0 0 4px; }
-  .header p { margin: 0; color: #666; font-size: 10px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-  th { background: #111; color: #fff; padding: 6px 8px; text-align: center; font-size: 10px; letter-spacing: .05em; }
-  th:first-child { text-align: left; }
-  td { padding: 5px 8px; border-bottom: 0.5px solid #ddd; vertical-align: middle; }
-  td.naam { font-weight: 600; }
-  tr.alt td { background: #fafafa; }
-  td.onafhankelijk { background: #e8f5e9; color: #2e7d32; font-weight: 500; text-align: center; }
-  td.basis { background: #e3f2fd; color: #1565c0; font-weight: 500; text-align: center; }
-  td.intensief { background: #fff3e0; color: #e65100; font-weight: 500; text-align: center; }
-  td.individueel { background: #fce4ec; color: #880e4f; font-weight: 500; text-align: center; }
-  td.niveau:empty { color: #ccc; text-align: center; }
-  td.niveau:empty::before { content: "—"; }
-  .legenda { display: flex; gap: 12px; align-items: center; margin-top: 8px; font-size: 10px; flex-wrap: wrap; }
-  .legenda-item { padding: 3px 8px; border-radius: 3px; font-weight: 500; }
-  .legenda-item.onafhankelijk { background: #e8f5e9; color: #2e7d32; }
-  .legenda-item.basis { background: #e3f2fd; color: #1565c0; }
-  .legenda-item.intensief { background: #fff3e0; color: #e65100; }
-  .legenda-item.individueel { background: #fce4ec; color: #880e4f; }
-  .notities { margin-top: 12px; font-size: 10px; color: #444; }
-  .footer { margin-top: 16px; font-size: 9px; color: #aaa; border-top: 0.5px solid #ddd; padding-top: 6px; }
-</style>
-</head>
-<body>
-<div class="header">
-  <h1>Groepsplan groep ${groep} &mdash; ${schooljaar}</h1>
-  <p>Gegenereerd op ${datum} &middot; School van Morgen</p>
-</div>
-${tabelHtml}
-${legenda}
-${notities ? '<div class="notities"><strong>Notities:</strong> ' + notities + '</div>' : ''}
-<div class="footer">Dit document is vertrouwelijk. School van Morgen &mdash; Administratie voor basisscholen.</div>
-<scr' + 'ipt>window.onload = function() { window.print(); }</scr' + 'ipt>
-</body>
-</html>`;
-
-  const w = window.open('', '_blank');
-  if (w) { w.document.write(html); w.document.close(); }
-  else { alert('Sta pop-ups toe om het groepsplan af te drukken.'); }
-}
-
 // ══════════════════════════════════════════════════════════
-// SCHOOL & ROLLEN
-// ══════════════════════════════════════════════════════════
-
-async function schoolInit() {
-  if (!huidigToken) return;
-  // Herlaad schoolContext voor de zekerheid
-  await laadSchoolContext();
-  const ctx = schoolContext;
-
-  if (!ctx.heeft_school) {
-    document.getElementById('school-geen-account').style.display = 'block';
-    document.getElementById('school-account').style.display = 'none';
-    document.getElementById('school-resultaat').innerHTML = (
-      '<div class="leeg"><div class="leeg-c">&#x1F3EB;</div>'
-      + '<div class="leeg-t">Nog geen schoolaccount gekoppeld</div></div>'
-    );
-    return;
-  }
-
-  document.getElementById('school-geen-account').style.display = 'none';
-  document.getElementById('school-account').style.display = 'block';
-
-  const rolLabels = { leerkracht: 'Leerkracht', ib: 'IB-er', directeur: 'Directeur' };
-  document.getElementById('school-info').innerHTML = (
-    '<strong>' + (ctx.naam || 'School') + '</strong>'
-    + '<br>Jouw rol: <strong>' + (rolLabels[ctx.rol] || ctx.rol) + '</strong>'
-  );
-
-  document.getElementById('school-resultaat').innerHTML = (
-    '<div style="padding:20px">'
-    + '<div style="font-size:13px;font-weight:500;margin-bottom:8px">' + (ctx.naam || 'School') + '</div>'
-    + '<div style="font-size:12px;color:var(--tz)">Rol: ' + (rolLabels[ctx.rol] || ctx.rol) + '</div>'
-    + (ctx.is_ib ? '<div style="font-size:12px;color:var(--tz);margin-top:4px">Je kunt alle leerlingen en groepsplannen van de school inzien.</div>' : '')
-    + '</div>'
-  );
-
-  if (ctx.is_directeur) {
-    document.getElementById('school-directeur-acties').style.display = 'block';
-  }
-  if (ctx.is_ib) {
-    document.getElementById('school-ib-acties').style.display = 'block';
-    schoolLaadCollegas();
-  }
-}
 
 async function schoolLaadCollegas() {
   if (!huidigToken) return;
@@ -5705,64 +4972,6 @@ async function schoolLaadCollegas() {
     if (!data.length) { el.textContent = 'Nog geen collega\u2019s gekoppeld.'; return; }
     el.innerHTML = data.map(c => '<div style="padding:6px 0;border-bottom:0.5px solid var(--rand);display:flex;gap:8px"><span style="flex:1">' + (c.voornaam || c.email || 'Onbekend') + '</span><span style="color:var(--tz);font-size:11px">' + c.rol + '</span></div>').join('');
   } catch(e) { document.getElementById('school-collegas').textContent = 'Laden mislukt.'; }
-}
-
-async function schoolAanmaken() {
-  const naam = document.getElementById('school-naam-input').value.trim();
-  const brin = document.getElementById('school-brin-input').value.trim();
-  if (!naam) { alert('Vul de naam van de school in.'); return; }
-  const res = await fetch(API_BASE + '/school/aanmaken', {
-    method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ naam, brin, adres: '' })
-  });
-  if (res.ok) {
-    const data = await res.json();
-    // Herlaad de Supabase sessie zodat user_metadata up-to-date is
-    await sb.auth.refreshSession();
-    await laadSchoolContext();
-    toonRolBadge();
-    await schoolInit();
-    alert('School aangemaakt! Je bent nu directeur van ' + (data.naam || naam) + '.');
-  } else {
-    const d = await res.json();
-    alert('Mislukt: ' + (d.detail || 'Onbekende fout'));
-  }
-}
-
-async function schoolDeelnemen() {
-  const token = document.getElementById('school-token-input').value.trim();
-  if (!token) { alert('Vul het uitnodigingstoken in.'); return; }
-  const res = await fetch(API_BASE + '/school/deelnemen', {
-    method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uitnodigingstoken: token })
-  });
-  if (res.ok) {
-    const data = await res.json();
-    const rolLabels = { leerkracht: 'Leerkracht', ib: 'IB-er', directeur: 'Directeur' };
-    await sb.auth.refreshSession();
-    await laadSchoolContext();
-    toonRolBadge();
-    await schoolInit();
-    await laadLeerlingen();
-    alert('Gekoppeld aan school als ' + (rolLabels[data.rol] || data.rol) + '.');
-  } else {
-    const d = await res.json();
-    alert('Mislukt: ' + (d.detail || 'Onbekende fout'));
-  }
-}
-
-async function schoolUitnodigGenereer() {
-  const rol = document.getElementById('school-uitnodig-rol').value;
-  const res = await fetch(API_BASE + '/school/uitnodigen', {
-    method: 'POST', headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ rol })
-  });
-  if (res.ok) {
-    const data = await res.json();
-    const el = document.getElementById('school-uitnodig-resultaat');
-    el.style.display = 'block';
-    el.innerHTML = '<strong>Token voor ' + rol + ':</strong><br>' + data.uitnodigingstoken + '<br><span style="font-size:11px;color:var(--tz)">Geldig voor 7 dagen. Stuur dit token naar de collega.</span>';
-  } else { alert('Genereren mislukt.'); }
 }
 
 if ('serviceWorker' in navigator && location.hostname !== 'www.claudeusercontent.com' && !location.hostname.includes('v0.dev') && location.protocol !== 'file:') {
@@ -6178,7 +5387,6 @@ async function notitieVerwijder(id, leerlingId) {
   }
 }
 
-
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -6230,7 +5438,6 @@ function stopMic() {
     actieveKnop = null;
   }
 }
-
 
 </script>
 </body>
