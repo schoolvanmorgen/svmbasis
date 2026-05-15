@@ -2075,13 +2075,24 @@ function toonTab(tab, knop) {
       <div id="lvs-tab-notitie" class="lvs-inhoud" style="display:none;padding:10px 14px;overflow-y:auto;flex:1;min-height:0">
         <div class="lvs-notitie-form">
           <div class="vlabel">TYPE</div>
-          <select id="lvs-notitie-type" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-            <option value="notitie">Notitie</option>
-            <option value="observatie">Observatie</option>
-            <option value="toets">Toetsresultaat</option>
-            <option value="gesprek">Gesprek</option>
-            <option value="bijzonderheid">Bijzonderheid</option>
-          </select>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="lvs-notitie-type-wrap">
+            <button type="button" class="type-keuze actief" data-type="notitie"
+              onclick="lvsKiesType(this)"
+              style="padding:5px 12px;font-size:11px;border:1.5px solid #4a7a4a;background:#4a7a4a;color:#fff;cursor:pointer;font-family:inherit;border-radius:20px;font-weight:600">Notitie</button>
+            <button type="button" class="type-keuze" data-type="observatie"
+              onclick="lvsKiesType(this)"
+              style="padding:5px 12px;font-size:11px;border:1.5px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;border-radius:20px">Observatie</button>
+            <button type="button" class="type-keuze" data-type="toets"
+              onclick="lvsKiesType(this)"
+              style="padding:5px 12px;font-size:11px;border:1.5px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;border-radius:20px">Toetsresultaat</button>
+            <button type="button" class="type-keuze" data-type="gesprek"
+              onclick="lvsKiesType(this)"
+              style="padding:5px 12px;font-size:11px;border:1.5px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;border-radius:20px">Gesprek</button>
+            <button type="button" class="type-keuze" data-type="bijzonderheid"
+              onclick="lvsKiesType(this)"
+              style="padding:5px 12px;font-size:11px;border:1.5px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;border-radius:20px">Bijzonderheid</button>
+          </div>
+          <input type="hidden" id="lvs-notitie-type" value="notitie">
           <div class="vlabel" style="margin-top:10px">SCORES BIJWERKEN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
 
           <!-- Technisch lezen -->
@@ -2116,19 +2127,6 @@ function toonTab(tab, knop) {
                 <option value="83">M7</option>
                 <option value="90">E7</option>
                 <option value="97">Plus</option>
-              </select>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">DMT</div>
-              <select id="lvs-s-dmt" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
               </select>
             </div>
           </div>
@@ -4328,6 +4326,20 @@ function lvsRenderTijdlijn() {
       + '<div class="lvs-tl-tekst" style="font-size:12px;color:#333;line-height:1.5">' + item.tekst + '</div>'
       + '</div></div>';
   }).join('');
+}
+
+function lvsKiesType(knop) {
+  document.querySelectorAll('.type-keuze').forEach(function(b) {
+    b.style.background   = '#fff';
+    b.style.color        = 'var(--tm)';
+    b.style.borderColor  = 'var(--rand)';
+    b.style.fontWeight   = '';
+  });
+  knop.style.background  = '#4a7a4a';
+  knop.style.color       = '#fff';
+  knop.style.borderColor = '#4a7a4a';
+  knop.style.fontWeight  = '600';
+  document.getElementById('lvs-notitie-type').value = knop.dataset.type;
 }
 
 async function lvsSlaNotitieOp() {
