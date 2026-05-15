@@ -2482,56 +2482,54 @@ function toonTab(tab, knop) {
 
 <div id="tab-aanwezigheid" style="display:none;flex:1;min-height:0;overflow:hidden;background:#f8f8f8;flex-direction:column">
 
-  <!-- Balk 1: datum + navigatie -->
-  <div style="background:#fff;border-bottom:1px solid var(--warmrand);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:16px;flex-wrap:wrap">
-    <div id="aaw-datum-tekst" style="font-family:Georgia,serif;font-size:20px;color:var(--t)">—</div>
+  <!-- Topbalk: datum + klas selector + opslaan -->
+  <div style="background:#fff;border-bottom:1px solid var(--warmrand);padding:12px 24px;display:flex;align-items:center;gap:16px;flex-shrink:0;flex-wrap:wrap">
+
+    <!-- Datum navigatie -->
     <div style="display:flex;align-items:center;gap:8px">
       <button class="aaw-datum-knop" onclick="aawVorigeDag()">‹</button>
-      <button class="aaw-datum-knop" onclick="aawVandaag()" style="font-size:11px;width:auto;padding:0 14px">Vandaag</button>
+      <div id="aaw-datum-tekst" style="font-family:Georgia,serif;font-size:18px;color:var(--t);min-width:160px;text-align:center">—</div>
       <button class="aaw-datum-knop" onclick="aawVolgendeDag()">›</button>
+      <button class="aaw-datum-knop" onclick="aawVandaag()" style="font-size:11px;width:auto;padding:0 14px;margin-left:4px">Vandaag</button>
     </div>
-  </div>
 
-  <!-- Balk 2: klassen als pills -->
-  <div style="background:#fff;border-bottom:1px solid var(--warmrand);padding:10px 24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0">
-    <span style="font-size:10px;font-weight:700;color:#888;letter-spacing:.08em;margin-right:4px">KLAS</span>
-    <div id="aaw-klassen-lijst" style="display:flex;gap:6px;flex-wrap:wrap">
-      <div style="font-size:12px;color:var(--tz)">Laden…</div>
+    <!-- Klas selector -->
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:10px;font-weight:700;color:#888;letter-spacing:.08em">KLAS</span>
+      <select id="aaw-klas-select" onchange="aawSelecteerKlas(this.value)"
+        style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff;border-radius:7px;min-width:120px">
+        <option value="">Kies groep…</option>
+        <option>1</option><option>2</option><option>3</option><option>4</option>
+        <option>5</option><option>6</option><option>7</option><option>8</option>
+      </select>
     </div>
-  </div>
 
-  <!-- Balk 3: statistieken + feedback -->
-  <div style="background:#fff;border-bottom:1px solid var(--warmrand);padding:10px 24px;display:flex;align-items:center;gap:0;flex-shrink:0">
-    <div style="display:flex;gap:0;flex:1">
-      <div style="padding:8px 24px 8px 0;border-right:1px solid var(--warmrand)">
-        <div id="aaw-tel-aanwezig" style="font-size:28px;font-weight:500;font-family:Georgia,serif;color:#2a3a2a;line-height:1">—</div>
-        <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;margin-top:2px">AANWEZIG</div>
+    <!-- Statistieken -->
+    <div style="display:flex;gap:20px;margin-left:auto">
+      <div style="text-align:center">
+        <div id="aaw-tel-aanwezig" style="font-size:22px;font-weight:500;font-family:Georgia,serif;color:#2d6a2d;line-height:1">—</div>
+        <div style="font-size:9px;font-weight:700;color:#888;letter-spacing:.06em">AANWEZIG</div>
       </div>
-      <div style="padding:8px 24px;border-right:1px solid var(--warmrand)">
-        <div id="aaw-tel-afwezig" style="font-size:28px;font-weight:500;font-family:Georgia,serif;color:#2a3a2a;line-height:1">—</div>
-        <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;margin-top:2px">AFWEZIG</div>
-      </div>
-      <div style="padding:8px 24px">
-        <div id="aaw-tel-laat" style="font-size:28px;font-weight:500;font-family:Georgia,serif;color:#2a3a2a;line-height:1">—</div>
-        <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;margin-top:2px">TE LAAT</div>
+      <div style="text-align:center">
+        <div id="aaw-tel-afwezig" style="font-size:22px;font-weight:500;font-family:Georgia,serif;color:#991b1b;line-height:1">—</div>
+        <div style="font-size:9px;font-weight:700;color:#888;letter-spacing:.06em">AFWEZIG</div>
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-left:auto">
-      <button onclick="aawAlleAanwezig()" style="padding:8px 16px;border:1px solid var(--rand);background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:var(--tm)">Iedereen aanwezig</button>
-      <button onclick="aawSlaOp()" style="padding:8px 20px;background:#4a7a4a;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Opslaan</button>
-      <button onclick="aawExporteer()" style="padding:8px 16px;border:1px solid var(--rand);background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:var(--tm)">CSV</button>
-      <button onclick="aawToonLeerlingToevoegen()" style="padding:8px 16px;border:1px solid #4a7a4a;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#4a7a4a;font-weight:600">+ Leerling</button>
-      <button onclick="openImportModal()" style="padding:8px 16px;border:1.5px solid #4a7a4a;background:#4a7a4a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">↑ Importeer klas</button>
+
+    <!-- Acties -->
+    <div style="display:flex;gap:8px">
+      <button onclick="aawAlleAanwezig()" style="padding:8px 16px;border:1px solid var(--rand);background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:var(--tm);border-radius:7px">Iedereen aanwezig</button>
+      <button onclick="aawSlaOp()" style="padding:8px 20px;background:#4a7a4a;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Opslaan</button>
     </div>
   </div>
 
   <!-- Feedback balk -->
-  <div id="aaw-export-balk" style="display:none;background:var(--gl);border-bottom:1px solid var(--warmrand);padding:10px 24px;font-size:12px;color:var(--g);flex-shrink:0"></div>
+  <div id="aaw-export-balk" style="display:none;background:var(--gl);border-bottom:1px solid var(--warmrand);padding:8px 24px;font-size:12px;color:var(--g);flex-shrink:0"></div>
 
-  <!-- Leerlingenlijst — vult rest van scherm -->
-  <div style="flex:1;overflow-y:auto;padding:20px 24px;position:relative">
-    <div id="aaw-toevoeg-wrap" style="display:none;margin-bottom:16px"></div>
-    <div id="aaw-lijst" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px"></div>
+  <!-- Leerlingenlijst -->
+  <div style="flex:1;overflow-y:auto;padding:20px 24px">
+    <div id="aaw-lijst" style="display:flex;flex-direction:column;gap:0"></div>
+    <div id="aaw-leeg" style="color:var(--tz);font-size:13px;padding:40px 0;text-align:center">Selecteer een klas om de leerlingen te zien.</div>
   </div>
 
 </div>
@@ -4779,6 +4777,33 @@ async function aawInit() {
   if (aawGeselecteerdeKlas) aawToonKlas(aawGeselecteerdeKlas);
 }
 
+function aawSelecteerKlas(groep) {
+  aawGeselecteerdeKlas = groep;
+  const leeg = document.getElementById('aaw-leeg');
+  const lijst = document.getElementById('aaw-lijst');
+  if (!groep) {
+    if (leeg) leeg.style.display = 'block';
+    if (lijst) lijst.innerHTML = '';
+    aawTelBijwerken();
+    return;
+  }
+  if (leeg) leeg.style.display = 'none';
+  aawToonKlas(groep);
+}
+
+function aawRenderKlassen() {
+  // Zet de juiste groepen in de select
+  const sel = document.getElementById('aaw-klas-select');
+  if (!sel) return;
+  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))].sort(function(a,b){return parseInt(a)-parseInt(b);});
+  // Bewaar opties 1-8, voeg ontbrekende groepen niet toe — select is al gevuld
+  // Activeer automatisch als er maar één klas is
+  if (groepen.length === 1 && sel.value !== groepen[0]) {
+    sel.value = groepen[0];
+    aawSelecteerKlas(groepen[0]);
+  }
+}
+
 function aawRenderKlassen() {
   const el = document.getElementById('aaw-klassen-lijst');
   if (!el) return;
@@ -5022,6 +5047,81 @@ async function aawVoegGroepToe() {
 }
 
 async function aawToonKlas(groep) {
+  const lijst = document.getElementById('aaw-lijst');
+  const leeg  = document.getElementById('aaw-leeg');
+  if (!lijst) return;
+
+  const klasLeerlingen = aawLeerlingen
+    .filter(function(l) { return String(l.groep) === String(groep); })
+    .sort(function(a,b) { return (a.voornaam||'').localeCompare(b.voornaam||''); });
+
+  if (!klasLeerlingen.length) {
+    lijst.innerHTML = '';
+    if (leeg) { leeg.style.display = 'block'; leeg.textContent = 'Geen leerlingen in groep ' + groep + '.'; }
+    aawTelBijwerken();
+    return;
+  }
+  if (leeg) leeg.style.display = 'none';
+
+  let html = '';
+  klasLeerlingen.forEach(function(l) {
+    const status = (aawStatus[aawDatum] || {})[l.id] || 'aanwezig';
+    const isAanwezig = status === 'aanwezig';
+    const isAfwezig  = status === 'afwezig';
+    const ach = [l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
+
+    const stijlAanwezig = isAanwezig
+      ? 'border:1.5px solid #4a7a4a;background:#4a7a4a;color:#fff'
+      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
+    const stijlAfwezig = isAfwezig
+      ? 'border:1.5px solid #991b1b;background:#991b1b;color:#fff'
+      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
+
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#fff;border-bottom:1px solid var(--warmrand)">';
+    html += '<div style="font-size:14px;font-weight:500;color:var(--t)">' + l.voornaam;
+    if (ach) html += ' <span style="font-weight:400;color:var(--tz)">' + ach + '</span>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px">';
+    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="aanwezig"'
+          + ' style="padding:8px 22px;' + stijlAanwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Aanwezig</button>';
+    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="afwezig"'
+          + ' style="padding:8px 22px;' + stijlAfwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Afwezig</button>';
+    html += '</div></div>';
+  });
+
+  lijst.innerHTML = html;
+
+  lijst.querySelectorAll('.aaw-status-knop').forEach(function(knop) {
+    knop.addEventListener('click', function() {
+      aawZetStatus(knop.dataset.id, knop.dataset.status);
+    });
+  });
+
+  aawTelBijwerken();
+}
+
+function aawZetStatus(leerlingId, status) {
+  if (!aawStatus[aawDatum]) aawStatus[aawDatum] = {};
+  aawStatus[aawDatum][leerlingId] = status;
+  // Herrender de klas
+  if (aawGeselecteerdeKlas) aawToonKlas(aawGeselecteerdeKlas);
+}
+
+function aawTelBijwerken() {
+  if (!aawDatum || !aawStatus[aawDatum] || !aawGeselecteerdeKlas) {
+    document.getElementById('aaw-tel-aanwezig').textContent = '—';
+    document.getElementById('aaw-tel-afwezig').textContent  = '—';
+    return;
+  }
+  const klasLeerlingen = aawLeerlingen.filter(function(l) { return String(l.groep) === String(aawGeselecteerdeKlas); });
+  const dagStatus = aawStatus[aawDatum] || {};
+  const afwezig  = klasLeerlingen.filter(function(l) { return dagStatus[l.id] === 'afwezig'; }).length;
+  const aanwezig = klasLeerlingen.length - afwezig;
+  document.getElementById('aaw-tel-aanwezig').textContent = aanwezig;
+  document.getElementById('aaw-tel-afwezig').textContent  = afwezig;
+}
+
+async function aawOudeToonKlas(groep) {
   aawGeselecteerdeKlas = groep;
   aawRenderKlassen();
   const sleutel = aawDatumSleutel(aawDatum);
