@@ -1816,14 +1816,14 @@ function toonTab(tab, knop) {
       <!-- Extra opties -->
       <div>
         <div class="vlabel" style="margin-bottom:5px">EXTRA GENEREREN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff;border-radius:6px" id="eo-opp" onclick="toggleExtraOptie('opp')">
-            <input type="checkbox" id="cb-opp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
-            <span style="font-size:12px;color:var(--t);font-weight:500">OPP</span>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="cb-opp" style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">OPP genereren</span>
           </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff;border-radius:6px" id="eo-hp" onclick="toggleExtraOptie('hp')">
-            <input type="checkbox" id="cb-hp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
-            <span style="font-size:12px;color:var(--t);font-weight:500">Handelingsplan</span>
+          <label style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="cb-hp" style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Handelingsplan genereren</span>
           </label>
         </div>
       </div>
