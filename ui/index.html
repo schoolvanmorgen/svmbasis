@@ -1642,26 +1642,13 @@ function toonTab(tab, knop) {
         <div class="nwrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
           <textarea id="notities" maxlength="2000"
             style="flex:1;min-height:80px;resize:none;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
-            placeholder="Typ of plak je notities vrij in…"></textarea>
+            placeholder="Aanvullende notities (optioneel — eerdere observaties worden automatisch meegenomen)"></textarea>
           <span class="teller" id="teller" style="right:52px">0 / 2000</span>
           <button class="mic-knop" onclick="toggleMic('notities',this)" title="Spraak naar tekst">🎤</button>
         </div>
       </div>
 
-      <!-- Extra opties: compact horizontaal -->
-      <div>
-        <div class="vlabel" style="margin-bottom:5px">EXTRA GENEREREN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-opp" onclick="toggleExtraOptie('opp')">
-            <input type="checkbox" id="cb-opp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
-            <span style="font-size:12px;color:var(--t);font-weight:500">OPP</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-hp" onclick="toggleExtraOptie('hp')">
-            <input type="checkbox" id="cb-hp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
-            <span style="font-size:12px;color:var(--t);font-weight:500">Handelingsplan</span>
-          </label>
-        </div>
-      </div>
+
 
     </div>
 
@@ -2588,12 +2575,11 @@ async function genereer() {
   const naam     = document.getElementById('naam').value.trim();
   const groep    = document.getElementById('groep').value;
   const notities = document.getElementById('notities').value.trim();
-  if (notities.length < 20) { toonFout('Voer minimaal 20 tekens aan notities in.'); return; }
+  // Notities zijn optioneel — data uit DB wordt altijd meegenomen
 
   document.getElementById('spin').style.display = 'block';
   document.getElementById('ktekst').textContent = 'Verwerken...';
-  const _inclOpp = document.getElementById('cb-opp')?.checked || false;
-  const _inclHp = document.getElementById('cb-hp')?.checked || false;
+
   document.getElementById('gknop').disabled = true;
 
   const behoeftes = getGeselecteerdeBehoeftes();
@@ -2626,11 +2612,33 @@ async function genereer() {
     } catch(e) { /* stil falen — context is optioneel */ }
   }
 
+  // Haal opgeslagen notities op uit de database
+  let dbNotitiesTekst = '';
+  if (window._huidigeLeerlingId) {
+    try {
+      const notRes = await fetch(API_BASE + '/leerlingen/' + window._huidigeLeerlingId + '/notities', {
+        headers: { 'Authorization': 'Bearer ' + huidigToken }
+      });
+      if (notRes.ok) {
+        const notData = await notRes.json();
+        const items = (notData.notities || notData || []).slice(0, 8);
+        if (items.length) {
+          dbNotitiesTekst = '\nEerdere observaties (chronologisch):\n'
+            + items.map(function(n) {
+                const datum = (n.aangemaakt_op || '').slice(0,10);
+                return '- [' + datum + '] ' + (n.tekst || '').slice(0,200);
+              }).join('\n');
+        }
+      }
+    } catch(e) { /* stil falen */ }
+  }
+
   const prompt = (naam ? 'Leerling: ' + naam + (groep ? ', groep ' + groep : '') + '.' : '')
     + (groepType ? ' Dit kind zit in de ' + groepType + '.' : '')
     + ondersteuningContext
     + lvsContextTekst
-    + '\nNotities van de leerkracht:\n"' + notities + '"'
+    + dbNotitiesTekst
+    + (notities ? '\nAanvullende notities leerkracht:\n"' + notities + '"' : '')
     + '\n\nRetourneer ALLEEN een geldig JSON-object met deze sleutels:'
     + '\n{'
     + '"leerresultaten":null,'
