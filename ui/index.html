@@ -479,6 +479,8 @@ function stelLeerlingIn(leerling) {
     if (header) header.style.display = 'block';
     if (naamEl) naamEl.textContent = leerling.voornaam;
     if (metaEl) metaEl.textContent = 'Groep ' + (leerling.groep || '?');
+    // Ververs bronnen-overzicht in rapport-tab
+    if (typeof bronnenVervers === 'function') bronnenVervers(leerling.id);
   }
 }
 
@@ -1590,18 +1592,18 @@ function toonTab(tab, knop) {
 <div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
   <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0">
 
-    <!-- Scrollbare inhoud — vult beschikbare ruimte -->
-    <div style="flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:10px;min-height:0">
+    <!-- Scrollbare inhoud -->
+    <div style="flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:12px;min-height:0">
 
-      <!-- Leerling: naam + groep naast elkaar -->
+      <!-- Leerling: naam + groep (readonly — gevuld via leerling-selector) -->
       <div style="display:grid;grid-template-columns:1fr 100px;gap:8px">
         <div>
           <div class="vlabel">LEERLING</div>
-          <input type="text" id="naam" placeholder="Naam kind">
+          <input type="text" id="naam" placeholder="Selecteer een leerling…" readonly style="background:#f8f8f8;cursor:default">
         </div>
         <div>
           <div class="vlabel">GROEP</div>
-          <select id="groep">
+          <select id="groep" disabled style="background:#f8f8f8;cursor:default">
             <option value="">—</option>
             <option>1</option><option>2</option><option>3</option>
             <option>4</option><option>5</option><option>6</option>
@@ -1610,7 +1612,7 @@ function toonTab(tab, knop) {
         </div>
       </div>
 
-      <!-- Ondersteuningsbehoeftes: 2-koloms grid -->
+      <!-- Ondersteuningsbehoeftes -->
       <div>
         <div class="vlabel">ONDERSTEUNINGSBEHOEFTES <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
         <div id="od-wrap">
@@ -1628,27 +1630,70 @@ function toonTab(tab, knop) {
         </div>
       </div>
 
-      <!-- Notities: flex:1 zodat het de resterende ruimte vult -->
-      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
-        <div class="vlabel">NOTITIES</div>
-        <div class="nwrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
-          <textarea id="notities" maxlength="2000"
-            style="flex:1;min-height:80px;resize:none;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
-            placeholder="Typ of plak je notities vrij in…"></textarea>
-          <span class="teller" id="teller" style="right:52px">0 / 2000</span>
+      <!-- Bronnen-overzicht -->
+      <div>
+        <div class="vlabel">INFORMATIEBRONNEN <span style="font-weight:400;color:var(--tz)">— worden meegenomen in het rapport</span></div>
+        <div id="bronnen-overzicht" style="display:flex;flex-direction:column;gap:4px">
+          <!-- Bron: Snelle notities -->
+          <label id="bron-notities-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="bron-notities" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Snelle notities</span>
+            <span id="bron-notities-status" style="font-size:10px;color:var(--tz)">Laden…</span>
+          </label>
+          <!-- Bron: LVS-scores -->
+          <label id="bron-lvs-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="bron-lvs" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">LVS-scores & tijdlijn</span>
+            <span id="bron-lvs-status" style="font-size:10px;color:var(--tz)">Laden…</span>
+          </label>
+          <!-- Bron: Toetsresultaten -->
+          <label id="bron-toetsen-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="bron-toetsen" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Toetsresultaten</span>
+            <span id="bron-toetsen-status" style="font-size:10px;color:var(--tz)">Laden…</span>
+          </label>
+          <!-- Bron: Aanwezigheid -->
+          <label id="bron-aanwezigheid-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="bron-aanwezigheid" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Aanwezigheid</span>
+            <span id="bron-aanwezigheid-status" style="font-size:10px;color:var(--tz)">Laden…</span>
+          </label>
+          <!-- Bron: OPP / handelingsplan -->
+          <label id="bron-opp-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="bron-opp" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">OPP & handelingsplan</span>
+            <span id="bron-opp-status" style="font-size:10px;color:var(--tz)">Laden…</span>
+          </label>
+          <!-- Bron: Eerdere rapporten -->
+          <label id="bron-rapporten-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
+            <input type="checkbox" id="bron-rapporten" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
+            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Eerdere rapporten</span>
+            <span id="bron-rapporten-status" style="font-size:10px;color:var(--tz)">Laden…</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Aanvullende opmerking -->
+      <div>
+        <div class="vlabel">AANVULLENDE OPMERKING <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
+        <div class="nwrap" style="display:flex;flex-direction:column">
+          <textarea id="notities" maxlength="500" rows="3"
+            style="resize:none;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 46px 9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
+            placeholder="Iets specifieks dat je wilt meegeven aan Claude…"></textarea>
+          <span class="teller" id="teller" style="right:52px">0 / 500</span>
           <button class="mic-knop" onclick="toggleMic('notities',this)" title="Spraak naar tekst">🎤</button>
         </div>
       </div>
 
-      <!-- Extra opties: compact horizontaal -->
+      <!-- Extra opties -->
       <div>
         <div class="vlabel" style="margin-bottom:5px">EXTRA GENEREREN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-opp" onclick="toggleExtraOptie('opp')">
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff;border-radius:6px" id="eo-opp" onclick="toggleExtraOptie('opp')">
             <input type="checkbox" id="cb-opp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
             <span style="font-size:12px;color:var(--t);font-weight:500">OPP</span>
           </label>
-          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-hp" onclick="toggleExtraOptie('hp')">
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff;border-radius:6px" id="eo-hp" onclick="toggleExtraOptie('hp')">
             <input type="checkbox" id="cb-hp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
             <span style="font-size:12px;color:var(--t);font-weight:500">Handelingsplan</span>
           </label>
@@ -1661,7 +1706,7 @@ function toonTab(tab, knop) {
     <div style="flex-shrink:0;padding:10px 1.6rem;background:var(--warm);border-top:1px solid var(--warmrand)">
       <button class="genknop" id="gknop" onclick="genereer()">
         <div class="spin" id="spin"></div>
-        <span id="ktekst">Genereer ParnasSys-rapport</span>
+        <span id="ktekst">Genereer rapport</span>
       </button>
     </div>
 
@@ -2533,66 +2578,236 @@ let huidigeSectieData = null;
 let feedbackWaarde    = null;
 
 document.getElementById('notities').addEventListener('input', function() {
-  document.getElementById('teller').textContent = `${this.value.length} / 2000`;
+  document.getElementById('teller').textContent = `${this.value.length} / 500`;
 });
 
 function laad(type) {
   const v = VOORBEELDEN[type];
   document.getElementById('naam').value    = v.naam;
   document.getElementById('groep').value   = v.groep;
-  document.getElementById('notities').value = v.notities;
-  document.getElementById('teller').textContent = `${v.notities.length} / 2000`;
+  document.getElementById('notities').value = '';
+  document.getElementById('teller').textContent = `0 / 500`;
+}
+
+// ── Bronnen-overzicht: ververs statussen bij leerling-selectie ──
+let _bronnenData = {};  // cache van opgehaalde brondata voor huidige leerling
+
+async function bronnenVervers(leerlingId) {
+  if (!leerlingId || !huidigToken) return;
+  _bronnenData = {};
+
+  function stelStatus(id, tekst, ok) {
+    const el = document.getElementById('bron-' + id + '-status');
+    if (!el) return;
+    el.textContent = tekst;
+    el.style.color = ok ? '#4a7a4a' : (ok === false ? '#999' : '#888');
+  }
+
+  // Snelle notities
+  stelStatus('notities', 'Laden…', null);
+  try {
+    const r = await fetch(API_BASE + '/leerlingen/' + leerlingId + '/notities', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    if (r.ok) {
+      const data = await r.json();
+      _bronnenData.notities = data;
+      stelStatus('notities', data.length ? data.length + ' notitie' + (data.length !== 1 ? 's' : '') : 'Geen notities', data.length > 0);
+    } else { stelStatus('notities', 'Niet beschikbaar', false); }
+  } catch(e) { stelStatus('notities', 'Niet beschikbaar', false); }
+
+  // LVS-scores & tijdlijn
+  stelStatus('lvs', 'Laden…', null);
+  try {
+    const r = await fetch(API_BASE + '/lvs/' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    if (r.ok) {
+      const data = await r.json();
+      _bronnenData.lvs = data;
+      const aantalScores = Object.values(data.scores || {}).filter(v => v > 0).length;
+      const aantalTijdlijn = (data.tijdlijn || []).length;
+      const delen = [];
+      if (aantalScores) delen.push(aantalScores + ' scores');
+      if (aantalTijdlijn) delen.push(aantalTijdlijn + ' tijdlijn-items');
+      stelStatus('lvs', delen.length ? delen.join(', ') : 'Leeg', delen.length > 0);
+    } else { stelStatus('lvs', 'Niet beschikbaar', false); }
+  } catch(e) { stelStatus('lvs', 'Niet beschikbaar', false); }
+
+  // Toetsresultaten (via LVS tijdlijn toets-items of apart endpoint)
+  stelStatus('toetsen', 'Laden…', null);
+  try {
+    const r = await fetch(API_BASE + '/toetsen?leerling_id=' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    if (r.ok) {
+      const data = await r.json();
+      _bronnenData.toetsen = data;
+      stelStatus('toetsen', data.length ? data.length + ' resultaat' + (data.length !== 1 ? 'en' : '') : 'Geen resultaten', data.length > 0);
+    } else { stelStatus('toetsen', 'Niet beschikbaar', false); }
+  } catch(e) { stelStatus('toetsen', 'Niet beschikbaar', false); }
+
+  // Aanwezigheid (laatste 30 dagen)
+  stelStatus('aanwezigheid', 'Laden…', null);
+  try {
+    const r = await fetch(API_BASE + '/aanwezigheid?leerling_id=' + leerlingId + '&dagen=30', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    if (r.ok) {
+      const data = await r.json();
+      _bronnenData.aanwezigheid = data;
+      const afwezig = Array.isArray(data) ? data.filter(d => d.status === 'afwezig').length : 0;
+      const totaal  = Array.isArray(data) ? data.length : 0;
+      stelStatus('aanwezigheid', totaal ? totaal + ' dagen · ' + afwezig + ' afwezig' : 'Geen data', totaal > 0);
+    } else { stelStatus('aanwezigheid', 'Niet beschikbaar', false); }
+  } catch(e) { stelStatus('aanwezigheid', 'Niet beschikbaar', false); }
+
+  // OPP & handelingsplan
+  stelStatus('opp', 'Laden…', null);
+  try {
+    const r = await fetch(API_BASE + '/dossier/' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    if (r.ok) {
+      const data = await r.json();
+      _bronnenData.opp = data;
+      const delen = [];
+      if (data.opp) delen.push('OPP');
+      if (data.handelingsplannen && data.handelingsplannen.length) delen.push(data.handelingsplannen.length + ' handelingsplan(nen)');
+      stelStatus('opp', delen.length ? delen.join(' + ') : 'Geen documenten', delen.length > 0);
+    } else { stelStatus('opp', 'Niet beschikbaar', false); }
+  } catch(e) { stelStatus('opp', 'Niet beschikbaar', false); }
+
+  // Eerdere rapporten
+  stelStatus('rapporten', 'Laden…', null);
+  try {
+    const r = await fetch(API_BASE + '/rapporten/' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+    if (r.ok) {
+      const data = await r.json();
+      _bronnenData.rapporten = data;
+      stelStatus('rapporten', data.length ? data.length + ' rapport' + (data.length !== 1 ? 'en' : '') : 'Geen eerdere rapporten', data.length > 0);
+    } else { stelStatus('rapporten', 'Niet beschikbaar', false); }
+  } catch(e) { stelStatus('rapporten', 'Niet beschikbaar', false); }
 }
 
 async function genereer() {
-  const naam     = document.getElementById('naam').value.trim();
-  const groep    = document.getElementById('groep').value;
-  const notities = document.getElementById('notities').value.trim();
-  if (notities.length < 20) { toonFout('Voer minimaal 20 tekens aan notities in.'); return; }
+  const naam  = document.getElementById('naam').value.trim();
+  const groep = document.getElementById('groep').value;
+  if (!naam) { toonFout('Selecteer eerst een leerling via de zoekbalk bovenin.'); return; }
 
   document.getElementById('spin').style.display = 'block';
-  document.getElementById('ktekst').textContent = 'Verwerken...';
-  const _inclOpp = document.getElementById('cb-opp')?.checked || false;
-  const _inclHp = document.getElementById('cb-hp')?.checked || false;
+  document.getElementById('ktekst').textContent = 'Bronnen verzamelen…';
   document.getElementById('gknop').disabled = true;
 
-  const behoeftes = getGeselecteerdeBehoeftes();
-  const groepType = parseInt(groep) <= 3 ? 'onderbouw (groep 1-3)' :
-                   parseInt(groep) <= 6 ? 'middenbouw (groep 4-6)' :
-                   groep ? 'bovenbouw (groep 7-8)' : '';
+  const leerlingId = window._huidigeLeerlingId;
+  const behoeftes  = getGeselecteerdeBehoeftes();
+  const aanvulling = document.getElementById('notities').value.trim();
+  const groepType  = parseInt(groep) <= 3 ? 'onderbouw (groep 1-3)' :
+                     parseInt(groep) <= 6 ? 'middenbouw (groep 4-6)' :
+                     groep ? 'bovenbouw (groep 7-8)' : '';
+
+  // Welke bronnen zijn aangevinkt?
+  const inclNotities     = document.getElementById('bron-notities')?.checked;
+  const inclLvs          = document.getElementById('bron-lvs')?.checked;
+  const inclToetsen      = document.getElementById('bron-toetsen')?.checked;
+  const inclAanwezigheid = document.getElementById('bron-aanwezigheid')?.checked;
+  const inclOpp          = document.getElementById('bron-opp')?.checked;
+  const inclRapporten    = document.getElementById('bron-rapporten')?.checked;
+
+  // Zorg dat brondata vers is als die nog niet geladen is
+  if (leerlingId && Object.keys(_bronnenData).length === 0) {
+    await bronnenVervers(leerlingId);
+  }
+
+  document.getElementById('ktekst').textContent = 'Rapport genereren…';
+
+  // ── Bouw context per bron ──────────────────────────────────
+  let contextBlokken = [];
+
+  // 1. Snelle notities
+  if (inclNotities && _bronnenData.notities && _bronnenData.notities.length) {
+    const tekst = _bronnenData.notities.slice(0, 10).map(n => {
+      const datum = new Date(n.aangemaakt_op).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
+      return '  [' + datum + '] ' + n.tekst;
+    }).join('\n');
+    contextBlokken.push('SNELLE NOTITIES VAN DE LEERKRACHT:\n' + tekst);
+  }
+
+  // 2. LVS-scores & tijdlijn
+  if (inclLvs && _bronnenData.lvs) {
+    const lvs = _bronnenData.lvs;
+    const scores = lvs.scores || {};
+    const gevuldeScores = LVS_DOMEINEN
+      .filter(d => scores[d.k] && scores[d.k] > 0)
+      .map(d => d.l + ': ' + scores[d.k] + '/100')
+      .join(', ');
+    let lvsBlok = 'LVS-SCORES:\n';
+    lvsBlok += gevuldeScores || '  (geen scores ingevoerd)';
+    if (lvs.tijdlijn && lvs.tijdlijn.length) {
+      const tijdlijnTekst = lvs.tijdlijn.slice(0, 8).map(t => {
+        const datum = t.datum ? new Date(t.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '';
+        return '  [' + datum + '] ' + t.type + ': ' + t.tekst;
+      }).join('\n');
+      lvsBlok += '\nLVS-TIJDLIJN:\n' + tijdlijnTekst;
+    }
+    contextBlokken.push(lvsBlok);
+  }
+
+  // 3. Toetsresultaten
+  if (inclToetsen && _bronnenData.toetsen && _bronnenData.toetsen.length) {
+    const toetsTekst = _bronnenData.toetsen.slice(0, 15).map(t => {
+      const datum = t.afname_datum ? new Date(t.afname_datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) : 'datum onbekend';
+      return '  ' + t.vakgebied + ' — score: ' + (t.score ?? '?') + (t.niveau ? ', niveau: ' + t.niveau : '') + ' (' + datum + ', bron: ' + (t.bron || '?') + ')';
+    }).join('\n');
+    contextBlokken.push('TOETSRESULTATEN:\n' + toetsTekst);
+  }
+
+  // 4. Aanwezigheid
+  if (inclAanwezigheid && _bronnenData.aanwezigheid && _bronnenData.aanwezigheid.length) {
+    const aaw = _bronnenData.aanwezigheid;
+    const afwezig = aaw.filter(d => d.status === 'afwezig').length;
+    const teLaat  = aaw.filter(d => d.status === 'te_laat').length;
+    const totaal  = aaw.length;
+    contextBlokken.push('AANWEZIGHEID (laatste 30 dagen):\n  Aanwezig: ' + (totaal - afwezig - teLaat) + '/' + totaal + ' dagen, afwezig: ' + afwezig + ', te laat: ' + teLaat);
+  }
+
+  // 5. OPP & handelingsplan
+  if (inclOpp && _bronnenData.opp) {
+    const dossier = _bronnenData.opp;
+    let oppBlok = 'OPP & HANDELINGSPLAN:\n';
+    if (dossier.opp) {
+      oppBlok += '  OPP aanwezig';
+      if (dossier.opp.uitstroombestemming) oppBlok += ', uitstroom: ' + dossier.opp.uitstroombestemming;
+      if (dossier.opp.doelen) oppBlok += '\n  OPP-doelen: ' + String(dossier.opp.doelen).slice(0, 300);
+    }
+    if (dossier.handelingsplannen && dossier.handelingsplannen.length) {
+      dossier.handelingsplannen.slice(0, 3).forEach(hp => {
+        oppBlok += '\n  Handelingsplan (' + (hp.behoefte || '?') + ')';
+        if (hp.doel) oppBlok += ': ' + String(hp.doel).slice(0, 200);
+      });
+    }
+    if (oppBlok !== 'OPP & HANDELINGSPLAN:\n') contextBlokken.push(oppBlok);
+  }
+
+  // 6. Eerdere rapporten
+  if (inclRapporten && _bronnenData.rapporten && _bronnenData.rapporten.length) {
+    const vorigeRapporten = _bronnenData.rapporten.slice(0, 3);
+    const rapTekst = vorigeRapporten.map(r => {
+      const datum = new Date(r.aangemaakt_op).toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
+      const d = r.rapport_data || {};
+      const delen = [];
+      if (d.leerresultaten) delen.push('Leerresultaten: ' + String(d.leerresultaten).slice(0, 150));
+      if (d.aandachtspunten) delen.push('Aandachtspunten: ' + String(d.aandachtspunten).slice(0, 150));
+      return '  [' + datum + ']\n    ' + (delen.join('\n    ') || '(geen details)');
+    }).join('\n');
+    contextBlokken.push('EERDERE RAPPORTEN:\n' + rapTekst);
+  }
+
+  // 7. Aanvullende opmerking leerkracht
+  if (aanvulling) {
+    contextBlokken.push('AANVULLENDE OPMERKING LEERKRACHT:\n  "' + aanvulling + '"');
+  }
 
   const ondersteuningContext = behoeftes.length > 0
     ? '\nOndersteuningsbehoeftes: ' + behoeftes.join(', ') + '.\nVul de sleutel "ondersteuning" in als een ARRAY van objecten, één per behoefte: [{"behoefte":"naam","praktijk":"hoe dit er voor dit kind concreet uitziet in gewone taal voor ouders","thuistip":"één concrete tip voor thuis"}]'
     : '';
 
-  // Haal bestaande LVS-scores op als context voor Claude (alleen lezen, niet terugschrijven)
-  let lvsContextTekst = '';
-  if (window._huidigeLeerlingId) {
-    try {
-      const lvsRes = await fetch(API_BASE + '/lvs/' + window._huidigeLeerlingId, {
-        headers: { 'Authorization': 'Bearer ' + huidigToken }
-      });
-      if (lvsRes.ok) {
-        const lvsProfiel = await lvsRes.json();
-        const scores = lvsProfiel.scores || {};
-        const gevuldeScores = LVS_DOMEINEN
-          .filter(d => scores[d.k] && scores[d.k] > 0)
-          .map(d => d.l + ': ' + scores[d.k])
-          .join(', ');
-        if (gevuldeScores) {
-          lvsContextTekst = '\nBekende LVS-scores (ter informatie, niet aanpassen): ' + gevuldeScores + '.';
-        }
-      }
-    } catch(e) { /* stil falen — context is optioneel */ }
-  }
-
-  const prompt = (naam ? 'Leerling: ' + naam + (groep ? ', groep ' + groep : '') + '.' : '')
-    + (groepType ? ' Dit kind zit in de ' + groepType + '.' : '')
-    + ondersteuningContext
-    + lvsContextTekst
-    + '\nNotities van de leerkracht:\n"' + notities + '"'
-    + '\n\nRetourneer ALLEEN een geldig JSON-object met deze sleutels:'
-    + '\n{'
+  const prompt =
+    'Schrijf een volledig ParnasSys-rapport voor leerling: ' + naam + (groep ? ', groep ' + groep + ' (' + groepType + ')' : '') + '.\n'
+    + 'Gebruik ALLE onderstaande informatiebronnen om een zo compleet en nauwkeurig mogelijk rapport te schrijven.\n'
+    + ondersteuningContext + '\n\n'
+    + contextBlokken.join('\n\n')
+    + '\n\nRetourneer ALLEEN een geldig JSON-object met deze sleutels:\n{'
     + '"leerresultaten":null,'
     + '"werkhouding":null,'
     + '"sociaal_emotioneel":null,'
@@ -2600,9 +2815,8 @@ async function genereer() {
     + '"doelen":null,'
     + '"positieve_punten":null,'
     + '"ondersteuning":null,'
-    + '"rapportcommentaar":null,'
-
-    + '}'
+    + '"rapportcommentaar":null'
+    + '}';
 
   // Toon streaming indicator
   verbergResultaten();
@@ -2616,28 +2830,24 @@ async function genereer() {
 
   try {
     const tekst = await roepAPIaanStream(prompt, (chunk) => {
-      // Toon geen tussentijdse foutobjecten als rapporttekst
-      if (!chunk.trimStart().startsWith('{"error"')) {
-        streamDiv.textContent = chunk;
-      }
+      if (!chunk.trimStart().startsWith('{"error"')) streamDiv.textContent = chunk;
     });
     const schoon = tekst.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(schoon);
     huidigeSectieData = parsed;
     toonResultaten(parsed, naam, groep);
     registreerRapport();
-    if (window._huidigeLeerlingId) slaRapportOp(parsed);
-    // Werk LVS bij met scores en tijdlijn uit het rapport
+    if (leerlingId) slaRapportOp(parsed);
     await werkLvsVanuitRapportBij(parsed, naam, groep);
   } catch (err) {
     if (r) r.innerHTML = '<div class="fout">' + err.message + '</div>';
   } finally {
-    const spin = document.getElementById('spin');
+    const spin   = document.getElementById('spin');
     const ktekst = document.getElementById('ktekst');
-    const gknop = document.getElementById('gknop');
-    if (spin) spin.style.display = 'none';
-    if (ktekst) ktekst.textContent = 'Genereer ParnasSys-rapport';
-    if (gknop) gknop.disabled = false;
+    const gknop  = document.getElementById('gknop');
+    if (spin)   spin.style.display = 'none';
+    if (ktekst) ktekst.textContent = 'Genereer rapport';
+    if (gknop)  gknop.disabled = false;
   }
 }
 
