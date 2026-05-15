@@ -36,8 +36,8 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_URL     = "https://api.anthropic.com/v1/messages"
 MODEL             = "claude-sonnet-4-20250514"
 
-SUPABASE_URL      = os.environ.get("SUPABASE_URL", "").rstrip("/")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "").strip()
+SUPABASE_URL      = os.environ.get("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 RESEND_API_KEY       = os.environ.get("RESEND_API_KEY", "")      # resend.com — gratis laag: 3000 e-mails/maand
 MAIL_FROM            = os.environ.get("MAIL_FROM", "noreply@schoolvanmorgen.nl")
 APP_URL              = os.environ.get("APP_URL", "http://localhost:8000")
@@ -1316,8 +1316,7 @@ async def genereer_batch_rapporten(
             notities_taak = supabase_get("leerling_notities", token, {
                 "leerling_id":  f"eq.{lid}",
                 "leerkracht_id": f"eq.{user['id']}",
-                "order":        "aangemaakt_op.desc",
-                "limit":        "5",
+                "order":        "aangemaakt_op.asc",
                 "select":       "tekst,aangemaakt_op,type"
             })
             lvs_taak = supabase_get("lvs_profielen", token, {
