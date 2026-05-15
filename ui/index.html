@@ -533,8 +533,9 @@ function toonApp() {
     }
   });
   setTimeout(() => {
-    const aawTab = document.querySelector('.tab[onclick*="aanwezigheid"]');
-    toonTab('aanwezigheid', aawTab);
+    const opgeslagenTab = sessionStorage.getItem('actieveTab') || 'aanwezigheid';
+    const tabKnop = document.querySelector('.tab[onclick*="' + opgeslagenTab + '"]');
+    toonTab(opgeslagenTab, tabKnop);
   }, 50);
   // Vertraagd IB/Inspectie tabs tonen (na schoolContext laden)
   setTimeout(function() {
@@ -1405,6 +1406,9 @@ function sluitLeerlingModal() {
 window.addEventListener('DOMContentLoaded', initAuth);
 
 function toonTab(tab, knop) {
+  // Onthoud actieve tab
+  sessionStorage.setItem('actieveTab', tab);
+
   // Reset knoppen
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
