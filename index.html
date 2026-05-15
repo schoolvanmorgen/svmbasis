@@ -1574,8 +1574,29 @@ function toonTab(tab, knop) {
   <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0">
-<div id="tab-rapport-wrap" style="display:grid;grid-template-columns:380px 1fr;height:100%;min-height:0">
-  <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0">
+<div id="tab-rapport-wrap" style="display:grid;grid-template-columns:180px 380px 1fr;height:100%;min-height:0">
+  <!-- Klas-sidebar: selecteer klas → leerlingen → klik leerling -->
+  <div style="border-right:1px solid var(--warmrand);background:var(--warm);display:flex;flex-direction:column;overflow:hidden;height:100%">
+
+    <!-- Klas selector -->
+    <div style="padding:10px 10px 8px;border-bottom:1px solid var(--warmrand);flex-shrink:0">
+      <div class="vlabel" style="margin-bottom:5px">KLAS</div>
+      <select id="rapport-klas" onchange="rapportLaadKlas(this.value)"
+        style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+        <option value="">Kies groep…</option>
+        <option>1</option><option>2</option><option>3</option><option>4</option>
+        <option>5</option><option>6</option><option>7</option><option>8</option>
+      </select>
+    </div>
+
+    <!-- Leerlingenlijst -->
+    <div id="rapport-leerlingen-lijst" style="flex:1;overflow-y:auto;padding:6px">
+      <div style="font-size:11px;color:var(--tz);padding:8px 6px">Kies een groep.</div>
+    </div>
+
+  </div>
+
+  <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0;border-right:1px solid var(--warmrand)">
 
     <!-- Scrollbare inhoud — vult beschikbare ruimte -->
     <div style="flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:10px;min-height:0">
@@ -2495,6 +2516,72 @@ function laad(type) {
   document.getElementById('groep').value   = v.groep;
   document.getElementById('notities').value = v.notities;
   document.getElementById('teller').textContent = `${v.notities.length} / 2000`;
+}
+
+function rapportLaadKlas(groep) {
+  const lijst = document.getElementById('rapport-leerlingen-lijst');
+  if (!lijst) return;
+  if (!groep) {
+    lijst.innerHTML = '<div style="font-size:11px;color:var(--tz);padding:8px 6px">Kies een groep.</div>';
+    return;
+  }
+  const klasLeerlingen = leerlingen
+    .filter(function(l) { return String(l.groep) === String(groep); })
+    .sort(function(a,b) { return (a.voornaam||'').localeCompare(b.voornaam||''); });
+
+  if (!klasLeerlingen.length) {
+    lijst.innerHTML = '<div style="font-size:11px;color:var(--tz);padding:8px 6px">Geen leerlingen in groep ' + groep + '.</div>';
+    return;
+  }
+
+  let html = '';
+  klasLeerlingen.forEach(function(l) {
+    const ach = [l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
+    html += '<div class="rapport-leerling-item" data-lid="' + l.id + '"'
+      + ' style="padding:7px 8px;font-size:12px;cursor:pointer;border-radius:6px;margin-bottom:2px;color:var(--t)">'
+      + '<div style="font-weight:500">' + l.voornaam + '</div>'
+      + (ach ? '<div style="font-size:10px;color:var(--tz)">' + ach + '</div>' : '')
+      + '</div>';
+  });
+  lijst.innerHTML = html;
+
+  lijst.querySelectorAll('.rapport-leerling-item').forEach(function(el) {
+    el.addEventListener('click', function() { rapportSelecteerLeerling(el.dataset.lid); });
+    el.addEventListener('mouseover', function() { if (!el.classList.contains('actief')) el.style.background = '#f0f0f0'; });
+    el.addEventListener('mouseout',  function() { if (!el.classList.contains('actief')) el.style.background = ''; });
+  });
+}
+
+function rapportSelecteerLeerling(id) {
+  const l = leerlingen.find(function(x) { return x.id === id; });
+  if (!l) return;
+
+  // Vul naam en groep in
+  const naamEl  = document.getElementById('naam');
+  const groepEl = document.getElementById('groep');
+  if (naamEl) {
+    const volledig = [l.voornaam, l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
+    naamEl.value = volledig;
+    if (typeof telTekens === 'function') telTekens();
+  }
+  if (groepEl) groepEl.value = l.groep || '';
+
+  // Zet ondersteuningsbehoeftes aan
+  const behoeftes = l.ondersteuningsbehoeftes || [];
+  document.querySelectorAll('#od-checklijst input[type=checkbox]').forEach(function(cb) {
+    cb.checked = behoeftes.includes(cb.value);
+  });
+  if (typeof updateTags === 'function') updateTags();
+
+  // Markeer geselecteerde leerling in de lijst
+  document.querySelectorAll('.rapport-leerling-item').forEach(function(el) {
+    const actief = el.dataset.id === id;
+    el.style.background = actief ? 'var(--gl)' : '';
+    el.style.fontWeight  = actief ? '600' : '';
+  });
+
+  // Sync globale context
+  stelLeerlingIn(l);
 }
 
 async function genereer() {
