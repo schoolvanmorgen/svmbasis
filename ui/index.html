@@ -1587,7 +1587,7 @@ function toonTab(tab, knop) {
   <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0">
-<div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
+<div id="tab-rapport-wrap" style="display:grid;grid-template-columns:380px 1fr;height:100%;min-height:0">
   <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0">
 
     <!-- Scrollbare inhoud — vult beschikbare ruimte -->
@@ -2017,23 +2017,6 @@ function toonTab(tab, knop) {
         <div id="lvs-domeinen">
           <div style="color:var(--tz);font-size:12px;padding:16px 18px">Selecteer een leerling.</div>
         </div>
-      </div>        <!-- Groep kiezen -->
-        <div style="padding:12px 18px;border-bottom:1px solid var(--warmrand);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <select id="benchmark-groep" onchange="benchmarkLaad()"
-            style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-            <option value="">Kies groep…</option>
-            <option>1</option><option>2</option><option>3</option><option>4</option>
-            <option>5</option><option>6</option><option>7</option><option>8</option>
-          </select>
-          <button onclick="benchmarkLaad()" style="padding:6px 14px;background:#4a7a4a;color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Vergelijk</button>
-
-        </div>
-
-        <!-- Resultaten -->
-        <div id="benchmark-resultaten" style="padding:16px 18px">
-          <div style="color:var(--tz);font-size:12px">Kies een groep om de benchmark te zien.</div>
-        </div>
-
       </div>
 
       <!-- Tab: Tijdlijn -->
