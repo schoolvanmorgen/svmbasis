@@ -533,7 +533,7 @@ function toonApp() {
     let herstelTab = 'aanwezigheid';
     try {
       const opgeslagen = localStorage.getItem('svm_actieve_tab');
-      if (opgeslagen && ['aanwezigheid','notities','lvs','rapport','ib','inspectie'].includes(opgeslagen)) {
+      if (opgeslagen && ['klas','aanwezigheid','notities','lvs','rapport','ib','inspectie'].includes(opgeslagen)) {
         herstelTab = opgeslagen;
       }
     } catch(e) {}
@@ -1375,6 +1375,168 @@ function openLeerlingModal() {
   document.getElementById('leerling-modal').style.display = 'flex';
   leerlingTab(1);
 }
+// ── Klas toevoegen tab ──────────────────────────────
+
+function klasLeesBestand(bestand) {
+  if (!bestand) return;
+  document.getElementById('klas-bestandsnaam').textContent = bestand.name;
+  const ext = bestand.name.split('.').pop().toLowerCase();
+
+  if (ext === 'csv') {
+    _leesCSVBestand(bestand, function(tekst) { klasVerwerk(tekst); });
+  } else {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      klasVerwerk(XLSX.utils.sheet_to_csv(ws));
+    };
+    reader.readAsArrayBuffer(bestand);
+  }
+}
+
+function klasVerwerk(csv) {
+  const regels = csv.split("\n").filter(function(r) { return r.trim(); });
+
+  if (!regels.length) return;
+
+  const headers = _parseCsvRegel(regels[0]).map(function(h) {
+    return h.toLowerCase().replace(/"/g,'').replace(/\r/g,'').replace(/\uFEFF/g,'').trim();
+
+  });
+
+  const idx = {
+    voornaam:       headers.findIndex(function(h) { return h.includes('roepnaam') || h.includes('voornaam') || h === 'naam'; }),
+    achternaam:     headers.findIndex(function(h) { return h.includes('achternaam') || h.includes('familienaam'); }),
+    tussenvoegsel:  headers.findIndex(function(h) { return h.includes('tussenvoegsel') || h.includes('voorvoegsel'); }),
+    groep:          headers.findIndex(function(h) { return h.includes('groepsnaam') || h === 'klas' || h === 'groep' || h.includes('klas'); }),
+    leerlingnummer: headers.findIndex(function(h) { return h.includes('leerlingnummer') || h.includes('leerlingnr') || h === 'nummer' || h === 'id'; }),
+  };
+
+  if (idx.voornaam < 0) {
+    const info = document.getElementById('klas-info');
+    if (info) { info.textContent = '✗ Voornaam/Roepnaam kolom niet gevonden. Controleer de kolomnamen.'; info.style.background='#fff5f5'; info.style.color='#991b1b'; info.style.borderColor='#fca5a5'; }
+    document.getElementById('klas-preview').style.display = 'flex';
+    document.getElementById('klas-lijst').innerHTML = '';
+    document.getElementById('klas-knop').disabled = true;
+    return;
+  }
+
+  const leerlingen = [];
+  for (var i = 1; i < regels.length; i++) {
+    if (!regels[i].trim()) continue;
+    const cols = _parseCsvRegel(regels[i]);
+    const voornaam = (cols[idx.voornaam] || '').replace(/"/g,'').trim();
+    if (!voornaam) continue;
+    const groepRuw = idx.groep >= 0 ? (cols[idx.groep] || '').replace(/"/g,'').trim() : '';
+    const groepMatch = groepRuw.match(/\d+/);
+    leerlingen.push({
+      voornaam:       voornaam,
+      achternaam:     idx.achternaam >= 0    ? (cols[idx.achternaam] || '').replace(/"/g,'').trim()    : '',
+      tussenvoegsel:  idx.tussenvoegsel >= 0 ? (cols[idx.tussenvoegsel] || '').replace(/"/g,'').trim() : '',
+      groep:          groepMatch ? groepMatch[0] : '',
+      leerlingnummer: idx.leerlingnummer >= 0 ? (cols[idx.leerlingnummer] || '').replace(/"/g,'').trim() : '',
+    });
+  }
+
+  window._klasLeerlingen = leerlingen;
+
+  // Groepen tellen
+  const groepen = {};
+  leerlingen.forEach(function(l) { groepen[l.groep||'?'] = (groepen[l.groep||'?']||0)+1; });
+  const groepTekst = Object.keys(groepen).sort(function(a,b){return parseInt(a)-parseInt(b);})
+    .map(function(g) { return 'Groep ' + g + ' (' + groepen[g] + ')'; }).join(' · ');
+
+  const info = document.getElementById('klas-info');
+  if (info) {
+    info.style.background='#f0faf0'; info.style.color='#2d6a2d'; info.style.borderColor='#c0e0c0';
+    info.textContent = '✓ ' + leerlingen.length + ' leerlingen herkend — ' + groepTekst;
+  }
+
+  // Preview tabel
+  const lijst = document.getElementById('klas-lijst');
+  if (lijst) {
+    lijst.innerHTML = leerlingen.slice(0,8).map(function(l) {
+      return '<div style="padding:7px 14px;border-bottom:1px solid #f5f5f5;font-size:12px;display:grid;grid-template-columns:1fr 1fr 80px 120px;gap:8px;color:var(--t)">'
+        + '<span>' + l.voornaam + '</span>'
+        + '<span>' + [l.tussenvoegsel,l.achternaam].filter(Boolean).join(' ') + '</span>'
+        + '<span>' + (l.groep ? l.groep : '—') + '</span>'
+        + '<span style="color:var(--tz)">' + (l.leerlingnummer||'—') + '</span>'
+        + '</div>';
+    }).join('') + (leerlingen.length > 8 ? '<div style="padding:7px 14px;font-size:11px;color:var(--tz)">… en ' + (leerlingen.length-8) + ' meer</div>' : '');
+  }
+
+  document.getElementById('klas-preview').style.display = 'flex';
+  const knop = document.getElementById('klas-knop');
+  if (knop) { knop.disabled = false; knop.style.opacity = '1'; }
+}
+
+async function klasImporteer() {
+  const lijst = window._klasLeerlingen || [];
+  if (!lijst.length) return;
+
+  const knop      = document.getElementById('klas-knop');
+  const voortgang = document.getElementById('klas-voortgang');
+  if (knop) { knop.disabled = true; knop.textContent = 'Importeren…'; }
+  if (voortgang) voortgang.style.display = 'block';
+
+  let nieuw = 0, dubbel = 0, fout = 0;
+  const BATCH = 6;
+
+  for (var i = 0; i < lijst.length; i += BATCH) {
+    const batch = lijst.slice(i, i + BATCH);
+    await Promise.all(batch.map(async function(l) {
+      try {
+        const body = { voornaam: l.voornaam, groep: l.groep };
+        if (l.achternaam)     body.achternaam     = l.achternaam;
+        if (l.tussenvoegsel)  body.tussenvoegsel  = l.tussenvoegsel;
+        if (l.leerlingnummer) body.leerlingnummer = l.leerlingnummer;
+
+        const res = await fetch(API_BASE + '/leerlingen', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data._bestaand) dubbel++; else nieuw++;
+        } else { fout++; }
+      } catch(e) { fout++; }
+    }));
+
+    if (voortgang) {
+      voortgang.innerHTML = '<span style="color:#2d6a2d">⏳ ' + Math.min(i+BATCH, lijst.length) + ' / ' + lijst.length + ' verwerkt…</span>';
+    }
+  }
+
+  // Ververs alle lijsten
+  await laadLeerlingen();
+  aawLeerlingen = leerlingen;
+  if (typeof lvsInitVanuitLeerlingen === 'function') lvsInitVanuitLeerlingen();
+  if (typeof lvsRenderLijst === 'function') lvsRenderLijst(lvsLeerlingen);
+  if (typeof notitieVulZijbalk === 'function') notitieVulZijbalk();
+  if (typeof rapportLaadKlas === 'function') {
+    const klasSelect = document.getElementById('rapport-klas');
+    if (klasSelect && klasSelect.value) rapportLaadKlas(klasSelect.value);
+  }
+
+  if (voortgang) {
+    let html = '';
+    if (nieuw > 0)   html += '<div style="color:#2d6a2d;font-weight:600">✓ ' + nieuw + ' leerlingen geïmporteerd</div>';
+    if (dubbel > 0)  html += '<div style="color:#92400e">⚠ ' + dubbel + ' al aanwezig (overgeslagen)</div>';
+    if (fout > 0)    html += '<div style="color:#991b1b">✗ ' + fout + ' mislukt</div>';
+    html += '<div style="font-size:11px;color:var(--tz);margin-top:6px">De klas is nu zichtbaar in alle secties.</div>';
+    voortgang.innerHTML = html;
+  }
+
+  if (knop) { knop.textContent = 'Nog een klas importeren'; knop.disabled = false; knop.onclick = function() {
+    window._klasLeerlingen = [];
+    document.getElementById('klas-bestandsnaam').textContent = 'Sleep bestand hierheen of klik om te kiezen';
+    document.getElementById('klas-preview').style.display = 'none';
+    if (voortgang) voortgang.style.display = 'none';
+  }; }
+}
+
 function openImportModal() {
   // Zet callback-flags zodat na sluiten de juiste tab ververst
   const actieveTab = document.querySelector('.tab.actief');
@@ -1413,7 +1575,7 @@ function toonTab(tab, knop) {
   if (knop) knop.classList.add('actief');
 
   // Verberg alle containers
-  ['tab-inhoud','tab-lvs','tab-aanwezigheid','tab-ib','tab-inspectie'].forEach(function(id) {
+  ['tab-inhoud','tab-lvs','tab-aanwezigheid','tab-ib','tab-inspectie','tab-klas'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -1436,6 +1598,10 @@ function toonTab(tab, knop) {
     var el3 = document.getElementById('tab-lvs');
     if (el3) el3.style.display = 'flex';
     if (typeof lvsInit === 'function') lvsInit();
+
+  } else if (tab === 'klas') {
+    var elKlas = document.getElementById('tab-klas');
+    if (elKlas) elKlas.style.display = 'flex';
 
   } else if (tab === 'ib') {
     var el4 = document.getElementById('tab-ib');
@@ -1576,6 +1742,7 @@ function toonTab(tab, knop) {
 </header>
 
 <div style="display:flex;border-bottom:1px solid var(--warmrand);background:var(--warm);padding:0 1.5rem;flex-shrink:0;z-index:90">
+  <button class="tab" onclick="toonTab('klas',this)">+ Klas toevoegen</button>
   <button class="tab actief" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
   <button class="tab" onclick="toonTab('notities',this)">Snelle notitie</button>
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
@@ -2416,6 +2583,66 @@ function toonTab(tab, knop) {
     </div>
   </div>
 </div><!-- einde tab-notities -->
+
+<!-- ── Klas toevoegen Tab ── -->
+<div id="tab-klas" style="display:none;flex:1;min-height:0;overflow-y:auto;background:var(--warm);flex-direction:column">
+
+  <div style="max-width:640px;margin:0 auto;padding:2.5rem 1.5rem;display:flex;flex-direction:column;gap:24px">
+
+    <!-- Header -->
+    <div>
+      <div style="font-family:Georgia,serif;font-size:22px;color:var(--t);margin-bottom:6px">Klas importeren</div>
+      <div style="font-size:13px;color:var(--tz);line-height:1.7">
+        Importeer een leerlingenlijst vanuit ParnasSys of een ander systeem. De leerlingen zijn daarna direct zichtbaar in alle secties: aanwezigheid, LVS, notities en rapport.
+      </div>
+    </div>
+
+    <!-- Dropzone -->
+    <label id="klas-dropzone"
+      style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:40px 24px;border:2px dashed var(--rand);cursor:pointer;background:#fff;border-radius:12px;transition:all .15s"
+      ondragover="event.preventDefault();this.style.borderColor='#4a7a4a';this.style.background='#f0faf0'"
+      ondragleave="this.style.borderColor='var(--rand)';this.style.background='#fff'"
+      ondrop="event.preventDefault();this.style.borderColor='var(--rand)';this.style.background='#fff';klasLeesBestand(event.dataTransfer.files[0])">
+      <div style="font-size:36px">📂</div>
+      <div style="font-size:14px;font-weight:500;color:var(--t)" id="klas-bestandsnaam">Sleep bestand hierheen of klik om te kiezen</div>
+      <div style="font-size:11px;color:var(--tz)">CSV · Excel (.xlsx / .xls) — ParnasSys, Magister, eigen format</div>
+      <input type="file" id="klas-bestand" accept=".csv,.xlsx,.xls" style="display:none" onchange="klasLeesBestand(this.files[0])">
+    </label>
+
+    <!-- Ondersteunde formaten -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;width:100%;margin-bottom:2px">ONDERSTEUNDE KOLOMNAMEN</div>
+      <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--rand);color:var(--tz)">Roepnaam / Voornaam</span>
+      <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--rand);color:var(--tz)">Achternaam</span>
+      <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--rand);color:var(--tz)">Tussenvoegsel</span>
+      <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--rand);color:var(--tz)">Groepsnaam / Klas / Groep</span>
+      <span style="font-size:11px;padding:3px 10px;border-radius:20px;background:#fff;border:1px solid var(--rand);color:var(--tz)">Leerlingnummer</span>
+    </div>
+
+    <!-- Preview -->
+    <div id="klas-preview" style="display:none;flex-direction:column;gap:12px">
+
+      <!-- Info balk -->
+      <div id="klas-info" style="padding:10px 14px;background:#f0faf0;border:1px solid #c0e0c0;border-radius:8px;font-size:12px;color:#2d6a2d;font-weight:600"></div>
+
+      <!-- Leerlingenlijst preview -->
+      <div style="background:#fff;border:1px solid var(--rand);border-radius:8px;overflow:hidden">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--rand);font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;display:grid;grid-template-columns:1fr 1fr 80px 120px;gap:8px">
+          <span>VOORNAAM</span><span>ACHTERNAAM</span><span>GROEP</span><span>LEERLINGNUMMER</span>
+        </div>
+        <div id="klas-lijst" style="max-height:240px;overflow-y:auto"></div>
+      </div>
+
+      <!-- Importeerknop -->
+      <button onclick="klasImporteer()" id="klas-knop"
+        style="background:#4a7a4a;color:#fff;border:none;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:8px;letter-spacing:.03em">
+        Importeer klas
+      </button>
+      <div id="klas-voortgang" style="display:none;font-size:12px;line-height:1.7"></div>
+    </div>
+
+  </div>
+</div><!-- einde tab-klas -->
 </div><!-- einde app-scherm -->
 
   </div>
