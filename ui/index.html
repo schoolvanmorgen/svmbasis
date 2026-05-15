@@ -49,7 +49,7 @@ header{border-bottom:1px solid #e0e8e0;box-shadow:0 1px 8px rgba(0,0,0,.06);padd
 .resultaat{padding:1.2rem;display:flex;flex-direction:column;gap:.8rem;background:var(--grijs);min-height:0;overflow-y:auto}
 @media(min-width:768px){
   .app{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 60px)}
-  #tab-rapport-wrap{grid-template-columns:200px 380px 1fr}
+  #tab-rapport-wrap{grid-template-columns:380px 1fr}
   .invoer{padding:1.8rem;border-right:1px solid var(--warmrand);overflow-y:auto;height:100%;box-sizing:border-box;min-height:0}
   .resultaat{padding:1.8rem;overflow-y:auto;height:100%;box-sizing:border-box;min-height:0}
 }
@@ -225,7 +225,15 @@ body{padding-bottom:64px}
 /* ── Login scherm verbetering ── */
 #login-scherm > div:last-child{width:calc(100% - 32px);max-width:360px;border-radius:7px;padding:24px}
 
-
+'
+    + 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 30px;color:#2a3a2a;font-size:14px;line-height:1.7}'
+    + 'h1{font-size:22px;border-bottom:2px solid #4a7a4a;padding-bottom:10px;margin-bottom:6px}'
+    + '.meta{font-size:12px;color:#888;margin-bottom:30px}'
+    + '.sectie{margin-bottom:22px;page-break-inside:avoid}'
+    + '.sectie-titel{font-size:10px;font-weight:700;letter-spacing:.08em;color:#3a5a3a;margin-bottom:6px;text-transform:uppercase}'
+    + '.sectie-inhoud{font-size:13px;line-height:1.8;color:#333;background:#f8f8f8;border-left:3px solid #4a7a4a;padding:10px 14px;border-radius:6px'
+    + '.footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}'
+    + '
 
 .aaw-wrap{max-width:700px;margin:0 auto;padding:1.2rem;width:100%;flex:1;overflow-y:auto}
 .aaw-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:10px}
@@ -479,10 +487,6 @@ function stelLeerlingIn(leerling) {
     if (header) header.style.display = 'block';
     if (naamEl) naamEl.textContent = leerling.voornaam;
     if (metaEl) metaEl.textContent = 'Groep ' + (leerling.groep || '?');
-    // Ververs bronnen-overzicht in rapport-tab
-    if (typeof bronnenVervers === 'function') bronnenVervers(leerling.id);
-    // Highlight leerling in rapport-sidebar
-    if (typeof rapportSidebarHighlight === 'function') rapportSidebarHighlight(leerling.id);
   }
 }
 
@@ -537,9 +541,8 @@ function toonApp() {
     }
   });
   setTimeout(() => {
-    const opgeslagenTab = sessionStorage.getItem('actieveTab') || 'aanwezigheid';
-    const tabKnop = document.querySelector('.tab[onclick*="' + opgeslagenTab + '"]');
-    toonTab(opgeslagenTab, tabKnop);
+    const aawTab = document.querySelector('.tab[onclick*="aanwezigheid"]');
+    toonTab('aanwezigheid', aawTab);
   }, 50);
   // Vertraagd IB/Inspectie tabs tonen (na schoolContext laden)
   setTimeout(function() {
@@ -789,17 +792,11 @@ async function laadLeerlingen() {
     const res = await fetch(API_BASE + '/leerlingen?limit=50&offset=0', {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
-    if (!res.ok) {
-      const aawFout = document.getElementById('aaw-klassen-lijst');
-      if (aawFout) aawFout.innerHTML = '<div style="font-size:12px;color:#c0392b;padding:4px 0">Verbinding mislukt ('+res.status+'). Ververs de pagina.</div>';
-      return;
-    }
+    if (!res.ok) return;
     leerlingen = await res.json();
     toonLeerlingenLijst();
     // Vul notities-zijbalk bij als die al open staat
     if (typeof notitieVulZijbalk === 'function') notitieVulZijbalk();
-    // Vul rapport-sidebar
-    if (typeof rapportSidebarVul === 'function') rapportSidebarVul();
     // Sync aanwezigheids-leerlingenlijst
     aawLeerlingen = leerlingen;
     // Update GLS badge
@@ -1034,186 +1031,69 @@ async function verwijderRapport(id) {
 }
 
 async function startBatchRapporten() {
-  const groep = _rapportGeselecteerdeKlas;
-  if (!groep) { alert('Selecteer eerst een klas in de zijbalk.'); return; }
-
-  const klasLeerlingen = leerlingen.filter(l => l.groep === groep);
-  if (!klasLeerlingen.length) { alert('Geen leerlingen gevonden in groep ' + groep + '.'); return; }
+  const groep = document.getElementById('batch-groep').value;
+  if (!groep) { alert('Kies eerst een groep.'); return; }
 
   const knop      = document.getElementById('batch-knop');
   const voortgang = document.getElementById('batch-voortgang');
-  const stopKnop  = document.getElementById('batch-stop-knop');
 
-  let gestopt = false;
-  if (stopKnop) {
-    stopKnop.style.display = 'inline-block';
-    stopKnop.onclick = function() { gestopt = true; stopKnop.textContent = 'Stoppen…'; };
-  }
-
-  knop.disabled = true;
+  knop.disabled  = true;
   knop.textContent = 'Bezig…';
   voortgang.style.display = 'block';
-
-  let gegenereerd = 0, mislukt = 0, fouten = [];
-
-  for (let i = 0; i < klasLeerlingen.length; i++) {
-    if (gestopt) break;
-    const l = klasLeerlingen[i];
-
-    voortgang.innerHTML =
-      '<div style="color:#4a7a4a;font-weight:600;margin-bottom:4px">⏳ ' + (i + 1) + ' / ' + klasLeerlingen.length + ' — ' + l.voornaam + '</div>'
-      + (gegenereerd ? '<div style="color:#2d6a2d;font-size:11px">✓ ' + gegenereerd + ' gereed</div>' : '')
-      + (mislukt    ? '<div style="color:#991b1b;font-size:11px">✗ ' + mislukt + ' mislukt</div>' : '');
-
-    try {
-      // Selecteer leerling en laad bronnen
-      stelLeerlingIn(l);
-      _bronnenData = {};
-      await bronnenVervers(l.id);
-
-      // Bouw dezelfde prompt als genereer() — gedeelde helper
-      const rapportData = await _bouwEnGenereerRapport(l.voornaam, l.groep);
-      if (rapportData) {
-        await slaRapportOpVoorLeerling(l.id, rapportData);
-        await werkLvsVanuitRapportBij(rapportData, l.voornaam, l.groep);
-        gegenereerd++;
-        // Markeer leerling als klaar in sidebar
-        const el = document.getElementById('rapport-ll-' + l.id);
-        if (el) el.style.opacity = '0.5';
-      } else {
-        mislukt++;
-        fouten.push(l.voornaam);
-      }
-    } catch(e) {
-      mislukt++;
-      fouten.push(l.voornaam + ' (' + e.message + ')');
-    }
-
-    // Kleine pauze tussen leerlingen om rate limits te vermijden
-    if (i < klasLeerlingen.length - 1 && !gestopt) await new Promise(r => setTimeout(r, 800));
-  }
-
-  // Eindresultaat
-  let html = '';
-  if (gestopt) html += '<div style="color:#92400e;font-weight:600;margin-bottom:4px">⏹ Gestopt na ' + gegenereerd + ' rapporten.</div>';
-  if (gegenereerd) html += '<div style="color:#2d6a2d;font-weight:600;margin-bottom:4px">✓ ' + gegenereerd + ' van ' + klasLeerlingen.length + ' rapporten gegenereerd.</div>';
-  if (mislukt)     html += '<div style="color:#991b1b;font-size:11px">✗ Mislukt: ' + fouten.join(', ') + '</div>';
-  if (!html)       html  = '<div style="color:#999;font-size:11px">Niets te verwerken.</div>';
-  voortgang.innerHTML = html;
-
-  knop.disabled = false;
-  knop.textContent = 'Genereer hele klas';
-  if (stopKnop) stopKnop.style.display = 'none';
-  await laadLeerlingen();
-}
-
-// Gedeelde rapport-generator — gebruikt door zowel genereer() als batch
-async function _bouwEnGenereerRapport(naam, groep) {
-  const groepType = parseInt(groep) <= 3 ? 'onderbouw (groep 1-3)' :
-                    parseInt(groep) <= 6 ? 'middenbouw (groep 4-6)' :
-                    groep ? 'bovenbouw (groep 7-8)' : '';
-  const aanvulling = document.getElementById('notities')?.value?.trim() || '';
-
-  const inclNotities     = document.getElementById('bron-notities')?.checked !== false;
-  const inclLvs          = document.getElementById('bron-lvs')?.checked !== false;
-  const inclToetsen      = document.getElementById('bron-toetsen')?.checked !== false;
-  const inclAanwezigheid = document.getElementById('bron-aanwezigheid')?.checked !== false;
-  const inclOpp          = document.getElementById('bron-opp')?.checked !== false;
-  const inclRapporten    = document.getElementById('bron-rapporten')?.checked !== false;
-
-  let contextBlokken = [];
-
-  if (inclNotities && _bronnenData.notities?.length) {
-    const tekst = _bronnenData.notities.slice(0, 10).map(n => {
-      const datum = new Date(n.aangemaakt_op).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
-      return '  [' + datum + '] ' + n.tekst;
-    }).join('\n');
-    contextBlokken.push('SNELLE NOTITIES VAN DE LEERKRACHT:\n' + tekst);
-  }
-
-  if (inclLvs && _bronnenData.lvs) {
-    const lvs = _bronnenData.lvs;
-    const scores = lvs.scores || {};
-    const gevuldeScores = LVS_DOMEINEN.filter(d => scores[d.k] > 0).map(d => d.l + ': ' + scores[d.k] + '/100').join(', ');
-    let blok = 'LVS-SCORES:\n' + (gevuldeScores || '  (geen scores)');
-    if (lvs.tijdlijn?.length) {
-      blok += '\nLVS-TIJDLIJN:\n' + lvs.tijdlijn.slice(0, 8).map(t => {
-        const datum = t.datum ? new Date(t.datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '';
-        return '  [' + datum + '] ' + t.type + ': ' + t.tekst;
-      }).join('\n');
-    }
-    contextBlokken.push(blok);
-  }
-
-  if (inclToetsen && _bronnenData.toetsen?.length) {
-    contextBlokken.push('TOETSRESULTATEN:\n' + _bronnenData.toetsen.slice(0, 15).map(t => {
-      const datum = t.afname_datum ? new Date(t.afname_datum).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) : 'datum onbekend';
-      return '  ' + t.vakgebied + ' — score: ' + (t.score ?? '?') + (t.niveau ? ', niveau: ' + t.niveau : '') + ' (' + datum + ')';
-    }).join('\n'));
-  }
-
-  if (inclAanwezigheid && _bronnenData.aanwezigheid?.length) {
-    const aaw = _bronnenData.aanwezigheid;
-    const afwezig = aaw.filter(d => d.status === 'afwezig').length;
-    const teLaat  = aaw.filter(d => d.status === 'te_laat').length;
-    contextBlokken.push('AANWEZIGHEID (laatste 30 dagen):\n  Aanwezig: ' + (aaw.length - afwezig - teLaat) + '/' + aaw.length + ' dagen, afwezig: ' + afwezig + ', te laat: ' + teLaat);
-  }
-
-  if (inclOpp && _bronnenData.opp) {
-    const d = _bronnenData.opp;
-    let blok = 'OPP & HANDELINGSPLAN:\n';
-    if (d.opp) {
-      blok += '  OPP aanwezig' + (d.opp.uitstroombestemming ? ', uitstroom: ' + d.opp.uitstroombestemming : '');
-      if (d.opp.doelen) blok += '\n  OPP-doelen: ' + String(d.opp.doelen).slice(0, 300);
-    }
-    if (d.handelingsplannen?.length) d.handelingsplannen.slice(0, 3).forEach(hp => {
-      blok += '\n  Handelingsplan (' + (hp.behoefte || '?') + ')' + (hp.doel ? ': ' + String(hp.doel).slice(0, 200) : '');
-    });
-    if (blok !== 'OPP & HANDELINGSPLAN:\n') contextBlokken.push(blok);
-  }
-
-  if (inclRapporten && _bronnenData.rapporten?.length) {
-    contextBlokken.push('EERDERE RAPPORTEN:\n' + _bronnenData.rapporten.slice(0, 3).map(r => {
-      const datum = new Date(r.aangemaakt_op).toLocaleDateString('nl-NL', { month: 'long', year: 'numeric' });
-      const d = r.rapport_data || {};
-      const delen = [];
-      if (d.leerresultaten)  delen.push('Leerresultaten: ' + String(d.leerresultaten).slice(0, 150));
-      if (d.aandachtspunten) delen.push('Aandachtspunten: ' + String(d.aandachtspunten).slice(0, 150));
-      return '  [' + datum + ']\n    ' + (delen.join('\n    ') || '(geen details)');
-    }).join('\n'));
-  }
-
-  if (aanvulling) contextBlokken.push('AANVULLENDE OPMERKING LEERKRACHT:\n  "' + aanvulling + '"');
-
-  if (!contextBlokken.length) return null;
-
-  const ondersteuningInstructie = `
-ONDERSTEUNINGSBEHOEFTES — AUTOMATISCHE DETECTIE:
-Analyseer alle bronnen en detecteer zelf welke ondersteuningsbehoeftes van toepassing zijn.
-Vul "ondersteuning" in als ARRAY: [{"behoefte":"naam","signalen":"...","praktijk":"...","thuistip":"..."}]
-Geen behoeftes gevonden: gebruik [].`;
-
-  const prompt =
-    'Schrijf een volledig ParnasSys-rapport voor leerling: ' + naam + (groep ? ', groep ' + groep + ' (' + groepType + ')' : '') + '.\n'
-    + 'Gebruik ALLE onderstaande informatiebronnen.\n'
-    + ondersteuningInstructie + '\n\n'
-    + contextBlokken.join('\n\n')
-    + '\n\nRetourneer ALLEEN een geldig JSON-object:\n{"leerresultaten":null,"werkhouding":null,"sociaal_emotioneel":null,"aandachtspunten":null,"doelen":null,"positieve_punten":null,"ondersteuning":null,"rapportcommentaar":null}';
+  voortgang.innerHTML = '<span style="color:#4a7a4a">⏳ Rapporten worden gegenereerd voor groep ' + groep + '…</span>';
 
   try {
-    const tekst  = await roepAPIaan(prompt);
-    const schoon = tekst.replace(/```json|```/g, '').trim();
-    return JSON.parse(schoon);
-  } catch(e) { return null; }
-}
+    const res = await fetch(API_BASE + '/rapporten/batch', {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ groep, schooljaar: '2025-2026' })
+    });
 
-async function slaRapportOpVoorLeerling(leerlingId, data) {
-  if (!leerlingId || !huidigToken) return;
-  await fetch(API_BASE + '/rapporten', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + huidigToken, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ leerling_id: leerlingId, rapport_data: data })
-  });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Status ' + res.status);
+    }
+
+    const data = await res.json();
+    const { totaal, gegenereerd, overgeslagen, fouten: aantalFouten, fouten_detail } = data;
+
+    // Toon resultaat
+    let html = '';
+
+    if (gegenereerd > 0) {
+      html += '<div style="color:#2d6a2d;font-weight:600;margin-bottom:6px">✓ ' + gegenereerd + ' van de ' + totaal + ' rapporten gegenereerd en opgeslagen.</div>';
+    }
+
+    if (overgeslagen > 0) {
+      const namen = fouten_detail
+        .filter(f => f.status === 'overgeslagen')
+        .map(f => f.voornaam)
+        .join(', ');
+      html += '<div style="color:#92400e;margin-bottom:4px">⚠ ' + overgeslagen + ' overgeslagen (geen notities): ' + namen + '</div>';
+    }
+
+    if (aantalFouten > 0) {
+      const namen = fouten_detail
+        .filter(f => f.status === 'fout')
+        .map(f => f.voornaam)
+        .join(', ');
+      html += '<div style="color:#991b1b;margin-bottom:4px">✗ ' + aantalFouten + ' mislukt: ' + namen + '</div>';
+    }
+
+    if (gegenereerd > 0) {
+      html += '<div style="margin-top:6px;font-size:10px;color:var(--tz)">Selecteer een leerling om het rapport te bekijken en eventueel aan te passen.</div>';
+      // Herlaad leerlingenlijst zodat rapport-geschiedenis up to date is
+      await laadLeerlingen();
+    }
+
+    voortgang.innerHTML = html;
+
+  } catch(e) {
+    voortgang.innerHTML = '<span style="color:#991b1b">Fout: ' + e.message + '</span>';
+  } finally {
+    knop.disabled  = false;
+    knop.textContent = 'Genereer alle rapporten';
+  }
 }
 
 async function laadRapport(id) {
@@ -1529,9 +1409,6 @@ function sluitLeerlingModal() {
 window.addEventListener('DOMContentLoaded', initAuth);
 
 function toonTab(tab, knop) {
-  // Onthoud actieve tab
-  sessionStorage.setItem('actieveTab', tab);
-
   // Reset knoppen
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
@@ -1711,51 +1588,20 @@ function toonTab(tab, knop) {
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0">
 <div id="tab-rapport-wrap" style="display:grid;height:100%;min-height:0">
-
-  <!-- ── Leerling-selector zijbalk ── -->
-  <div id="rapport-sidebar" style="width:200px;flex-shrink:0;border-right:1px solid var(--warmrand);background:#fafcfa;display:flex;flex-direction:column;overflow:hidden;height:100%">
-
-    <!-- Klassen-pills -->
-    <div style="flex-shrink:0;padding:10px 10px 6px;border-bottom:1px solid var(--warmrand)">
-      <div class="vlabel" style="margin-bottom:6px">KLAS</div>
-      <div id="rapport-klassen" style="display:flex;flex-wrap:wrap;gap:4px">
-        <div style="font-size:11px;color:var(--tz)">Laden…</div>
-      </div>
-    </div>
-
-    <!-- Leerlingenlijst van geselecteerde klas -->
-    <div style="flex:1;overflow-y:auto;padding:6px">
-      <div id="rapport-leerlingen-lijst">
-        <div style="font-size:11px;color:var(--tz);padding:8px 4px">Kies een klas.</div>
-      </div>
-    </div>
-
-    <!-- Batch-sectie onderaan -->
-    <div style="flex-shrink:0;border-top:1px solid var(--warmrand);padding:10px;background:var(--warm)">
-      <div class="vlabel" style="margin-bottom:4px">HELE KLAS</div>
-      <div style="font-size:10px;color:var(--tz);line-height:1.4;margin-bottom:7px">Genereer rapporten voor alle leerlingen in de geselecteerde klas.</div>
-      <button onclick="startBatchRapporten()" id="batch-knop" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:6px;margin-bottom:4px">Genereer hele klas</button>
-      <button id="batch-stop-knop" onclick="" style="display:none;width:100%;background:#fff;color:#991b1b;border:1px solid #fca5a5;padding:5px;font-size:11px;cursor:pointer;font-family:inherit;border-radius:6px;margin-bottom:4px">⏹ Stop</button>
-      <div id="batch-voortgang" style="display:none;font-size:11px;line-height:1.6;margin-top:4px"></div>
-    </div>
-
-  </div>
-
-  <!-- ── Invoerpaneel ── -->
   <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0">
 
-    <!-- Scrollbare inhoud -->
-    <div style="flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:12px;min-height:0">
+    <!-- Scrollbare inhoud — vult beschikbare ruimte -->
+    <div style="flex:1;overflow-y:auto;padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:10px;min-height:0">
 
-      <!-- Leerling: naam + groep (readonly — gevuld via zijbalk) -->
+      <!-- Leerling: naam + groep naast elkaar -->
       <div style="display:grid;grid-template-columns:1fr 100px;gap:8px">
         <div>
           <div class="vlabel">LEERLING</div>
-          <input type="text" id="naam" placeholder="Selecteer een leerling…" readonly style="background:#f8f8f8;cursor:default">
+          <input type="text" id="naam" placeholder="Naam kind">
         </div>
         <div>
           <div class="vlabel">GROEP</div>
-          <select id="groep" disabled style="background:#f8f8f8;cursor:default">
+          <select id="groep">
             <option value="">—</option>
             <option>1</option><option>2</option><option>3</option>
             <option>4</option><option>5</option><option>6</option>
@@ -1764,84 +1610,66 @@ function toonTab(tab, knop) {
         </div>
       </div>
 
-      <!-- Bronnen-overzicht -->
+      <!-- Ondersteuningsbehoeftes: 2-koloms grid -->
       <div>
-        <div class="vlabel">INFORMATIEBRONNEN <span style="font-weight:400;color:var(--tz)">— worden meegenomen in het rapport</span></div>
-        <div id="bronnen-overzicht" style="display:flex;flex-direction:column;gap:4px">
-          <label id="bron-notities-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="bron-notities" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Snelle notities</span>
-            <span id="bron-notities-status" style="font-size:10px;color:var(--tz)">—</span>
-          </label>
-          <label id="bron-lvs-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="bron-lvs" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">LVS-scores & tijdlijn</span>
-            <span id="bron-lvs-status" style="font-size:10px;color:var(--tz)">—</span>
-          </label>
-          <label id="bron-toetsen-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="bron-toetsen" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Toetsresultaten</span>
-            <span id="bron-toetsen-status" style="font-size:10px;color:var(--tz)">—</span>
-          </label>
-          <label id="bron-aanwezigheid-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="bron-aanwezigheid" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Aanwezigheid</span>
-            <span id="bron-aanwezigheid-status" style="font-size:10px;color:var(--tz)">—</span>
-          </label>
-          <label id="bron-opp-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="bron-opp" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">OPP & handelingsplan</span>
-            <span id="bron-opp-status" style="font-size:10px;color:var(--tz)">—</span>
-          </label>
-          <label id="bron-rapporten-rij" style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="bron-rapporten" checked style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Eerdere rapporten</span>
-            <span id="bron-rapporten-status" style="font-size:10px;color:var(--tz)">—</span>
-          </label>
+        <div class="vlabel">ONDERSTEUNINGSBEHOEFTES <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
+        <div id="od-wrap">
+          <div id="od-checklijst" style="background:#fff;border:1px solid var(--rand);padding:6px 8px;display:grid;grid-template-columns:1fr 1fr;gap:2px 8px">
+            <label class="od-check-item"><input type="checkbox" value="Dyslexie" onchange="updateTags()"> Dyslexie</label>
+            <label class="od-check-item"><input type="checkbox" value="Dyscalculie" onchange="updateTags()"> Dyscalculie</label>
+            <label class="od-check-item"><input type="checkbox" value="Hoogbegaafdheid" onchange="updateTags()"> Hoogbegaafdheid</label>
+            <label class="od-check-item"><input type="checkbox" value="ADHD / concentratieproblemen" onchange="updateTags()"> ADHD</label>
+            <label class="od-check-item"><input type="checkbox" value="Autisme (ASS)" onchange="updateTags()"> Autisme (ASS)</label>
+            <label class="od-check-item"><input type="checkbox" value="Sociaal-emotionele problematiek" onchange="updateTags()"> Soc.-emotioneel</label>
+            <label class="od-check-item"><input type="checkbox" value="Taalontwikkelingsachterstand" onchange="updateTags()"> Taalontwikkeling</label>
+            <label class="od-check-item"><input type="checkbox" value="Motorische problematiek" onchange="updateTags()"> Motoriek</label>
+          </div>
+          <div class="tags-rij" id="od-tags"></div>
         </div>
       </div>
 
-      <!-- Aanvullende opmerkingen -->
-      <div>
-        <div class="vlabel">AANVULLENDE OPMERKINGEN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
-        <div class="nwrap" style="display:flex;flex-direction:column">
-          <textarea id="notities" maxlength="500" rows="3"
-            style="resize:none;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 46px 9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
-            placeholder="Aanvullende opmerkingen…"></textarea>
-          <span class="teller" id="teller" style="right:52px">0 / 500</span>
+      <!-- Notities: flex:1 zodat het de resterende ruimte vult -->
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div class="vlabel">NOTITIES</div>
+        <div class="nwrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
+          <textarea id="notities" maxlength="2000"
+            style="flex:1;min-height:80px;resize:none;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
+            placeholder="Typ of plak je notities vrij in…"></textarea>
+          <span class="teller" id="teller" style="right:52px">0 / 2000</span>
           <button class="mic-knop" onclick="toggleMic('notities',this)" title="Spraak naar tekst">🎤</button>
         </div>
       </div>
 
-      <!-- Extra opties -->
+      <!-- Extra opties: compact horizontaal -->
       <div>
         <div class="vlabel" style="margin-bottom:5px">EXTRA GENEREREN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="cb-opp" style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">OPP genereren</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-opp" onclick="toggleExtraOptie('opp')">
+            <input type="checkbox" id="cb-opp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
+            <span style="font-size:12px;color:var(--t);font-weight:500">OPP</span>
           </label>
-          <label style="display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--rand);background:#fff;cursor:pointer;border-radius:6px">
-            <input type="checkbox" id="cb-hp" style="width:14px;height:14px;accent-color:#4a7a4a;flex-shrink:0;cursor:pointer">
-            <span style="font-size:12px;font-weight:500;color:var(--t);flex:1">Handelingsplan genereren</span>
+          <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--rand);cursor:pointer;background:#fff" id="eo-hp" onclick="toggleExtraOptie('hp')">
+            <input type="checkbox" id="cb-hp" style="width:14px;height:14px;accent-color:var(--t);flex-shrink:0;cursor:pointer" onclick="event.stopPropagation()">
+            <span style="font-size:12px;color:var(--t);font-weight:500">Handelingsplan</span>
           </label>
         </div>
       </div>
 
     </div>
 
-    <!-- Genereerknop -->
+    <!-- Genereerknop: altijd onderaan vastgezet -->
     <div style="flex-shrink:0;padding:10px 1.6rem;background:var(--warm);border-top:1px solid var(--warmrand)">
       <button class="genknop" id="gknop" onclick="genereer()">
         <div class="spin" id="spin"></div>
-        <span id="ktekst">Genereer rapport</span>
+        <span id="ktekst">Genereer ParnasSys-rapport</span>
       </button>
     </div>
 
   </div>
 
   <div class="resultaat" id="resultaat" style="height:100%;min-height:0">
-    <div class="leeg" id="leeg"></div>
+    <div class="leeg" id="leeg">
+    </div>
   </div>
 
 </div></div><!-- einde tab-rapport -->
@@ -2150,6 +1978,11 @@ function toonTab(tab, knop) {
       <div style="padding:14px 18px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0">
         <div id="lvs-naam" style="font-family:Georgia,serif;font-size:20px;color:var(--t)">Selecteer een leerling</div>
         <div id="lvs-meta" style="font-size:12px;color:var(--tz);margin-top:2px"></div>
+        <div id="lvs-acties" style="display:none;margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="lvsNaarTab('rapport')" style="font-size:11px;padding:6px 12px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)">→ Rapport genereren</button>
+          <button onclick="lvsNaarTab('opp')" style="font-size:11px;padding:6px 12px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)">→ OPP</button>
+          <button onclick="lvsNaarTab('handelingsplan')" style="font-size:11px;padding:6px 12px;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm)">→ Handelingsplan</button>
+        </div>
       </div>
 
       <!-- Signalenbalk — toont stilte-alerts voor de huidige leerling -->
@@ -2193,10 +2026,7 @@ function toonTab(tab, knop) {
             <option>5</option><option>6</option><option>7</option><option>8</option>
           </select>
           <button onclick="benchmarkLaad()" style="padding:6px 14px;background:#4a7a4a;color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Vergelijk</button>
-          <button onclick="benchmarkBijdragen()" id="benchmark-bijdragen-knop"
-            style="padding:6px 14px;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit"
-            title="Draag anonieme gemiddelden bij aan het schoolnetwerk">↑ Bijdragen aan netwerk</button>
-          <div id="benchmark-bijdrage-balk" style="display:none;font-size:11px;color:#2d6a2d;padding:4px 0"></div>
+
         </div>
 
         <!-- Resultaten -->
@@ -2500,16 +2330,13 @@ function toonTab(tab, knop) {
             style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 11px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.6"></textarea>
           <button onclick="lvsSlaNotitieOp()" style="align-self:flex-start;background:#4a7a4a;color:#fff;border:none;padding:7px 16px;font-size:11px;font-weight:600;letter-spacing:.06em;cursor:pointer;font-family:inherit">Opslaan</button>
         </div>
-      </div>
-      <div id="lvs-tab-csv" style="display:none;flex:1;overflow-y:auto;padding:14px 18px;flex-direction:column;gap:8px">
-        <textarea id="lvs-csv-invoer" rows="8" placeholder="leerlingnummer,vakgebied,score,niveau,datum&#10;12345,lezen,75,II,2025-01-15"
+      </div>        <textarea id="lvs-csv-invoer" rows="8" placeholder="leerlingnummer,vakgebied,score,niveau,datum&#10;12345,lezen,75,II,2025-01-15"
           style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 11px;font-size:12px;font-family:monospace;outline:none;resize:vertical;line-height:1.6;margin-bottom:8px"></textarea>
         <button onclick="toetsImportCSV(document.getElementById('lvs-csv-invoer').value)"
           style="background:#4a7a4a;color:#fff;border:none;padding:9px 18px;font-size:11px;font-weight:600;letter-spacing:.06em;cursor:pointer;font-family:inherit">Importeren</button>
       </div>
 
     </div>
-  </div>
 
 <div id="tab-aanwezigheid" style="display:none;flex:1;min-height:0;overflow:hidden;background:#f8f8f8;flex-direction:column">
 
@@ -2615,6 +2442,9 @@ function toonTab(tab, knop) {
   </div>
 </div><!-- einde tab-notities -->
 
+  </div>
+</div>
+
 
 
 
@@ -2700,192 +2530,80 @@ let huidigeSectieData = null;
 let feedbackWaarde    = null;
 
 document.getElementById('notities').addEventListener('input', function() {
-  document.getElementById('teller').textContent = `${this.value.length} / 500`;
+  document.getElementById('teller').textContent = `${this.value.length} / 2000`;
 });
 
 function laad(type) {
   const v = VOORBEELDEN[type];
   document.getElementById('naam').value    = v.naam;
   document.getElementById('groep').value   = v.groep;
-  document.getElementById('notities').value = '';
-  document.getElementById('teller').textContent = `0 / 500`;
-}
-
-// ── Bronnen-overzicht: ververs statussen bij leerling-selectie ──
-// ── Rapport leerling-selector zijbalk ────────────────────────
-let _rapportGeselecteerdeKlas = null;
-
-function rapportSidebarVul() {
-  // Bouw klassen-pills op basis van geladen leerlingen
-  const klassenEl = document.getElementById('rapport-klassen');
-  if (!klassenEl) return;
-  const klassen = [...new Set(leerlingen.map(l => l.groep).filter(Boolean))].sort((a, b) => parseInt(a) - parseInt(b));
-  if (!klassen.length) {
-    klassenEl.innerHTML = '<div style="font-size:11px;color:var(--tz)">Geen klassen.</div>';
-    return;
-  }
-  klassenEl.innerHTML = klassen.map(g =>
-    '<button onclick="rapportKlasSelecteer(' + JSON.stringify(g) + ')" id="rapport-klas-' + g + '" style="padding:4px 10px;font-size:11px;font-weight:500;border:1px solid var(--rand);background:#fff;cursor:pointer;font-family:inherit;color:var(--tm);border-radius:20px;transition:all .12s">Groep ' + g + '</button>'
-  ).join('');
-  // Selecteer automatisch de eerste klas
-  if (!_rapportGeselecteerdeKlas && klassen.length) rapportKlasSelecteer(klassen[0]);
-}
-
-function rapportKlasSelecteer(groep) {
-  _rapportGeselecteerdeKlas = groep;
-  // Update pill styling
-  document.querySelectorAll('[id^="rapport-klas-"]').forEach(btn => {
-    const actief = btn.id === 'rapport-klas-' + groep;
-    btn.style.background  = actief ? '#4a7a4a' : '#fff';
-    btn.style.color       = actief ? '#fff'    : 'var(--tm)';
-    btn.style.borderColor = actief ? '#4a7a4a' : 'var(--rand)';
-  });
-  // Vul leerlingenlijst
-  const lijst = document.getElementById('rapport-leerlingen-lijst');
-  if (!lijst) return;
-  const klasLeerlingen = leerlingen.filter(l => l.groep === groep);
-  if (!klasLeerlingen.length) {
-    lijst.innerHTML = '<div style="font-size:11px;color:var(--tz);padding:8px 4px">Geen leerlingen in groep ' + groep + '.</div>';
-    return;
-  }
-  lijst.innerHTML = klasLeerlingen.map(l =>
-    '<div id="rapport-ll-' + l.id + '" onclick="rapportLeerlingSelecteer(' + JSON.stringify(l.id) + ')" style="padding:7px 9px;border-radius:6px;cursor:pointer;margin-bottom:2px;border-left:2px solid transparent;transition:all .12s" onmouseover="this.style.background=\'#f0f5f0\'" onmouseout="this.style.background=(window._huidigeLeerlingId===\'' + l.id + '\'?\'#eef3ee\':\'transparent\')">'
-    + '<div style="font-size:12px;font-weight:500;color:var(--t)">' + l.voornaam + '</div>'
-    + '</div>'
-  ).join('');
-  // Highlight actieve leerling
-  if (window._huidigeLeerlingId) rapportSidebarHighlight(window._huidigeLeerlingId);
-}
-
-function rapportLeerlingSelecteer(id) {
-  const l = leerlingen.find(x => x.id === id);
-  if (!l) return;
-  stelLeerlingIn(l);
-  rapportSidebarHighlight(id);
-}
-
-function rapportSidebarHighlight(id) {
-  document.querySelectorAll('[id^="rapport-ll-"]').forEach(el => {
-    const actief = el.id === 'rapport-ll-' + id;
-    el.style.background   = actief ? '#eef3ee' : 'transparent';
-    el.style.borderLeftColor = actief ? '#4a7a4a' : 'transparent';
-  });
-}
-
-let _bronnenData = {};  // cache van opgehaalde brondata voor huidige leerling
-
-async function bronnenVervers(leerlingId) {
-  if (!leerlingId || !huidigToken) return;
-  _bronnenData = {};
-
-  function stelStatus(id, tekst, ok) {
-    const el = document.getElementById('bron-' + id + '-status');
-    if (!el) return;
-    el.textContent = tekst;
-    el.style.color = ok ? '#4a7a4a' : (ok === false ? '#999' : '#888');
-  }
-
-  // Snelle notities
-  stelStatus('notities', 'Laden…', null);
-  try {
-    const r = await fetch(API_BASE + '/leerlingen/' + leerlingId + '/notities', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
-    if (r.ok) {
-      const data = await r.json();
-      _bronnenData.notities = data;
-      stelStatus('notities', data.length ? data.length + ' notitie' + (data.length !== 1 ? 's' : '') : 'Geen notities', data.length > 0);
-    } else { stelStatus('notities', 'Niet beschikbaar', false); }
-  } catch(e) { stelStatus('notities', 'Niet beschikbaar', false); }
-
-  // LVS-scores & tijdlijn
-  stelStatus('lvs', 'Laden…', null);
-  try {
-    const r = await fetch(API_BASE + '/lvs/' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
-    if (r.ok) {
-      const data = await r.json();
-      _bronnenData.lvs = data;
-      const aantalScores = Object.values(data.scores || {}).filter(v => v > 0).length;
-      const aantalTijdlijn = (data.tijdlijn || []).length;
-      const delen = [];
-      if (aantalScores) delen.push(aantalScores + ' scores');
-      if (aantalTijdlijn) delen.push(aantalTijdlijn + ' tijdlijn-items');
-      stelStatus('lvs', delen.length ? delen.join(', ') : 'Leeg', delen.length > 0);
-    } else { stelStatus('lvs', 'Niet beschikbaar', false); }
-  } catch(e) { stelStatus('lvs', 'Niet beschikbaar', false); }
-
-  // Toetsresultaten (via LVS tijdlijn toets-items of apart endpoint)
-  stelStatus('toetsen', 'Laden…', null);
-  try {
-    const r = await fetch(API_BASE + '/toetsen?leerling_id=' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
-    if (r.ok) {
-      const data = await r.json();
-      _bronnenData.toetsen = data;
-      stelStatus('toetsen', data.length ? data.length + ' resultaat' + (data.length !== 1 ? 'en' : '') : 'Geen resultaten', data.length > 0);
-    } else { stelStatus('toetsen', 'Niet beschikbaar', false); }
-  } catch(e) { stelStatus('toetsen', 'Niet beschikbaar', false); }
-
-  // Aanwezigheid (laatste 30 dagen)
-  stelStatus('aanwezigheid', 'Laden…', null);
-  try {
-    const r = await fetch(API_BASE + '/aanwezigheid?leerling_id=' + leerlingId + '&dagen=30', { headers: { 'Authorization': 'Bearer ' + huidigToken } });
-    if (r.ok) {
-      const data = await r.json();
-      _bronnenData.aanwezigheid = data;
-      const afwezig = Array.isArray(data) ? data.filter(d => d.status === 'afwezig').length : 0;
-      const totaal  = Array.isArray(data) ? data.length : 0;
-      stelStatus('aanwezigheid', totaal ? totaal + ' dagen · ' + afwezig + ' afwezig' : 'Geen data', totaal > 0);
-    } else { stelStatus('aanwezigheid', 'Niet beschikbaar', false); }
-  } catch(e) { stelStatus('aanwezigheid', 'Niet beschikbaar', false); }
-
-  // OPP & handelingsplan
-  stelStatus('opp', 'Laden…', null);
-  try {
-    const r = await fetch(API_BASE + '/dossier/' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
-    if (r.ok) {
-      const data = await r.json();
-      _bronnenData.opp = data;
-      const delen = [];
-      if (data.opp) delen.push('OPP');
-      if (data.handelingsplannen && data.handelingsplannen.length) delen.push(data.handelingsplannen.length + ' handelingsplan(nen)');
-      stelStatus('opp', delen.length ? delen.join(' + ') : 'Geen documenten', delen.length > 0);
-    } else { stelStatus('opp', 'Niet beschikbaar', false); }
-  } catch(e) { stelStatus('opp', 'Niet beschikbaar', false); }
-
-  // Eerdere rapporten
-  stelStatus('rapporten', 'Laden…', null);
-  try {
-    const r = await fetch(API_BASE + '/rapporten/' + leerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
-    if (r.ok) {
-      const data = await r.json();
-      _bronnenData.rapporten = data;
-      stelStatus('rapporten', data.length ? data.length + ' rapport' + (data.length !== 1 ? 'en' : '') : 'Geen eerdere rapporten', data.length > 0);
-    } else { stelStatus('rapporten', 'Niet beschikbaar', false); }
-  } catch(e) { stelStatus('rapporten', 'Niet beschikbaar', false); }
+  document.getElementById('notities').value = v.notities;
+  document.getElementById('teller').textContent = `${v.notities.length} / 2000`;
 }
 
 async function genereer() {
-  const naam  = document.getElementById('naam').value.trim();
-  const groep = document.getElementById('groep').value;
-  if (!naam) { toonFout('Selecteer eerst een leerling via de zijbalk.'); return; }
+  const naam     = document.getElementById('naam').value.trim();
+  const groep    = document.getElementById('groep').value;
+  const notities = document.getElementById('notities').value.trim();
+  if (notities.length < 20) { toonFout('Voer minimaal 20 tekens aan notities in.'); return; }
 
-  const spin   = document.getElementById('spin');
-  const ktekst = document.getElementById('ktekst');
-  const gknop  = document.getElementById('gknop');
-  spin.style.display = 'block';
-  ktekst.textContent = 'Bronnen verzamelen…';
-  gknop.disabled = true;
+  document.getElementById('spin').style.display = 'block';
+  document.getElementById('ktekst').textContent = 'Verwerken...';
+  const _inclOpp = document.getElementById('cb-opp')?.checked || false;
+  const _inclHp = document.getElementById('cb-hp')?.checked || false;
+  document.getElementById('gknop').disabled = true;
 
-  const leerlingId = window._huidigeLeerlingId;
+  const behoeftes = getGeselecteerdeBehoeftes();
+  const groepType = parseInt(groep) <= 3 ? 'onderbouw (groep 1-3)' :
+                   parseInt(groep) <= 6 ? 'middenbouw (groep 4-6)' :
+                   groep ? 'bovenbouw (groep 7-8)' : '';
 
-  // Zorg dat brondata vers is
-  if (leerlingId && Object.keys(_bronnenData).length === 0) {
-    await bronnenVervers(leerlingId);
+  const ondersteuningContext = behoeftes.length > 0
+    ? '\nOndersteuningsbehoeftes: ' + behoeftes.join(', ') + '.\nVul de sleutel "ondersteuning" in als een ARRAY van objecten, één per behoefte: [{"behoefte":"naam","praktijk":"hoe dit er voor dit kind concreet uitziet in gewone taal voor ouders","thuistip":"één concrete tip voor thuis"}]'
+    : '';
+
+  // Haal bestaande LVS-scores op als context voor Claude (alleen lezen, niet terugschrijven)
+  let lvsContextTekst = '';
+  if (window._huidigeLeerlingId) {
+    try {
+      const lvsRes = await fetch(API_BASE + '/lvs/' + window._huidigeLeerlingId, {
+        headers: { 'Authorization': 'Bearer ' + huidigToken }
+      });
+      if (lvsRes.ok) {
+        const lvsProfiel = await lvsRes.json();
+        const scores = lvsProfiel.scores || {};
+        const gevuldeScores = LVS_DOMEINEN
+          .filter(d => scores[d.k] && scores[d.k] > 0)
+          .map(d => d.l + ': ' + scores[d.k])
+          .join(', ');
+        if (gevuldeScores) {
+          lvsContextTekst = '\nBekende LVS-scores (ter informatie, niet aanpassen): ' + gevuldeScores + '.';
+        }
+      }
+    } catch(e) { /* stil falen — context is optioneel */ }
   }
 
-  ktekst.textContent = 'Rapport genereren…';
+  const prompt = (naam ? 'Leerling: ' + naam + (groep ? ', groep ' + groep : '') + '.' : '')
+    + (groepType ? ' Dit kind zit in de ' + groepType + '.' : '')
+    + ondersteuningContext
+    + lvsContextTekst
+    + '\nNotities van de leerkracht:\n"' + notities + '"'
+    + '\n\nRetourneer ALLEEN een geldig JSON-object met deze sleutels:'
+    + '\n{'
+    + '"leerresultaten":null,'
+    + '"werkhouding":null,'
+    + '"sociaal_emotioneel":null,'
+    + '"aandachtspunten":null,'
+    + '"doelen":null,'
+    + '"positieve_punten":null,'
+    + '"ondersteuning":null,'
+    + '"rapportcommentaar":null,'
+
+    + '}'
 
   // Toon streaming indicator
   verbergResultaten();
-  const r    = document.getElementById('resultaat');
+  const r = document.getElementById('resultaat');
   const leeg = document.getElementById('leeg');
   if (leeg) leeg.style.display = 'none';
   const streamDiv = document.createElement('div');
@@ -2894,20 +2612,29 @@ async function genereer() {
   r.appendChild(streamDiv);
 
   try {
-    const parsed = await _bouwEnGenereerRapport(naam, groep);
-    if (!parsed) throw new Error('Geen informatiebronnen beschikbaar om rapport te genereren.');
+    const tekst = await roepAPIaanStream(prompt, (chunk) => {
+      // Toon geen tussentijdse foutobjecten als rapporttekst
+      if (!chunk.trimStart().startsWith('{"error"')) {
+        streamDiv.textContent = chunk;
+      }
+    });
+    const schoon = tekst.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(schoon);
     huidigeSectieData = parsed;
     toonResultaten(parsed, naam, groep);
     registreerRapport();
-    if (leerlingId) slaRapportOp(parsed);
+    if (window._huidigeLeerlingId) slaRapportOp(parsed);
+    // Werk LVS bij met scores en tijdlijn uit het rapport
     await werkLvsVanuitRapportBij(parsed, naam, groep);
-    streamDiv.remove();
   } catch (err) {
     if (r) r.innerHTML = '<div class="fout">' + err.message + '</div>';
   } finally {
-    spin.style.display = 'none';
-    ktekst.textContent = 'Genereer rapport';
-    gknop.disabled = false;
+    const spin = document.getElementById('spin');
+    const ktekst = document.getElementById('ktekst');
+    const gknop = document.getElementById('gknop');
+    if (spin) spin.style.display = 'none';
+    if (ktekst) ktekst.textContent = 'Genereer ParnasSys-rapport';
+    if (gknop) gknop.disabled = false;
   }
 }
 
@@ -4773,7 +4500,7 @@ function lvsToonTab(naam, knop) {
   document.querySelectorAll('.lvs-tab').forEach(k => k.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
   const tabEl = document.getElementById('lvs-tab-' + naam);
-  if (tabEl) tabEl.style.display = 'block';
+  if (tabEl) tabEl.style.display = naam === 'notitie' ? 'flex' : 'block';
   if (naam === 'profiel') { lvsRenderDomeinen(); lvsRenderRadar(); }
   if (naam === 'dossier' && lvsHuidig) { dossierLaad(lvsHuidig.id); }
   if (naam === 'benchmark') {
