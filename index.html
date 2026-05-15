@@ -1761,8 +1761,6 @@ function toonTab(tab, knop) {
       <select id="rapport-klas" onchange="rapportLaadKlas(this.value)"
         style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
         <option value="">Kies groep…</option>
-        <option>1</option><option>2</option><option>3</option><option>4</option>
-        <option>5</option><option>6</option><option>7</option><option>8</option>
       </select>
     </div>
 
@@ -2499,8 +2497,6 @@ function toonTab(tab, knop) {
       <select id="aaw-klas-select" onchange="aawSelecteerKlas(this.value)"
         style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff;border-radius:7px;min-width:120px">
         <option value="">Kies groep…</option>
-        <option>1</option><option>2</option><option>3</option><option>4</option>
-        <option>5</option><option>6</option><option>7</option><option>8</option>
       </select>
     </div>
 
@@ -4792,13 +4788,26 @@ function aawSelecteerKlas(groep) {
 }
 
 function aawRenderKlassen() {
-  // Zet de juiste groepen in de select
   const sel = document.getElementById('aaw-klas-select');
   if (!sel) return;
-  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))].sort(function(a,b){return parseInt(a)-parseInt(b);});
-  // Bewaar opties 1-8, voeg ontbrekende groepen niet toe — select is al gevuld
-  // Activeer automatisch als er maar één klas is
-  if (groepen.length === 1 && sel.value !== groepen[0]) {
+  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))]
+    .sort(function(a,b) { return parseInt(a) - parseInt(b); });
+
+  // Bouw opties dynamisch op basis van echte leerlingdata
+  const huidig = sel.value;
+  sel.innerHTML = '<option value="">Kies groep…</option>';
+  groepen.forEach(function(g) {
+    const count = aawLeerlingen.filter(function(l) { return l.groep === g; }).length;
+    const opt = document.createElement('option');
+    opt.value = g;
+    opt.textContent = 'Groep ' + g + ' (' + count + ' leerlingen)';
+    sel.appendChild(opt);
+  });
+
+  // Herstel vorige selectie of selecteer automatisch als er maar één klas is
+  if (huidig && groepen.includes(huidig)) {
+    sel.value = huidig;
+  } else if (groepen.length === 1) {
     sel.value = groepen[0];
     aawSelecteerKlas(groepen[0]);
   }
