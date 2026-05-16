@@ -1923,6 +1923,19 @@ function toonTab(tab, knop) {
       <div style="font-size:11px;color:var(--tz);padding:8px 6px">Kies een groep.</div>
     </div>
 
+    <!-- Batch-sectie -->
+    <div style="flex-shrink:0;border-top:1px solid var(--n-200);padding:10px;background:var(--n-50)">
+      <div class="vlabel" style="margin-bottom:6px">HELE KLAS</div>
+      <select id="batch-groep" style="width:100%;margin-bottom:6px">
+        <option value="">Kies groep…</option>
+      </select>
+      <button onclick="startBatchRapporten()" id="batch-knop"
+        style="width:100%;background:var(--accent);color:#fff;border:none;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);border-radius:var(--r-md)">
+        Genereer alle rapporten
+      </button>
+      <div id="batch-voortgang" style="display:none;margin-top:8px;font-size:11px;line-height:1.6"></div>
+    </div>
+
   </div>
 
   <div class="invoer" style="height:100%;overflow:hidden;box-sizing:border-box;display:flex;flex-direction:column;gap:0;padding:0;border-right:1px solid var(--warmrand)">
@@ -2023,16 +2036,7 @@ function toonTab(tab, knop) {
     </div>
   </div>
 
-  <!-- Batch-sectie: altijd zichtbaar onderaan -->
-  <div style="flex-shrink:0;border-top:2px solid var(--warmrand);padding:10px 12px;background:var(--warm)">
-    <div class="vlabel" style="margin-bottom:4px">HELE KLAS</div>
-    <div style="font-size:10px;color:var(--tz);line-height:1.5;margin-bottom:6px">Genereer voor alle leerlingen tegelijk op basis van notities en LVS.</div>
-    <select id="batch-groep" style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 8px;font-size:11px;font-family:inherit;outline:none;background:#fff;margin-bottom:6px">
-      <option value="">Kies groep…</option>
-    </select>
-    <button onclick="startBatchRapporten()" id="batch-knop" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:7px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Genereer alle rapporten</button>
-    <div id="batch-voortgang" style="display:none;margin-top:6px;font-size:11px;line-height:1.6"></div>
-  </div>
+
 
 </div>
 <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden">
