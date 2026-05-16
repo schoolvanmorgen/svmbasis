@@ -1940,9 +1940,6 @@ function toonTab(tab, knop) {
           <div class="vlabel">GROEP</div>
           <select id="groep">
             <option value="">—</option>
-            <option>1</option><option>2</option><option>3</option>
-            <option>4</option><option>5</option><option>6</option>
-            <option>7</option><option>8</option>
           </select>
         </div>
       </div>
@@ -2886,19 +2883,21 @@ function vulRapportKlasSelect() {
   const groepen = [...new Set((leerlingen||[]).map(function(l){ return l.groep; }).filter(Boolean))]
     .sort(function(a,b){ return parseInt(a)-parseInt(b); });
 
-  const maakOpties = function(el) {
-    el.innerHTML = '<option value="">Kies groep…</option>';
+  const maakOpties = function(el, kort) {
+    const leeg = kort ? '—' : 'Kies groep…';
+    el.innerHTML = '<option value="">' + leeg + '</option>';
     groepen.forEach(function(g) {
-      const count = leerlingen.filter(function(l){ return l.groep === g; }).length;
       const opt = document.createElement('option');
       opt.value = g;
-      opt.textContent = 'Groep ' + g + ' — ' + count + ' leerlingen';
+      opt.textContent = kort ? g : ('Groep ' + g + ' — ' + leerlingen.filter(function(l){ return l.groep === g; }).length + ' leerlingen');
       el.appendChild(opt);
     });
   };
 
-  maakOpties(sel);
-  if (batchSel) maakOpties(batchSel);
+  maakOpties(sel, false);
+  if (batchSel) maakOpties(batchSel, false);
+  const groepEl = document.getElementById('groep');
+  if (groepEl) maakOpties(groepEl, true);
   if (huidig && groepen.includes(huidig)) sel.value = huidig;
 }
 
