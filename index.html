@@ -653,6 +653,8 @@ textarea { resize: vertical; line-height: 1.7; min-height: 72px; }
     padding: 24px;
   }
 }
+
+.ib-groep-kaart:hover { box-shadow: var(--shadow-md) !important; transform: translateY(-2px); }
 </style>
 <script>
 // ── Globale foutopvang — toont fout in pagina i.p.v. blank scherm ──
@@ -1911,8 +1913,8 @@ function toonTab(tab, knop) {
 
   } else if (tab === 'ib') {
     var el4 = document.getElementById('tab-ib');
-    if (el4) el4.style.display = 'block';
-    if (typeof ibLaad === 'function') ibLaad();
+    if (el4) { el4.style.display = 'flex'; el4.style.flexDirection = 'column'; }
+    ibToonGroepen();
 
   } else if (tab === 'inspectie') {
     var el5 = document.getElementById('tab-inspectie');
@@ -2312,56 +2314,22 @@ function toonTab(tab, knop) {
 </div><!-- einde tab-inhoud -->
 
 <!-- ── IB-Dashboard Tab ── -->
-<div class="sectie" id="tab-ib" style="height:100%;overflow:hidden;display:none">
-  <div style="display:flex;height:100%;overflow:hidden">
+<div class="sectie" id="tab-ib" style="display:none;flex:1;min-height:0;overflow:hidden;flex-direction:column">
 
-    <!-- Hoofd paneel -->
-    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
-
-      <!-- Header -->
-      <div style="padding:14px 20px;border-bottom:1px solid var(--warmrand);background:#fff;flex-shrink:0">
-        <div style="font-family:var(--font-display);font-size:18px;color:var(--n-900);margin-bottom:4px">IB-overzicht</div>
-        <div style="font-size:12px;color:var(--tz)">Alle leerlingen met ondersteuning — status OPP, signalen en documenten.</div>
-      </div>
-
-      <!-- Statistieken balk -->
-      <div id="ib-stats-balk" style="display:none;padding:10px 20px;border-bottom:1px solid var(--warmrand);background:var(--warm);display:flex;gap:20px;flex-wrap:wrap;flex-shrink:0"></div>
-
-      <!-- Filters -->
-      <div style="padding:8px 20px;border-bottom:1px solid var(--warmrand);display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;background:#fff">
-        <select id="ib-filter-groep" onchange="ibFiltereer()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-          <option value="">Alle groepen</option>
-          <option>1</option><option>2</option><option>3</option><option>4</option>
-          <option>5</option><option>6</option><option>7</option><option>8</option>
-        </select>
-        <select id="ib-filter-urgentie" onchange="ibFiltereer()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-          <option value="">Alle urgentie</option>
-          <option value="hoog">Hoog — actie vereist</option>
-          <option value="aandacht">Aandacht</option>
-          <option value="normaal">Normaal</option>
-        </select>
-        <select id="ib-filter-opp" onchange="ibFiltereer()" style="border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-          <option value="">Alle OPP-statussen</option>
-          <option value="verlopen">OPP verlopen</option>
-          <option value="ontbreekt">OPP ontbreekt</option>
-          <option value="actueel">OPP actueel</option>
-        </select>
-        <button onclick="ibLaad()" style="padding:5px 14px;background:#4a7a4a;color:#fff;border:none;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">↺ Vernieuwen</button>
-      </div>
-
-      <!-- Leerlingenlijst -->
-      <div id="ib-lijst" style="flex:1;overflow-y:auto;padding:12px 20px">
-        <div style="color:var(--tz);font-size:12px">Dashboard laden…</div>
-      </div>
-
+  <!-- Header -->
+  <div style="background:var(--n-0);border-bottom:1px solid var(--n-200);padding:16px 24px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+    <div>
+      <div id="ib-header-titel" style="font-family:var(--font-display);font-size:20px;color:var(--n-900)">Groepsoverzicht</div>
+      <div id="ib-header-sub" style="font-size:12px;color:var(--n-400);margin-top:2px">Klik op een groep voor de leerlingdetails.</div>
     </div>
-
-    <!-- Detail-paneel rechts -->
-    <div id="ib-detail-paneel" style="display:none;width:380px;flex-shrink:0;border-left:1px solid var(--warmrand);overflow-y:auto;background:#fff">
-      <div id="ib-detail-inhoud"></div>
-    </div>
-
+    <button id="ib-terug-knop" onclick="ibToonGroepen()" style="display:none;padding:7px 14px;background:var(--n-0);border:1px solid var(--n-200);border-radius:var(--r-md);font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);color:var(--n-600)">← Alle groepen</button>
   </div>
+
+  <!-- Inhoud -->
+  <div id="ib-inhoud" style="flex:1;overflow-y:auto;padding:24px;background:var(--n-50)">
+    <div style="color:var(--n-400);font-size:13px">Laden…</div>
+  </div>
+
 </div><!-- einde tab-ib -->
 
 <!-- ── Inspectie Tab (als sub van IB, of standalone) ── -->
@@ -4429,273 +4397,214 @@ function inspectieKopieer() {
   });
 }
 
-// ── IB-Dashboard (moat 3) ──────────────────────────────────
+// ── IB Groepsoverzicht ──────────────────────────────────────
 
-let _ibData = [];        // Volledige dataset voor filtering
-let _ibGefilterd = [];   // Huidige gefilterde weergave
+function ibToonSubtab() {} // leeg — niet meer nodig
 
-async function ibLaad() {
-  const lijst = document.getElementById('ib-lijst');
-  const stats = document.getElementById('ib-stats-balk');
-  if (!lijst) return;
+async function ibLaad() { ibToonGroepen(); }
 
-  lijst.innerHTML = '<div style="color:var(--tz);font-size:12px">Dashboard laden…</div>';
+async function ibToonGroepen() {
+  const inhoud = document.getElementById('ib-inhoud');
+  const titel  = document.getElementById('ib-header-titel');
+  const sub    = document.getElementById('ib-header-sub');
+  const terug  = document.getElementById('ib-terug-knop');
+  if (!inhoud) return;
 
-  try {
-    const res = await fetch(API_BASE + '/ib/dashboard', {
-      headers: { 'Authorization': 'Bearer ' + huidigToken }
-    });
+  if (titel) titel.textContent = 'Groepsoverzicht';
+  if (sub)   sub.textContent   = 'Klik op een groep voor de leerlingdetails.';
+  if (terug) terug.style.display = 'none';
+  inhoud.innerHTML = '<div style="color:var(--n-400);font-size:13px">Groepen ophalen…</div>';
 
-    if (res.status === 403) {
-      lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:20px 0">Het IB-dashboard is alleen beschikbaar voor IB-ers en directeuren. Vraag de directeur om je rol aan te passen.</div>';
-      return;
-    }
-    if (!res.ok) throw new Error('Status ' + res.status);
-
-    const data = await res.json();
-    _ibData = data.leerlingen || [];
-    ibRenderStats(data.samenvatting || {});
-    ibFiltereer();
-
-  } catch(e) {
-    lijst.innerHTML = '<div style="color:#991b1b;font-size:12px">Dashboard laden mislukt: ' + e.message + '</div>';
-  }
-}
-
-function ibRenderStats(sam) {
-  const el = document.getElementById('ib-stats-balk');
-  if (!el) return;
-  el.style.display = 'flex';
-
-  const items = [
-    [sam.totaal || 0,            'leerlingen totaal'],
-    [sam.met_ondersteuning || 0, 'met ondersteuning'],
-    [sam.hoge_urgentie || 0,     'hoge urgentie',    sam.hoge_urgentie > 0 ? '#991b1b' : null],
-    [sam.opp_verlopen || 0,      'OPP verlopen',     sam.opp_verlopen > 0 ? '#c07000' : null],
-    [sam.opp_ontbreekt || 0,     'OPP ontbreekt',    sam.opp_ontbreekt > 0 ? '#c07000' : null],
-    [sam.opp_actueel || 0,       'OPP actueel',      '#2d6a2d'],
-  ];
-
-  el.innerHTML = items.map(function(item) {
-    const [n, l, kleur] = item;
-    return '<div style="text-align:center;padding:0 8px">'
-      + '<div style="font-size:20px;font-weight:500;font-family:Georgia,serif;color:' + (kleur || 'var(--t)') + '">' + n + '</div>'
-      + '<div style="font-size:10px;color:var(--tz);letter-spacing:.04em">' + l.toUpperCase() + '</div>'
-      + '</div>';
-  }).join('<div style="width:1px;background:var(--warmrand)"></div>');
-}
-
-function ibFiltereer() {
-  const groep    = (document.getElementById('ib-filter-groep')    || {}).value || '';
-  const urgentie = (document.getElementById('ib-filter-urgentie') || {}).value || '';
-  const opp      = (document.getElementById('ib-filter-opp')      || {}).value || '';
-
-  _ibGefilterd = _ibData.filter(function(l) {
-    if (groep    && l.groep        !== groep)    return false;
-    if (urgentie && l.urgentie     !== urgentie) return false;
-    if (opp      && l.opp_status   !== opp)      return false;
-    return true;
-  });
-
-  ibRenderLijst(_ibGefilterd);
-}
-
-function ibRenderLijst(lijst) {
-  const el = document.getElementById('ib-lijst');
-  if (!el) return;
-
-  if (!lijst.length) {
-    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:20px 0">Geen leerlingen gevonden met de geselecteerde filters.</div>';
-    return;
-  }
-
-  const urgentieKleur = {
-    hoog:     { rand: '#fca5a5', bg: '#fff5f5', icoon: '⚠', kleur: '#991b1b' },
-    aandacht: { rand: '#fcd34d', bg: '#fffbeb', icoon: '!',  kleur: '#92400e' },
-    normaal:  { rand: '#e0e0e0', bg: '#fff',    icoon: '',   kleur: '#555' },
-  };
-  const oppKleur = {
-    actueel:   { tekst: '#2d6a2d', bg: '#e8f5e9', label: 'OPP actueel' },
-    verlopen:  { tekst: '#991b1b', bg: '#fff5f5', label: 'OPP verlopen' },
-    ontbreekt: { tekst: '#92400e', bg: '#fffbeb', label: 'OPP ontbreekt' },
-  };
-
-  let html = '';
-
-  // Groepeer per groep voor overzicht
+  // Groepeer leerlingen
   const groepen = {};
-  lijst.forEach(function(l) {
-    const g = l.groep || '?';
+  (leerlingen || []).forEach(function(l) {
+    const g = String(l.groep || '?');
     if (!groepen[g]) groepen[g] = [];
     groepen[g].push(l);
   });
 
-  Object.keys(groepen).sort(function(a,b) {
-    return parseInt(a) - parseInt(b);
-  }).forEach(function(g) {
-    html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.06em;padding:10px 0 5px">'
-      + 'GROEP ' + g + ' <span style="font-weight:400">(' + groepen[g].length + ')</span></div>';
+  const groepKeys = Object.keys(groepen).sort(function(a,b){ return parseInt(a)-parseInt(b); });
 
-    groepen[g].forEach(function(l) {
-      const uk  = urgentieKleur[l.urgentie] || urgentieKleur.normaal;
-      const ok  = oppKleur[l.opp_status]   || oppKleur.ontbreekt;
-      const behoeftes = (l.ondersteuningsbehoeftes || []).slice(0, 2).join(', ');
+  if (!groepKeys.length) {
+    inhoud.innerHTML = '<div style="color:var(--n-400);font-size:13px">Geen leerlingendata. Importeer eerst een klas via "+ Klas toevoegen".</div>';
+    return;
+  }
 
-      html += '<div class="ib-item" data-id="' + l.leerling_id + '" style="padding:10px 12px;border:1px solid ' + uk.rand + ';background:' + uk.bg + ';margin-bottom:6px;cursor:pointer">';
+  // Haal LVS-scores op per groep (parallel, batches van 6)
+  const vakken = ['lezen','rekenen','spelling','begrijpend','sociaal'];
+  const vakLabels = { lezen:'Lezen', rekenen:'Rekenen', spelling:'Spelling', begrijpend:'Begrijpend lezen', sociaal:'Sociaal-em.' };
 
-      // Naam rij
-      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-      if (uk.icoon) html += '<span style="font-size:12px;font-weight:700;color:' + uk.kleur + ';flex-shrink:0">' + uk.icoon + '</span>';
-      html += '<span style="font-size:13px;font-weight:600;color:var(--t)">' + l.naam + '</span>';
-      html += '<span style="margin-left:auto;font-size:10px;padding:2px 8px;background:' + ok.bg + ';color:' + ok.tekst + ';border:1px solid ' + ok.bg + ';font-weight:500">' + ok.label + '</span>';
-      html += '</div>';
+  const groepScores = {};
 
-      // Info rij
-      html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
-      if (behoeftes) {
-        html += '<span style="font-size:11px;color:var(--tz)">🏷 ' + behoeftes + (l.ondersteuningsbehoeftes.length > 2 ? ' +' + (l.ondersteuningsbehoeftes.length - 2) : '') + '</span>';
-      }
-      if (l.signalen_count > 0) {
-        html += '<span style="font-size:11px;color:#c07000">⚡ ' + l.signalen_count + ' signaal' + (l.signalen_count > 1 ? 'en' : '') + '</span>';
-      }
-      if (l.laatste_rapport_datum) {
-        html += '<span style="font-size:11px;color:var(--tz)">📄 ' + new Date(l.laatste_rapport_datum).toLocaleDateString('nl-NL') + '</span>';
-      }
-      if (l.opp_uitstroom) {
-        html += '<span style="font-size:11px;color:#1565c0">→ ' + l.opp_uitstroom.slice(0, 40) + '</span>';
-      }
-      html += '</div>';
+  await Promise.all(groepKeys.map(async function(g) {
+    const ids = groepen[g].map(function(l){ return l.id; }).slice(0, 30);
+    const acc = {};
+    vakken.forEach(function(v){ acc[v] = []; });
 
-      html += '</div>';
+    const batches = [];
+    for (var i = 0; i < ids.length; i += 6) batches.push(ids.slice(i, i+6));
+
+    for (var b = 0; b < batches.length; b++) {
+      await Promise.all(batches[b].map(async function(id) {
+        try {
+          const res = await fetch(API_BASE + '/lvs/' + id + '/profiel', {
+            headers: { 'Authorization': 'Bearer ' + huidigToken }
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          const s = data.scores || {};
+          vakken.forEach(function(v) {
+            const val = parseFloat(s[v]);
+            if (!isNaN(val) && val > 0) acc[v].push(val);
+          });
+        } catch(e) {}
+      }));
+    }
+
+    const gem = {};
+    vakken.forEach(function(v) {
+      gem[v] = acc[v].length ? Math.round(acc[v].reduce(function(a,b){return a+b;},0)/acc[v].length) : null;
     });
-  });
+    groepScores[g] = gem;
+  }));
 
-  el.innerHTML = html;
-  // Event delegation voor klikken op leerlingen
-  el.querySelectorAll('.ib-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      ibToonDetail(item.dataset.id);
+  // Render
+  inhoud.innerHTML = ibRenderGroepKaarten(groepKeys, groepen, groepScores, vakken, vakLabels);
+
+  // Events
+  inhoud.querySelectorAll('.ib-groep-kaart').forEach(function(kaart) {
+    kaart.addEventListener('click', function() {
+      ibToonGroepDetail(kaart.dataset.groep, groepen[kaart.dataset.groep], groepScores[kaart.dataset.groep], vakken, vakLabels);
     });
-    item.addEventListener('mouseover', function() { item.style.opacity = '.85'; });
-    item.addEventListener('mouseout',  function() { item.style.opacity = '1'; });
   });
 }
 
-async function ibToonDetail(leerlingId) {
-  const paneel = document.getElementById('ib-detail-paneel');
-  const inhoud = document.getElementById('ib-detail-inhoud');
-  if (!paneel || !inhoud) return;
-
-  paneel.style.display = 'block';
-  inhoud.innerHTML = '<div style="padding:16px;color:var(--tz);font-size:12px">Laden…</div>';
-
-  try {
-    const res = await fetch(API_BASE + '/ib/leerling/' + leerlingId + '/volledig', {
-      headers: { 'Authorization': 'Bearer ' + huidigToken }
-    });
-    if (!res.ok) throw new Error('Status ' + res.status);
-    const data = await res.json();
-
-    const l          = data.leerling || {};
-    const documenten = data.documenten || [];
-    const berichten  = data.oudercontact || [];
-    const lvs        = data.lvs || {};
-    const tijdlijn   = lvs.tijdlijn || [];
-
-    let html = '';
-
-    // Header
-    html += '<div style="padding:14px 16px;border-bottom:1px solid var(--warmrand);display:flex;align-items:center;justify-content:space-between">';
-    html += '<div><div style="font-size:15px;font-weight:600;color:var(--t)">' + (l.voornaam || '') + '</div>';
-    html += '<div style="font-size:11px;color:var(--tz)">Groep ' + (l.groep || '?') + '</div></div>';
-    html += '<button id="ib-sluit-knop" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--tz);padding:4px">✕</button>';
-    html += '</div>';
-
-    // Ondersteuningsbehoeftes
-    const behoeftes = l.ondersteuningsbehoeftes || [];
-    if (behoeftes.length) {
-      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
-      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">ONDERSTEUNING</div>';
-      html += behoeftes.map(function(b) {
-        return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 9px;background:#e8f0fe;color:#1a3a8a;font-size:11px">' + b + '</span>';
-      }).join('');
-      html += '</div>';
-    }
-
-    // OPP status
-    const opp = l.opp_meta || {};
-    html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
-    html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">OPP</div>';
-    if (opp.uitstroombestemming) {
-      html += '<div style="font-size:12px;color:var(--t);margin-bottom:4px">→ ' + opp.uitstroombestemming + '</div>';
-      html += '<div style="font-size:11px;color:var(--tz)">Opgesteld: ' + (opp.opp_datum || '—') + '</div>';
-    } else {
-      html += '<div style="font-size:12px;color:#92400e">Geen OPP geregistreerd</div>';
-    }
-    html += '</div>';
-
-    // Recente signalen uit tijdlijn
-    const signalen = tijdlijn.filter(function(t) {
-      return t.sentiment === 'aandacht' || t.sentiment === 'zorg';
-    }).slice(0, 5);
-    if (signalen.length) {
-      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
-      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">RECENTE SIGNALEN</div>';
-      signalen.forEach(function(s) {
-        const kleur = s.sentiment === 'zorg' ? '#991b1b' : '#92400e';
-        html += '<div style="padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:11px">';
-        html += '<span style="color:' + kleur + ';font-weight:600">' + s.datum + '</span> — ' + s.tekst;
-        html += '</div>';
-      });
-      html += '</div>';
-    }
-
-    // Documenten
-    if (documenten.length) {
-      html += '<div style="padding:10px 16px;border-bottom:1px solid var(--warmrand)">';
-      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">DOCUMENTEN (' + documenten.length + ')</div>';
-      documenten.slice(0, 5).forEach(function(d) {
-        const datum = new Date(d.aangemaakt_op).toLocaleDateString('nl-NL');
-        html += '<div style="padding:4px 0;font-size:11px;color:var(--tm);border-bottom:1px solid #f5f5f5">📄 ' + datum + '</div>';
-      });
-      html += '</div>';
-    }
-
-    // Oudercontact
-    if (berichten.length) {
-      html += '<div style="padding:10px 16px">';
-      html += '<div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin-bottom:6px">OUDERCONTACT (' + berichten.length + ')</div>';
-      berichten.slice(0, 3).forEach(function(b) {
-        const datum = new Date(b.verstuurd_op).toLocaleDateString('nl-NL');
-        html += '<div style="padding:4px 0;font-size:11px;color:var(--tm);border-bottom:1px solid #f5f5f5">✉ ' + datum + ' — ' + (b.onderwerp || '') + '</div>';
-      });
-      html += '</div>';
-    }
-
-    // Navigeer naar LVS van deze leerling
-    html += '<div style="padding:12px 16px;border-top:1px solid var(--warmrand)">';
-    html += '<div style="padding:12px 16px;border-top:1px solid var(--warmrand)">';
-    html += '<button id="ib-naar-lvs-knop" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Open in LVS →</button>';
-
-    inhoud.innerHTML = html;
-    // Voeg event listeners toe
-    const sluitKnop = inhoud.querySelector('#ib-sluit-knop');
-    if (sluitKnop) sluitKnop.addEventListener('click', function() { document.getElementById('ib-detail-paneel').style.display='none'; });
-    const lvsKnop = inhoud.querySelector('#ib-naar-lvs-knop');
-    if (lvsKnop) lvsKnop.addEventListener('click', function() { ibNaarLeerling(leerlingId); });
-  } catch(e) {
-    inhoud.innerHTML = '<div style="padding:16px;color:#991b1b;font-size:12px">Laden mislukt: ' + e.message + '</div>';
-  }
+function ibStatusVanGem(gem) {
+  const waarden = Object.values(gem).filter(function(v){ return v !== null; });
+  if (!waarden.length) return { kleur:'var(--n-300)', bg:'var(--n-100)', tekst:'Geen data', pct: 0 };
+  const avg = waarden.reduce(function(a,b){return a+b;},0) / waarden.length;
+  if (avg >= 65) return { kleur:'var(--success)', bg:'var(--success-subtle)', tekst:'Goed', pct: Math.round(avg) };
+  if (avg >= 38) return { kleur:'var(--warning)', bg:'var(--warning-subtle)', tekst:'Aandacht', pct: Math.round(avg) };
+  return { kleur:'var(--danger)', bg:'var(--danger-subtle)', tekst:'Zorg', pct: Math.round(avg) };
 }
 
-function ibNaarLeerling(leerlingId) {
-  const leerling = leerlingen.find(function(l) { return l.id === leerlingId; });
-  if (leerling) {
-    stelLeerlingIn(leerling);
-    const lvsTab = document.querySelector('.tab[onclick*="lvs"]');
-    toonTab('lvs', lvsTab);
-    if (lvsTab) lvsTab.click();
+function ibNiveauLabel(pct) {
+  if (pct === null) return '—';
+  const niveaus = [[90,'I+'],[75,'I'],[60,'II'],[45,'III'],[30,'IV'],[15,'V'],[0,'V-']];
+  for (var i = 0; i < niveaus.length; i++) {
+    if (pct >= niveaus[i][0]) return niveaus[i][1];
   }
+  return 'V-';
+}
+
+function ibRenderGroepKaarten(groepKeys, groepen, groepScores, vakken, vakLabels) {
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">';
+
+  groepKeys.forEach(function(g) {
+    const scores = groepScores[g] || {};
+    const st = ibStatusVanGem(scores);
+    const aantalLeerl = groepen[g].length;
+    const metOnd = groepen[g].filter(function(l){ return (l.ondersteuningsbehoeftes||[]).length > 0; }).length;
+
+    html += '<div class="ib-groep-kaart" data-groep="' + g + '" style="background:var(--n-0);border:1px solid var(--n-200);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-xs);cursor:pointer;transition:box-shadow 120ms,transform 120ms">';
+
+    // Kaart header
+    html += '<div style="padding:16px 18px;background:' + st.bg + ';border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between">';
+    html += '<div><div style="font-family:var(--font-display);font-size:19px;color:var(--n-900)">Groep ' + g + '</div>';
+    html += '<div style="font-size:11px;color:var(--n-500);margin-top:1px">' + aantalLeerl + ' leerlingen' + (metOnd ? ' · ' + metOnd + ' met ondersteuning' : '') + '</div></div>';
+    html += '<div style="text-align:right">';
+    html += '<div style="font-size:22px;font-weight:700;color:' + st.kleur + ';font-family:var(--font-display)">' + (st.pct || '—') + '%</div>';
+    html += '<div style="font-size:10px;font-weight:700;color:' + st.kleur + ';letter-spacing:.05em">' + st.tekst.toUpperCase() + '</div>';
+    html += '</div></div>';
+
+    // Score balken
+    html += '<div style="padding:14px 18px;display:flex;flex-direction:column;gap:9px">';
+    vakken.forEach(function(v) {
+      const pct = scores[v];
+      const k = ibStatusVanGem({v: pct}).kleur;
+      const lbl = ibNiveauLabel(pct);
+      html += '<div style="display:flex;align-items:center;gap:10px">';
+      html += '<div style="width:100px;font-size:11px;color:var(--n-600);flex-shrink:0">' + (vakLabels[v]||v) + '</div>';
+      html += '<div style="flex:1;height:6px;background:var(--n-100);border-radius:var(--r-pill);overflow:hidden">';
+      html += pct !== null ? '<div style="height:100%;width:' + pct + '%;background:' + k + ';border-radius:var(--r-pill)"></div>' : '';
+      html += '</div>';
+      html += '<div style="font-size:11px;font-weight:600;color:' + k + ';width:24px;text-align:right">' + lbl + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+
+    html += '<div style="padding:10px 18px;border-top:1px solid var(--n-100);font-size:11px;color:var(--n-400)">Klik voor leerlingdetails →</div>';
+    html += '</div>';
+  });
+
+  html += '</div>';
+  return html;
+}
+
+function ibToonGroepDetail(groep, leerlingenInGroep, scores, vakken, vakLabels) {
+  const inhoud = document.getElementById('ib-inhoud');
+  const titel  = document.getElementById('ib-header-titel');
+  const sub    = document.getElementById('ib-header-sub');
+  const terug  = document.getElementById('ib-terug-knop');
+  if (!inhoud) return;
+
+  if (titel) titel.textContent = 'Groep ' + groep;
+  if (sub)   sub.textContent   = leerlingenInGroep.length + ' leerlingen';
+  if (terug) terug.style.display = 'block';
+
+  // Sorteer op naam
+  const gesorteerd = leerlingenInGroep.slice().sort(function(a,b){
+    return (a.voornaam||'').localeCompare(b.voornaam||'');
+  });
+
+  let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+
+  // Kolomheader
+  html += '<div style="display:grid;grid-template-columns:180px repeat(' + vakken.length + ',1fr);gap:8px;padding:8px 14px;font-size:10px;font-weight:700;color:var(--n-400);letter-spacing:.06em">';
+  html += '<div>LEERLING</div>';
+  vakken.forEach(function(v){ html += '<div style="text-align:center">' + (vakLabels[v]||v).toUpperCase() + '</div>'; });
+  html += '</div>';
+
+  gesorteerd.forEach(function(l) {
+    // Per leerling: haal scores op uit globale cache of toon —
+    const lScores = window._ibLeerlingScores && window._ibLeerlingScores[l.id] ? window._ibLeerlingScores[l.id] : {};
+    const naam = [l.voornaam, l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
+    const heeftOnd = (l.ondersteuningsbehoeftes||[]).length > 0;
+
+    html += '<div style="display:grid;grid-template-columns:180px repeat(' + vakken.length + ',1fr);gap:8px;padding:10px 14px;background:var(--n-0);border:1px solid var(--n-200);border-radius:var(--r-md);align-items:center">';
+    html += '<div><div style="font-size:13px;font-weight:500;color:var(--n-900)">' + naam + '</div>';
+    if (heeftOnd) html += '<div style="font-size:10px;color:var(--accent);margin-top:1px">ondersteuning</div>';
+    html += '</div>';
+
+    vakken.forEach(function(v) {
+      const pct = parseFloat(lScores[v]) || null;
+      const lbl = ibNiveauLabel(pct);
+      const kleur = pct === null ? 'var(--n-300)' : pct >= 65 ? 'var(--success)' : pct >= 38 ? 'var(--warning)' : 'var(--danger)';
+      html += '<div style="text-align:center;font-size:12px;font-weight:600;color:' + kleur + '">' + lbl + '</div>';
+    });
+    html += '</div>';
+  });
+
+  html += '</div>';
+  html += '<div style="margin-top:12px;font-size:11px;color:var(--n-400)">Scores worden geladen vanuit het LVS. Lege velden betekenen dat er nog geen score is ingevoerd.</div>';
+  inhoud.innerHTML = html;
+
+  // Haal individuele scores op op de achtergrond
+  window._ibLeerlingScores = window._ibLeerlingScores || {};
+  Promise.all(gesorteerd.slice(0,30).map(async function(l) {
+    if (window._ibLeerlingScores[l.id]) return;
+    try {
+      const res = await fetch(API_BASE + '/lvs/' + l.id + '/profiel', {
+        headers: { 'Authorization': 'Bearer ' + huidigToken }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      window._ibLeerlingScores[l.id] = data.scores || {};
+    } catch(e) {}
+  })).then(function() {
+    // Herrender na ophalen
+    ibToonGroepDetail(groep, leerlingenInGroep, scores, vakken, vakLabels);
+  });
 }
 
 // ── Schoolbrede Benchmarking (moat 2) ──────────────────────
