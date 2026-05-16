@@ -1744,16 +1744,22 @@ function toonTab(tab, knop) {
     if (typeof aawInit === 'function') aawInit();
 
   } else if (tab === 'notities') {
+    var tiNot = document.getElementById('tab-inhoud');
+    if (tiNot) tiNot.style.display = 'none';
     var el2 = document.getElementById('tab-notities');
     if (el2) { el2.style.display = 'flex'; el2.classList.add('actief'); }
     if (typeof notitieRender === 'function') notitieRender();
 
   } else if (tab === 'lvs') {
+    var tiLvs = document.getElementById('tab-inhoud');
+    if (tiLvs) tiLvs.style.display = 'none';
     var el3 = document.getElementById('tab-lvs');
     if (el3) el3.style.display = 'flex';
     if (typeof lvsInit === 'function') lvsInit();
 
   } else if (tab === 'klas') {
+    var tiKlas = document.getElementById('tab-inhoud');
+    if (tiKlas) tiKlas.style.display = 'none';
     var elKlas = document.getElementById('tab-klas');
     if (elKlas) elKlas.style.display = 'flex';
 
@@ -1873,7 +1879,7 @@ function toonTab(tab, knop) {
   </div>
 </div>
 
-<div id="app-scherm" style="display:none;flex-direction:column;width:100%;height:100vh;overflow:hidden">
+<div id="app-scherm" style="display:none;flex-direction:column;width:100%;height:100vh;overflow:hidden;background:var(--n-50)">
 
 <header>
   <div class="logo display">School van <em>morgen</em></div>
@@ -1906,7 +1912,7 @@ function toonTab(tab, knop) {
   <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
   <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
 </div>
-<div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0">
+<div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0;background:transparent">
 <div id="tab-rapport-wrap" style="display:grid;grid-template-columns:160px 340px 1fr;height:100%;min-height:0">
   <!-- Klas-sidebar: selecteer klas → leerlingen → klik leerling -->
   <div style="border-right:1px solid var(--warmrand);background:var(--warm);display:flex;flex-direction:column;overflow:hidden;height:100%">
