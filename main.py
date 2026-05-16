@@ -1254,6 +1254,9 @@ async def health():
     """
     checks: dict = {}
     alles_ok = True
+    
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
     # Supabase ping — lichtgewicht, max 3s timeout
     try:
