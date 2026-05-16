@@ -547,6 +547,155 @@ const SUPABASE_URL = 'https://ruaorbvprxcnnaltyvpi.supabase.co';
 const API_BASE = window.__API_BASE__ || '';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1YW9yYnZwcnhjbm5hbHR5dnBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMzgxMjEsImV4cCI6MjA5MzcxNDEyMX0.LPHqXtYQj3-qo8x5BUFLcOvWAPuBc1NkpWe1AyNKElk';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// ══════════════════════════════════════════════════════════
+// TOKEN REFRESH — JWT verloopt na 1 uur bij Supabase
+// We vernieuwen proactief 5 minuten voor het verlopen.
+// Zonder dit krijgt de gebruiker onverwacht een 401 midden
+// in het invullen van een rapport.
+// ══════════════════════════════════════════════════════════
+let _tokenRefreshTimer = null;
+let _tokenExpiresAt    = null;  // Unix timestamp (seconden)
+
+function _scheduleTokenRefresh(expiresAt) {
+  /**
+   * Plan een proactieve token refresh 5 minuten voor het verlopen.
+   * Supabase tokens verlopen standaard na 3600 seconden (1 uur).
+   *
+   * @param {number} expiresAt - Unix timestamp waarop het token verloopt
+   */
+  if (_tokenRefreshTimer) {
+    clearTimeout(_tokenRefreshTimer);
+    _tokenRefreshTimer = null;
+  }
+
+  _tokenExpiresAt = expiresAt;
+  const nu   = Math.floor(Date.now() / 1000);
+  const over = expiresAt - nu;  // seconden tot verlopen
+
+  if (over <= 0) {
+    // Al verlopen — direct uitloggen
+    console.warn('[SvM] Token al verlopen, uitloggen');
+    uitloggen();
+    return;
+  }
+
+  // Vernieuw 5 minuten (300s) voor het verlopen, minimaal over 30s
+  const refreshOver = Math.max(30, over - 300) * 1000;
+  console.info(`[SvM] Token refresh gepland over ${Math.round(refreshOver/1000)}s`);
+
+  _tokenRefreshTimer = setTimeout(async () => {
+    try {
+      const { data, error } = await sb.auth.refreshSession();
+      if (error || !data.session) {
+        console.warn('[SvM] Token refresh mislukt, uitloggen:', error);
+        await uitloggen();
+        return;
+      }
+      huidigToken = data.session.access_token;
+      console.info('[SvM] Token vernieuwd');
+      // Plan volgende refresh
+      _scheduleTokenRefresh(data.session.expires_at);
+    } catch(e) {
+      console.error('[SvM] Token refresh error:', e);
+      // Niet uitloggen bij netwerk-error — probeer opnieuw
+      _scheduleTokenRefresh(_tokenExpiresAt);
+    }
+  }, refreshOver);
+}
+
+// ══════════════════════════════════════════════════════════
+// SECURITY: XSS-sanitization helper
+// Gebruik altijd esc() bij het injecteren van user data in HTML
+// ══════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+// CENTRALE API AFHANDELING — met retry en exponential backoff
+// ══════════════════════════════════════════════════════════
+
+/**
+ * Voert een fetch request uit naar de backend API.
+ *
+ * Features:
+ * - Automatische retry bij transient errors (503, 504, netwerk-flap)
+ * - Exponential backoff: 1s, 2s, 4s wachttijd tussen pogingen
+ * - 401 → automatisch uitloggen
+ * - 429 → Retry-After header wordt gerespecteerd
+ * - Network error → duidelijke foutmelding
+ *
+ * @param {string} url          - Relatieve URL (bijv. "/leerlingen")
+ * @param {object} options      - fetch() options (method, body, headers)
+ * @param {number} maxPogingen  - Max aantal pogingen bij transient errors (default 3)
+ * @returns {Promise<any>}      - Geparsede JSON response
+ * @throws {Error}              - Bij niet-herstelbare fouten
+ */
+async function apiCall(url, options = {}, maxPogingen = 3) {
+  options.headers = {
+    'Authorization': 'Bearer ' + huidigToken,
+    'Content-Type': 'application/json',
+    ...(options.headers || {}),
+  };
+
+  const TRANSIENT_STATUS = new Set([503, 504, 502, 429]);
+
+  for (let poging = 1; poging <= maxPogingen; poging++) {
+    let res;
+    try {
+      res = await fetch(API_BASE + url, options);
+    } catch (e) {
+      // Netwerk-fout (offline, DNS, CORS)
+      if (poging === maxPogingen) {
+        throw new Error('Geen verbinding met de server. Controleer uw internetverbinding.');
+      }
+      const wacht = Math.pow(2, poging - 1) * 1000;
+      await new Promise(r => setTimeout(r, wacht));
+      continue;
+    }
+
+    // Sessie verlopen — direct uitloggen, niet retrien
+    if (res.status === 401) {
+      console.warn('[SvM] 401 ontvangen, sessie verlopen — uitloggen');
+      await uitloggen();
+      return null;
+    }
+
+    // Rate limit — respecteer Retry-After header
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get('Retry-After') || '60', 10);
+      throw new Error(`Te veel verzoeken. Wacht ${retryAfter} seconden en probeer opnieuw.`);
+    }
+
+    // Transient server errors — retry met backoff
+    if (TRANSIENT_STATUS.has(res.status) && poging < maxPogingen) {
+      const wacht = Math.pow(2, poging - 1) * 1000;  // 1s, 2s, 4s
+      console.warn(`[SvM] ${res.status} ontvangen (poging ${poging}/${maxPogingen}), retry over ${wacht/1000}s`);
+      await new Promise(r => setTimeout(r, wacht));
+      continue;
+    }
+
+    // Client errors (400, 403, 404, 422) — niet retrien
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `Fout ${res.status}: ${res.statusText}`);
+    }
+
+    // Succes
+    return res.json().catch(() => null);
+  }
+}
+
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/[/]/g, '&#x2F;');
+}
+
+// Gebruik textContent voor platte tekst, esc() voor HTML-context
+// Voorbeeld: el.innerHTML = '<span>' + esc(naam) + '</span>';
+
 let huidigGebruiker = null;
 let huidigToken = null;
 let leerlingen = [];
@@ -602,7 +751,7 @@ function stelLeerlingIn(leerling) {
   // Sync LVS als leerling ook in LVS-lijst staat
   if (leerling && typeof lvsSelecteer === 'function') {
     const lvsMatch = lvsLeerlingen.find(l => l.id === leerling.id);
-    if (lvsMatch && (!lvsHuidig || lvsHuidig.id !== leerling.id)) {
+    if (lvsMatch && (!lvsHuidig || lvsHuidig?.id !== leerling.id)) {
       lvsSelecteer(leerling.id);
     }
   }
@@ -638,6 +787,7 @@ async function initAuth() {
   if (session) {
     huidigGebruiker = session.user;
     huidigToken = session.access_token;
+    if (session.expires_at) _scheduleTokenRefresh(session.expires_at);
     toonApp();
   } else {
     toonLogin();
@@ -747,7 +897,7 @@ function glsToonDropdown(lijst) {
       const bg = (huidigeLeerling && huidigeLeerling.id === l.id) ? '#f0faf0' : '#fff';
       const vn = [l.voornaam, l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
       html += '<div class="gls-dd-item" data-gls-id="' + l.id + '" style="padding:8px 12px;font-size:12px;cursor:pointer;background:' + bg + ';border-bottom:1px solid #f5f5f5;color:#2a3a2a">';
-      html += '<strong>' + l.voornaam + '</strong>' + (vn !== l.voornaam ? ' ' + [l.tussenvoegsel,l.achternaam].filter(Boolean).join(' ') : '') + '</div>';
+      html += '<strong>' + esc(l.voornaam) + '</strong>' + (vn !== l.voornaam ? ' ' + [l.tussenvoegsel,l.achternaam].filter(Boolean).join(' ') : '') + '</div>';
     });
   });
   dd.innerHTML = html;
@@ -933,17 +1083,37 @@ async function registreren() {
 
 async function uitloggen() {
   await sb.auth.signOut();
+  // Reset alle state — voorkom data-lekkage tussen sessies
+  huidigToken = null;
+  huidigGebruiker = null;
+  huidigeLeerling = null;
+  leerlingen = [];
+  lvsLeerlingen = [];
+  lvsHuidig = null;
+  schoolContext = { school_id: null, rol: 'leerkracht', is_ib: false, is_directeur: false, heeft_school: false, naam: null };
+  aawLeerlingen = [];
+  aawStatus = {};
+  aawRegistraties = {};
+  window._huidigeLeerlingId = null;
+  window._lvsProfielCache = {};
+  window._ibLeerlingScores = {};
+  window._notitieGroepFilter = null;
+  _geselecteerdeRol = 'leerkracht';
 }
 
 async function laadLeerlingen() {
   if (!huidigToken) return;
   try {
-    // Laad eerste 50 direct — toon meteen, laad de rest op achtergrond
     const res = await fetch(API_BASE + '/leerlingen?limit=50&offset=0', {
       headers: { 'Authorization': 'Bearer ' + huidigToken }
     });
-    if (!res.ok) return;
-    leerlingen = await res.json();
+    if (res.status === 401) { await uitloggen(); return; }
+    if (!res.ok) {
+      console.error('Leerlingen laden mislukt:', res.status);
+      return;
+    }
+    const data = await res.json();
+    leerlingen = Array.isArray(data) ? data : (data.leerlingen || []);
     toonLeerlingenLijst();
     // Vul notities-zijbalk bij als die al open staat
     if (typeof notitieVulZijbalk === 'function') notitieVulZijbalk();
@@ -1007,7 +1177,7 @@ function toonLeerlingenLijst() {
     const div = document.createElement('div');
     div.className = 'leerling-item';
     div.dataset.id = l.id;
-    div.innerHTML = '<div class="leerling-naam">' + l.voornaam + '</div>'
+    div.innerHTML = '<div class="leerling-naam">' + esc(l.voornaam) + '</div>'
       + '<div class="leerling-meta">Groep ' + (l.groep || '?') + '</div>';
     div.addEventListener('click', function() { selecteerLeerling(l.id); });
     return div;
@@ -1612,7 +1782,7 @@ function klasVerwerk(csv) {
   if (lijst) {
     lijst.innerHTML = leerlingen.slice(0,8).map(function(l) {
       return '<div style="padding:7px 14px;border-bottom:1px solid #f5f5f5;font-size:12px;display:grid;grid-template-columns:1fr 1fr 80px 120px;gap:8px;color:var(--t)">'
-        + '<span>' + l.voornaam + '</span>'
+        + '<span>' + esc(l.voornaam) + '</span>'
         + '<span>' + [l.tussenvoegsel,l.achternaam].filter(Boolean).join(' ') + '</span>'
         + '<span>' + (l.groep ? l.groep : '—') + '</span>'
         + '<span style="color:var(--tz)">' + (l.leerlingnummer||'—') + '</span>'
@@ -2919,7 +3089,7 @@ function rapportLaadKlas(groep) {
     const ach = [l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
     html += '<div class="rapport-leerling-item" data-lid="' + l.id + '"'
       + ' style="padding:7px 8px;font-size:12px;cursor:pointer;border-radius:6px;margin-bottom:2px;color:var(--t)">'
-      + '<div style="font-weight:500">' + l.voornaam + '</div>'
+      + '<div style="font-weight:500">' + esc(l.voornaam) + '</div>'
       + (ach ? '<div style="font-size:10px;color:var(--tz)">' + ach + '</div>' : '')
       + '</div>';
   });
@@ -3812,7 +3982,7 @@ function lvsRenderLijst(lijst) {
     return;
   }
   el.innerHTML = lijst.map(l => {
-    const actief   = lvsHuidig && lvsHuidig.id === l.id;
+    const actief   = lvsHuidig && lvsHuidig?.id === l.id;
     const signalen = _lvsSignalen[l.id] || [];
     const hoogste  = signalen.length > 0 ? signalen[0] : null;
     const badgeTekst = hoogste ? (hoogste.urgentie === 'hoog' ? '⚠' : '!') : '';
@@ -3822,7 +3992,7 @@ function lvsRenderLijst(lijst) {
       : '';
     return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" onclick="lvsSelecteer(' + JSON.stringify(l.id) + ')">'
       + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
-      + '<div class="lvs-item-info"><div class="lvs-item-naam">' + l.naam + '</div><div class="lvs-item-groep">Groep ' + (l.groep || '?') + '</div></div>'
+      + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div><div class="lvs-item-groep">Groep ' + (l.groep || '?') + '</div></div>'
       + badgeHtml
       + '</div>';
   }).join('');
@@ -3880,7 +4050,7 @@ async function lvsSelecteer(id) {
   if (!gecached) {
     lvsHaalProfielOp(id).then(profiel => {
       // Controleer of de gebruiker ondertussen niet van leerling is gewisseld
-      if (!lvsHuidig || lvsHuidig.id !== id) return;
+      if (!lvsHuidig || lvsHuidig?.id !== id) return;
       if (!profiel) return;
       lvsHuidig.scores   = profiel.scores   || lvsHuidig.scores;
       lvsHuidig.vorige   = profiel.vorige   || lvsHuidig.vorige;
@@ -4189,7 +4359,7 @@ function inspectieRenderLijst(leerlingen, el) {
 
     html += '<div style="padding:10px 12px;border:1px solid ' + stijl.rand + ';background:' + stijl.bg + ';margin-bottom:6px">';
     html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-    html += '<span style="font-size:13px;font-weight:600;color:var(--t)">' + l.voornaam + '</span>';
+    html += '<span style="font-size:13px;font-weight:600;color:var(--t)">' + esc(l.voornaam) + '</span>';
     if (l.heeft_ondersteuning) {
       html += '<span style="font-size:10px;padding:2px 7px;background:#e8f0fe;color:#1a3a8a">ondersteuning</span>';
     }
@@ -4542,7 +4712,7 @@ function lvsRenderDomeinen() {
     { kleur:'#ff9800', tekst:'#e65100', label:'IV  Aandacht' },
     { kleur:'#e91e63', tekst:'#880e4f', label:'V  Zorg' },
   ].forEach(item => {
-    html += '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:' + item.tekst + '">'
+    html += '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:' + esc(item.tekst) + '">'
       + '<div style="width:10px;height:10px;background:' + item.kleur + ';border-radius:2px"></div>'
       + item.label + '</div>';
   });
@@ -4558,7 +4728,7 @@ function lvsRenderRadar() {
   const ctx = canvas.getContext('2d');
   const cx = canvas.width / 2, cy = canvas.height / 2, R = 90;
   const n = LVS_DOMEINEN.length;
-  const scores = LVS_DOMEINEN.map(d => (lvsHuidig.scores[d.k] || 0) / 100);
+  const scores = LVS_DOMEINEN.map(d => (lvsHuidig?.scores?.[d.k] || 0) / 100);
   const vorige = LVS_DOMEINEN.map(d => (lvsHuidig.vorige[d.k] || 0) / 100);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   [.25,.5,.75,1].forEach(p => {
@@ -4653,7 +4823,7 @@ function lvsRenderTijdlijn() {
       + (sIcon ? '<span style="font-size:11px;color:' + sKleur + ';font-weight:600">' + sIcon + '</span>' : '')
       + '<span style="font-size:10px;color:#999">' + item.datum + bron + '</span>'
       + '</div>'
-      + '<div class="lvs-tl-tekst" style="font-size:12px;color:#333;line-height:1.5">' + item.tekst + '</div>'
+      + '<div class="lvs-tl-tekst" style="font-size:12px;color:#333;line-height:1.5">' + esc(item.tekst) + '</div>'
       + '</div></div>';
   }).join('');
 }
@@ -4767,9 +4937,9 @@ async function lvsSlaNotitieOp() {
     const val = document.getElementById('lvs-s-' + d.k)?.value;
     if (val && val !== '') {
       const score = Math.min(100, Math.max(0, parseInt(val)));
+      lvsHuidig.vorige[d.k] = lvsHuidig?.scores?.[d.k];
       lvsHuidig.vorige[d.k] = lvsHuidig.scores[d.k];
-      lvsHuidig.scores[d.k] = score;
-      gewijzigdeVakken.push({ vakgebied: d.k, score });
+      if (lvsHuidig && lvsHuidig.scores) lvsHuidig.scores[d.k] = score;
     }
   });
 
@@ -4937,7 +5107,9 @@ const AAW_KLEUREN = ['#000','#555','#555','#888','#555','#555','#555','#777'];
 let aawDatum = new Date();
 let aawGeselecteerdeKlas = null;
 let aawLeerlingen = [];
+let aawStatus = {};
 let aawRegistraties = {};
+
 
 function aawDatumSleutel(datum) {
   return datum.toISOString().slice(0, 10);
@@ -5386,7 +5558,7 @@ function aawRender() {
     return '<div id="aaw-item-' + l.id + '" style="background:' + bg + ';border:1.5px solid ' + rnd + ';padding:14px;display:flex;flex-direction:column;gap:10px">'
       + '<div style="display:flex;align-items:center;gap:10px">'
       + '<div style="width:36px;height:36px;background:#4a7a4a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">' + ini + '</div>'
-      + '<div style="font-size:14px;font-weight:500;color:var(--t)">' + l.voornaam + '</div>'
+      + '<div style="font-size:14px;font-weight:500;color:var(--t)">' + esc(l.voornaam) + '</div>'
       + '</div>'
       + '<div style="display:flex;gap:6px">' + knop('Aanwezig','aanwezig','✓') + knop('Te laat','laat','◷') + knop('Afwezig','afwezig','✕') + '</div>'
       + '</div>';
@@ -5532,7 +5704,7 @@ function aawExporteer() {
   let csv = 'Naam,Groep,Status\n';
   klasLeerlingen.forEach(function(l) {
     const d = dagData[l.id] || { status: 'onbekend' };
-    csv += '"' + l.voornaam + '","' + (l.groep||'') + '","' + d.status + '"\n';
+    csv += '"' + esc(l.voornaam) + '","' + (l.groep||'') + '","' + d.status + '"\n';
   });
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -5840,7 +6012,7 @@ Retourneer ALLEEN een JSON-object met:
       if (profiel) {
         const tijdlijn = [{ type:'opp', datum, tekst:'OPP gegenereerd.' + (d.uitstroom ? ' Uitstroom: ' + d.uitstroom.slice(0,60) + '…' : '') + (d.doelen ? ' Doel: ' + d.doelen.slice(0,60) + '…' : '') }, ...(profiel.tijdlijn||[])];
         await lvsSlaProfielOp(leerlingId, { scores: profiel.scores||{}, vorige_scores: profiel.vorige_scores||{}, tijdlijn });
-        if (lvsHuidig && lvsHuidig.id === leerlingId) { lvsHuidig.tijdlijn = tijdlijn; lvsRenderTijdlijn(); }
+        if (lvsHuidig && lvsHuidig?.id === leerlingId) { lvsHuidig.tijdlijn = tijdlijn; lvsRenderTijdlijn(); }
       }
     }
   } catch(e) { resultaat.innerHTML = `<div class="fout">${e.message}</div>`; }
@@ -5914,7 +6086,7 @@ Retourneer ALLEEN een JSON-object met:
       if (profiel) {
         const tijdlijn = [{ type:'handelingsplan', datum, tekst:'Handelingsplan ' + behoefte + ' gegenereerd.' + (d.doel ? ' Doel: ' + d.doel.slice(0,60) + '…' : '') }, ...(profiel.tijdlijn||[])];
         await lvsSlaProfielOp(leerlingId, { scores: profiel.scores||{}, vorige_scores: profiel.vorige_scores||{}, tijdlijn });
-        if (lvsHuidig && lvsHuidig.id === leerlingId) { lvsHuidig.tijdlijn = tijdlijn; lvsRenderTijdlijn(); }
+        if (lvsHuidig && lvsHuidig?.id === leerlingId) { lvsHuidig.tijdlijn = tijdlijn; lvsRenderTijdlijn(); }
       }
     }
   } catch(e) { resultaat.innerHTML = `<div class="fout">${e.message}</div>`; }
@@ -6124,7 +6296,7 @@ function notitieRenderZijbalk(lijst) {
     return '<div onclick="notitieSelecteerLeerling(' + JSON.stringify(l.id) + ')" style="'
       + 'padding:9px 14px;cursor:pointer;border-left:2px solid ' + (actief ? '#4a7a4a' : 'transparent') + ';'
       + 'background:' + (actief ? '#f8f8f8' : '#fff') + ';transition:all .1s">'
-      + '<div style="font-size:12px;font-weight:500;color:#2a3a2a">' + l.voornaam + '</div>'
+      + '<div style="font-size:12px;font-weight:500;color:#2a3a2a">' + esc(l.voornaam) + '</div>'
       + '<div style="font-size:10px;color:var(--tz);margin-top:1px">Groep ' + (l.groep || '?') + '</div>'
       + '</div>';
   }).join('');

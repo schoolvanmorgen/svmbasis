@@ -7,13 +7,46 @@ from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime, timezone
 import httpx
+import uuid
 import os
 import json
 import logging
 
-# ── Logging ───────────────────────────────────────────────
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("school-van-morgen")
+# ── Structured JSON logging ───────────────────────────────
+# In productie (LOG_FORMAT=json) worden logs als JSON geschreven
+# voor log aggregators (Datadog, CloudWatch, Grafana Loki).
+# In development (LOG_FORMAT=text) worden logs leesbaar als tekst.
+
+import json as _json_module
+
+class _JsonFormatter(logging.Formatter):
+    """JSON log formatter voor productie log-aggregatie."""
+    def format(self, record: logging.LogRecord) -> str:
+        log_obj = {
+            "ts":      self.formatTime(record, "%Y-%m-%dT%H:%M:%S"),
+            "level":   record.levelname,
+            "logger":  record.name,
+            "msg":     record.getMessage(),
+            "module":  record.module,
+            "line":    record.lineno,
+        }
+        if record.exc_info:
+            log_obj["exc"] = self.formatException(record.exc_info)
+        return _json_module.dumps(log_obj, ensure_ascii=False)
+
+_log_format = os.environ.get("LOG_FORMAT", "text").lower()
+_handler = logging.StreamHandler()
+
+if _log_format == "json":
+    _handler.setFormatter(_JsonFormatter())
+else:
+    _handler.setFormatter(logging.Formatter(
+        "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%H:%M:%S"
+    ))
+
+logging.basicConfig(level=logging.INFO, handlers=[_handler], force=True)
+logger = logging.getLogger("svm")  # svm = School van Morgen
 
 # ── App setup ─────────────────────────────────────────────
 app = FastAPI(title="School van morgen", version="1.0.0")
@@ -24,12 +57,83 @@ ALLOWED_ORIGINS = [
     if o.strip()
 ]
 
+# ── Rate limiter ──────────────────────────────────────────────────────────
+import time as _time
+
+_rate_limit_store: dict[str, list[float]] = {}
+_RATE_LIMIT_AI_PER_MINUUT  = 30   # Zware AI endpoints (genereren documenten)
+_RATE_LIMIT_CLEANUP_INTERVAL = 300 # Cleanup elke 5 minuten
+_rate_limit_laatste_cleanup  = 0.0
+
+def _rate_limit_cleanup() -> None:
+    """Verwijder verlopen IP-entries om geheugenlek te voorkomen."""
+    global _rate_limit_laatste_cleanup
+    nu = _time.monotonic()
+    if nu - _rate_limit_laatste_cleanup < _RATE_LIMIT_CLEANUP_INTERVAL:
+        return
+    drempel = nu - 60
+    verlopen = [ip for ip, ts in _rate_limit_store.items() if not any(t > drempel for t in ts)]
+    for ip in verlopen:
+        del _rate_limit_store[ip]
+    _rate_limit_laatste_cleanup = nu
+    if verlopen:
+        logger.debug(f"Rate limit cleanup: {len(verlopen)} IPs verwijderd uit store")
+
+def _check_rate_limit_sync(client_ip: str, limiet: int) -> None:
+    """
+    Sliding-window rate limiter (60 seconden venster).
+    asyncio is single-threaded — geen lock nodig voor CPython dict.
+    Gooit HTTPException 429 met Retry-After header als limiet bereikt is.
+    """
+    _rate_limit_cleanup()
+    nu     = _time.monotonic()
+    drempel = nu - 60
+    calls  = [t for t in _rate_limit_store.get(client_ip, []) if t > drempel]
+    if len(calls) >= limiet:
+        raise HTTPException(
+            status_code=429,
+            headers={"Retry-After": "60"},
+            detail=f"Te veel verzoeken ({limiet}/minuut limiet). Wacht 60 seconden.",
+        )
+    calls.append(nu)
+    _rate_limit_store[client_ip] = calls
+
+async def _check_rate_limit(request: Request) -> None:
+    """Rate limit voor zware AI endpoints."""
+    ip = request.client.host if request.client else "unknown"
+    _check_rate_limit_sync(ip, _RATE_LIMIT_AI_PER_MINUUT)
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Pas rate limiting toe op AI-endpoints vóór de handler wordt uitgevoerd."""
+    ai_paths = ["/rapporten/batch", "/opp", "/handelingsplan", "/analyseer"]
+    if any(request.url.path.startswith(p) for p in ai_paths):
+        await _check_rate_limit(request)
+    response = await call_next(request)
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["POST", "GET", "DELETE", "PUT"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_methods=["POST", "GET", "DELETE", "PUT", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
+    expose_headers=["X-Request-ID"],
 )
+
+@app.middleware("http")
+async def correlation_id_middleware(request: Request, call_next):
+    """
+    Voegt een uniek X-Request-ID toe aan elke request en response.
+    Gebruikt de inkomende header als die er is (voor proxy-compatibiliteit),
+    anders genereren we er een.
+
+    Gebruik in logs: logger.info(f"[{request.state.request_id}] ...")
+    """
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())[:8]
+    request.state.request_id = request_id
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 # ── Config ────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -45,6 +149,28 @@ APP_URL              = os.environ.get("APP_URL", "http://localhost:8000")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 security = HTTPBearer(auto_error=False)
+
+# ── Gedeelde HTTP clients (connection pooling) ─────────────
+# httpx.AsyncClient houdt TCP-verbindingen open en hergebruikt ze.
+# Zonder dit opent elke Supabase-aanroep een nieuwe TCP verbinding:
+# - DNS lookup: ~20ms
+# - TCP handshake: ~10ms
+# - TLS handshake: ~30ms
+# Totaal: ~60ms overhead per aanroep die we volledig elimineren.
+_supabase_client: httpx.AsyncClient | None = None
+_claude_client:   httpx.AsyncClient | None = None
+
+def _get_supabase_client() -> httpx.AsyncClient:
+    """Geeft de gedeelde Supabase HTTP client terug."""
+    if _supabase_client is None:
+        raise RuntimeError("Supabase client niet geïnitialiseerd. Is startup() uitgevoerd?")
+    return _supabase_client
+
+def _get_claude_client() -> httpx.AsyncClient:
+    """Geeft de gedeelde Anthropic HTTP client terug."""
+    if _claude_client is None:
+        raise RuntimeError("Claude client niet geïnitialiseerd. Is startup() uitgevoerd?")
+    return _claude_client
 
 # ── Startup check ─────────────────────────────────────────
 @app.on_event("startup")
@@ -65,6 +191,38 @@ async def startup():
         logger.warning("RESEND_API_KEY niet ingesteld — e-mail versturen is uitgeschakeld. "
                        "Registreer gratis op resend.com en voeg de sleutel toe aan .env.")
     logger.info(f"Opstartcontrole geslaagd. CORS toegestaan voor: {ALLOWED_ORIGINS}")
+
+    # Initialiseer gedeelde HTTP clients met connection pooling
+    global _supabase_client, _claude_client
+
+    _supabase_client = httpx.AsyncClient(
+        base_url=SUPABASE_URL,
+        timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0),
+        limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
+        headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+    )
+
+    _claude_client = httpx.AsyncClient(
+        base_url="https://api.anthropic.com",
+        timeout=httpx.Timeout(connect=5.0, read=90.0, write=10.0, pool=5.0),
+        limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+        headers={
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json",
+        },
+    )
+    logger.info("HTTP connection pools geïnitialiseerd (Supabase: 50 conns, Claude: 20 conns)")
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Sluit HTTP connection pools netjes af bij server shutdown."""
+    global _supabase_client, _claude_client
+    if _supabase_client:
+        await _supabase_client.aclose()
+    if _claude_client:
+        await _claude_client.aclose()
+    logger.info("HTTP connection pools gesloten.")
 
 # ══════════════════════════════════════════════════════════
 # SYSTEM PROMPTS
@@ -225,41 +383,66 @@ Output: alleen een geldig JSON-object zonder markdown of backticks:
 class PromptVerzoek(BaseModel):
     prompt: str
 
+GELDIGE_GROEPEN = {str(i) for i in range(1, 9)} | {"SO", "SBO", ""}
+
 class LeerlingAanmaken(BaseModel):
-    voornaam: str
-    groep: Optional[str] = ""
+    voornaam: str = Field(..., min_length=1, max_length=100, description="Voornaam van de leerling")
+    groep: Optional[str] = Field("", max_length=10)
     ondersteuningsbehoeftes: Optional[List[str]] = []
-    notities: Optional[str] = ""
-    leerlingnummer: Optional[str] = None
-    achternaam: Optional[str] = None
-    tussenvoegsel: Optional[str] = None
+    notities: Optional[str] = Field("", max_length=5000)
+    leerlingnummer: Optional[str] = Field(None, max_length=20)
+    achternaam: Optional[str] = Field(None, max_length=100)
+    tussenvoegsel: Optional[str] = Field(None, max_length=20)
+
+    @validator('voornaam')
+    def voornaam_schoon(cls, v):
+        return v.strip()
+
+    @validator('groep')
+    def groep_geldig(cls, v):
+        if v and v.strip() not in GELDIGE_GROEPEN:
+            raise ValueError(f"Ongeldige groep: {v!r}. Verwacht 1-8, SO of SBO.")
+        return (v or "").strip()
+
+    @validator('ondersteuningsbehoeftes')
+    def behoeftes_geldig(cls, v):
+        if v and len(v) > 20:
+            raise ValueError("Maximaal 20 ondersteuningsbehoeftes")
+        return [str(b)[:100] for b in (v or [])]
 
 class LeerlingBijwerken(BaseModel):
-    voornaam: Optional[str] = None
-    groep: Optional[str] = None
+    voornaam: Optional[str] = Field(None, min_length=1, max_length=100)
+    groep: Optional[str] = Field(None, max_length=10)
     ondersteuningsbehoeftes: Optional[List[str]] = None
-    notities: Optional[str] = None
-    leerlingnummer: Optional[str] = None
-    achternaam: Optional[str] = None
-    tussenvoegsel: Optional[str] = None
+    notities: Optional[str] = Field(None, max_length=5000)
+    leerlingnummer: Optional[str] = Field(None, max_length=20)
+    achternaam: Optional[str] = Field(None, max_length=100)
+    tussenvoegsel: Optional[str] = Field(None, max_length=20)
 
 class RapportOpslaan(BaseModel):
-    leerling_id: str
+    leerling_id: str = Field(..., min_length=1, max_length=100)
     rapport_data: dict
 
+    @validator('leerling_id')
+    def id_formaat(cls, v):
+        import re
+        if not re.match(r'^[a-zA-Z0-9_-]{1,100}$', v):
+            raise ValueError("Ongeldig leerling_id formaat")
+        return v
+
 class OppVerzoek(BaseModel):
-    notities: str
-    naam: str = ""
-    groep: str = ""
-    ondersteuningsbehoefte: str = ""
-    leerling_id: Optional[str] = None
+    notities: str = Field("", max_length=10000)
+    naam: str = Field("", max_length=150)
+    groep: str = Field("", max_length=10)
+    ondersteuningsbehoefte: str = Field("", max_length=200)
+    leerling_id: Optional[str] = Field(None, max_length=100)
 
 class HandelingsplanVerzoek(BaseModel):
-    notities: str
-    naam: str = ""
-    groep: str = ""
-    ondersteuningsbehoefte: str = ""
-    leerling_id: Optional[str] = None
+    notities: str = Field("", max_length=10000)
+    naam: str = Field("", max_length=150)
+    groep: str = Field("", max_length=10)
+    ondersteuningsbehoefte: str = Field(..., min_length=1, max_length=200, description="Verplicht")
+    leerling_id: Optional[str] = Field(None, max_length=100)
 
 class OudergesprekVerzoek(BaseModel):
     notities: str
@@ -557,83 +740,142 @@ def _supabase_headers(token: str) -> dict:
         "Content-Type": "application/json",
     }
 
-async def supabase_get(path: str, token: str, params: dict = {}):
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            res = await client.get(
-                f"{SUPABASE_URL}/rest/v1/{path}",
-                headers=_supabase_headers(token),
-                params=params
-            )
-            if res.status_code == 401:
-                raise HTTPException(status_code=401, detail="Sessie verlopen.")
-            if res.status_code != 200:
-                raise HTTPException(status_code=res.status_code, detail=f"Databasefout: {res.text[:300]}")
-            return res.json()
-    except HTTPException:
-        raise
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout).")
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
+async def supabase_get(path: str, token: str, params: dict | None = None) -> list:
+    """
+    GET request naar Supabase REST API.
+    Gebruikt de gedeelde connection pool — geen nieuwe TCP verbinding per aanroep.
 
-async def supabase_post(path: str, token: str, data: dict):
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            res = await client.post(
-                f"{SUPABASE_URL}/rest/v1/{path}",
-                headers={**_supabase_headers(token), "Prefer": "return=representation"},
-                json=data
-            )
-            if res.status_code == 401:
-                raise HTTPException(status_code=401, detail="Sessie verlopen.")
-            if res.status_code not in (200, 201):
-                raise HTTPException(status_code=res.status_code, detail=f"Opslaan mislukt: {res.text[:300]}")
-            return res.json()
-    except HTTPException:
-        raise
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout).")
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
+    Args:
+        path:   Tabelnaam of endpoint (bijv. "leerlingen")
+        token:  Supabase JWT access token van de gebruiker
+        params: Query parameters (filter, select, order, limit, etc.)
 
-async def supabase_patch(path: str, token: str, data: dict):
-    try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            res = await client.patch(
-                f"{SUPABASE_URL}/rest/v1/{path}",
-                headers={**_supabase_headers(token), "Prefer": "return=representation"},
-                json=data
-            )
-            if res.status_code == 401:
-                raise HTTPException(status_code=401, detail="Sessie verlopen.")
-            if res.status_code not in (200, 204):
-                raise HTTPException(status_code=res.status_code, detail=f"Bijwerken mislukt: {res.text[:300]}")
-            return res.json() if res.content else []
-    except HTTPException:
-        raise
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout).")
-    except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
+    Returns:
+        Lijst van records. Lege lijst als er niets gevonden is.
 
-async def supabase_delete(path: str, token: str):
+    Raises:
+        HTTPException 401: Token verlopen
+        HTTPException 503: Database niet bereikbaar
+    """
+    if params is None:
+        params = {}
+    client = _get_supabase_client()
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            res = await client.delete(
-                f"{SUPABASE_URL}/rest/v1/{path}",
-                headers=_supabase_headers(token)
+        res = await client.get(
+            f"/rest/v1/{path}",
+            headers={"Authorization": f"Bearer {token}"},
+            params=params,
+        )
+        if res.status_code == 401:
+            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+        if res.status_code != 200:
+            logger.error(f"supabase_get {path} → {res.status_code}: {res.text[:200]}")
+            raise HTTPException(
+                status_code=res.status_code,
+                detail=f"Databasefout bij ophalen van {path}: {res.text[:300]}"
             )
-            if res.status_code == 401:
-                raise HTTPException(status_code=401, detail="Sessie verlopen.")
-            if res.status_code not in (200, 204):
-                raise HTTPException(status_code=res.status_code, detail=f"Verwijderen mislukt: {res.text[:300]}")
+        data = res.json()
+        return data if isinstance(data, list) else [data]
     except HTTPException:
         raise
     except httpx.TimeoutException:
+        logger.error(f"supabase_get {path} timeout")
         raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout).")
     except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
+        logger.error(f"supabase_get {path} verbindingsfout: {e}")
+        raise HTTPException(status_code=503, detail=f"Verbindingsfout met database: {str(e)}")
+
+async def supabase_post(path: str, token: str, data: dict) -> list | dict:
+    """
+    POST request naar Supabase REST API (aanmaken van record).
+    Geeft het aangemaakte record terug (door Prefer: return=representation).
+    """
+    client = _get_supabase_client()
+    try:
+        res = await client.post(
+            f"/rest/v1/{path}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Prefer": "return=representation",
+            },
+            json=data,
+        )
+        if res.status_code == 401:
+            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+        if res.status_code not in (200, 201):
+            logger.error(f"supabase_post {path} → {res.status_code}: {res.text[:200]}")
+            raise HTTPException(
+                status_code=res.status_code,
+                detail=f"Opslaan mislukt in {path}: {res.text[:300]}"
+            )
+        return res.json()
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        logger.error(f"supabase_post {path} timeout")
+        raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout).")
+    except httpx.RequestError as e:
+        logger.error(f"supabase_post {path} verbindingsfout: {e}")
+        raise HTTPException(status_code=503, detail=f"Verbindingsfout met database: {str(e)}")
+
+async def supabase_patch(path: str, token: str, data: dict) -> list | dict:
+    """
+    PATCH request naar Supabase REST API (bijwerken van bestaand record).
+    """
+    client = _get_supabase_client()
+    try:
+        res = await client.patch(
+            f"/rest/v1/{path}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Prefer": "return=representation",
+            },
+            json=data,
+        )
+        if res.status_code == 401:
+            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+        if res.status_code not in (200, 204):
+            logger.error(f"supabase_patch {path} → {res.status_code}: {res.text[:200]}")
+            raise HTTPException(
+                status_code=res.status_code,
+                detail=f"Bijwerken mislukt in {path}: {res.text[:300]}"
+            )
+        return res.json() if res.content else []
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        logger.error(f"supabase_patch {path} timeout")
+        raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout).")
+    except httpx.RequestError as e:
+        logger.error(f"supabase_patch {path} verbindingsfout: {e}")
+        raise HTTPException(status_code=503, detail=f"Verbindingsfout met database: {str(e)}")
+
+async def supabase_delete(path: str, token: str) -> None:
+    """
+    DELETE request naar Supabase REST API.
+    """
+    client = _get_supabase_client()
+    try:
+        res = await client.delete(
+            f"/rest/v1/{path}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if res.status_code == 401:
+            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+        if res.status_code not in (200, 204):
+            logger.error(f"supabase_delete {path} → {res.status_code}: {res.text[:200]}")
+            raise HTTPException(
+                status_code=res.status_code,
+                detail=f"Verwijderen mislukt in {path}: {res.text[:300]}"
+            )
+    except HTTPException:
+        raise
+    except httpx.TimeoutException:
+        logger.error(f"supabase_delete {path} timeout")
+        raise HTTPException(status_code=503, detail="Database niet bereikbaar (timeout).")
+    except httpx.RequestError as e:
+        logger.error(f"supabase_delete {path} verbindingsfout: {e}")
+        raise HTTPException(status_code=503, detail=f"Verbindingsfout met database: {str(e)}")
 
 # ══════════════════════════════════════════════════════════
 # CLAUDE HELPERS
@@ -657,32 +899,79 @@ def _claude_body(system: str, user: str, max_tokens: int, stream: bool = False) 
         body["stream"] = True
     return body
 
-async def roep_claude_aan(system: str, user: str, max_tokens: int = 1500) -> str:
+async def roep_claude_aan(
+    system: str,
+    user: str,
+    max_tokens: int = 1500,
+    request_id: str | None = None,
+) -> str:
+    """
+    Roept de Claude API aan via de gedeelde connection pool.
+
+    Args:
+        system:     System prompt
+        user:       Gebruikersbericht / prompt
+        max_tokens: Maximum te genereren tokens (default 1500)
+        request_id: Optioneel correlation ID voor log-tracing
+
+    Returns:
+        Gegenereerde tekst van Claude
+
+    Raises:
+        HTTPException 429: Rate limit bereikt
+        HTTPException 504: Timeout (Claude reageert niet binnen 90s)
+        HTTPException 503: Verbindingsfout
+    """
     if not ANTHROPIC_API_KEY:
-        raise HTTPException(status_code=500, detail="Anthropic API-sleutel niet ingesteld op de server.")
+        raise HTTPException(
+            status_code=500,
+            detail="Anthropic API-sleutel niet geconfigureerd."
+        )
+
+    client = _get_claude_client()
+    log_prefix = f"[{request_id}] " if request_id else ""
+
     try:
-        async with httpx.AsyncClient(timeout=90) as client:
-            res = await client.post(
-                ANTHROPIC_URL,
-                headers=_anthropic_headers(),
-                json=_claude_body(system, user, max_tokens),
+        res = await client.post(
+            "/v1/messages",
+            json=_claude_body(system, user, max_tokens),
+        )
+
+        if res.status_code == 401:
+            logger.error(f"{log_prefix}Claude 401 — ongeldige API-sleutel")
+            raise HTTPException(status_code=500, detail="Ongeldige Anthropic API-sleutel.")
+        if res.status_code == 429:
+            retry_after = res.headers.get("retry-after", "60")
+            logger.warning(f"{log_prefix}Claude 429 — rate limit, retry-after: {retry_after}s")
+            raise HTTPException(
+                status_code=429,
+                detail=f"AI-limiet bereikt. Wacht {retry_after} seconden en probeer opnieuw."
             )
-            if res.status_code == 401:
-                raise HTTPException(status_code=500, detail="Ongeldige Anthropic API-sleutel.")
-            if res.status_code == 429:
-                raise HTTPException(status_code=429, detail="Te veel verzoeken. Probeer het over een moment opnieuw.")
-            if res.status_code == 529:
-                raise HTTPException(status_code=503, detail="Anthropic API tijdelijk overbelast. Probeer opnieuw.")
-            if res.status_code != 200:
-                raise HTTPException(status_code=502, detail=f"API-fout ({res.status_code}): {res.text[:200]}")
-            data = res.json()
-            return data["content"][0]["text"]
+        if res.status_code == 529:
+            logger.warning(f"{log_prefix}Claude 529 — overbelast")
+            raise HTTPException(status_code=503, detail="AI-service tijdelijk overbelast. Probeer over 30 seconden opnieuw.")
+        if res.status_code != 200:
+            logger.error(f"{log_prefix}Claude {res.status_code}: {res.text[:200]}")
+            raise HTTPException(
+                status_code=502,
+                detail=f"AI-service fout ({res.status_code}). Probeer opnieuw."
+            )
+
+        data = res.json()
+        if not data.get("content") or not data["content"][0].get("text"):
+            logger.error(f"{log_prefix}Claude lege response: {data}")
+            raise HTTPException(status_code=502, detail="AI-service gaf een lege respons. Probeer opnieuw.")
+
+        return data["content"][0]["text"]
+
     except HTTPException:
         raise
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Claude reageert niet (timeout na 90s). Probeer opnieuw.")
+        logger.error(f"{log_prefix}Claude timeout (>90s)")
+        raise HTTPException(status_code=504, detail="AI reageert niet (timeout na 90s). Probeer opnieuw.")
     except httpx.RequestError as e:
-        raise HTTPException(status_code=503, detail=f"Kan Claude niet bereiken: {str(e)}")
+        logger.error(f"{log_prefix}Claude verbindingsfout: {e}")
+        raise HTTPException(status_code=503, detail="Kan AI-service niet bereiken. Controleer de verbinding.")
 
 def _veilig_json_parse(tekst: str) -> dict:
     """JSON parsen met opschoning van markdown-blokken."""
@@ -958,11 +1247,44 @@ def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[st
 
 @app.get("/health")
 async def health():
-    return {
-        "status": "ok",
-        "api_key_ingesteld": bool(ANTHROPIC_API_KEY),
-        "supabase_ingesteld": bool(SUPABASE_ANON_KEY),
-    }
+    """
+    Health check voor load balancers en monitoring.
+    Checkt of downstream dependencies bereikbaar zijn.
+    200 = operationeel, 503 = gedegradeerd.
+    """
+    checks: dict = {}
+    alles_ok = True
+
+    # Supabase ping — lichtgewicht, max 3s timeout
+    try:
+        client = _get_supabase_client()
+        res = await client.get(
+            "/rest/v1/",
+            headers={"apikey": SUPABASE_ANON_KEY},
+            timeout=3.0,
+        )
+        checks["supabase"] = "ok" if res.status_code < 500 else f"fout_{res.status_code}"
+        if res.status_code >= 500:
+            alles_ok = False
+    except Exception as e:
+        checks["supabase"] = f"niet_bereikbaar"
+        alles_ok = False
+        logger.error(f"Health check: Supabase niet bereikbaar: {e}")
+
+    # Anthropic — alleen config check, geen netwerk-aanroep
+    checks["anthropic"] = "geconfigureerd" if ANTHROPIC_API_KEY else "api_sleutel_ontbreekt"
+    if not ANTHROPIC_API_KEY:
+        alles_ok = False
+
+    return JSONResponse(
+        status_code=200 if alles_ok else 503,
+        content={
+            "status":  "ok" if alles_ok else "gedegradeerd",
+            "service": "school-van-morgen",
+            "versie":  "1.0.0",
+            "checks":  checks,
+        }
+    )
 
 @app.get("/")
 async def root():
@@ -1049,8 +1371,8 @@ async def analyseer(
                                         # Herstel naam in elk chunk dat [LEERLING] bevat
                                         tekst_herstel = herstel_pseudoniem(tekst, naam_mapping)
                                         yield tekst_herstel
-                            except (json.JSONDecodeError, KeyError):
-                                pass
+                            except (json.JSONDecodeError, KeyError) as e:
+                                logger.debug(f"Stream JSON parse skip: {e}")
         except httpx.TimeoutException:
             yield json.dumps({"error": "Timeout - Claude reageert niet. Probeer opnieuw."})
         except Exception as e:
