@@ -1242,7 +1242,7 @@ async function startBatchRapporten() {
     voortgang.innerHTML = '<span style="color:#991b1b">Fout: ' + e.message + '</span>';
   } finally {
     knop.disabled  = false;
-    knop.textContent = 'Genereer alle rapporten';
+    knop.textContent = 'Produceer alle rapporten';
   }
 }
 
@@ -1939,7 +1939,7 @@ function toonTab(tab, knop) {
       </select>
       <button onclick="startBatchRapporten()" id="batch-knop"
         style="width:100%;background:var(--accent);color:#fff;border:none;padding:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);border-radius:var(--r-md)">
-        Genereer alle rapporten
+        Produceer alle rapporten
       </button>
       <div id="batch-voortgang" style="display:none;margin-top:8px;font-size:11px;line-height:1.6"></div>
     </div>
@@ -2003,7 +2003,7 @@ function toonTab(tab, knop) {
     <div style="flex-shrink:0;padding:10px 1.6rem;background:var(--warm);border-top:1px solid var(--warmrand)">
       <button class="genknop" id="gknop" onclick="genereer()">
         <div class="spin" id="spin" style="display:none"></div>
-        <span id="ktekst">Genereer rapport</span>
+        <span id="ktekst">Produceer rapport</span>
       </button>
     </div>
 
@@ -2067,7 +2067,7 @@ function toonTab(tab, knop) {
       </div>
       <button class="genknop" id="opp-knop" onclick="genereerOpp()" style="width:100%">
         <div class="spin" id="opp-spin" style="display:none"></div>
-        <span id="opp-ktekst">Genereer OPP</span>
+        <span id="opp-ktekst">Produceer OPP</span>
       </button>
     </div>
     <div class="resultaat" id="opp-resultaat" style="overflow-y:auto">
@@ -2129,7 +2129,7 @@ function toonTab(tab, knop) {
       </div>
       <button class="genknop" id="hp-knop" onclick="genereerHandelingsplan()" style="width:100%">
         <div class="spin" id="hp-spin" style="display:none"></div>
-        <span id="hp-ktekst">Genereer handelingsplan</span>
+        <span id="hp-ktekst">Produceer handelingsplan</span>
       </button>
     </div>
     <div class="resultaat" id="hp-resultaat" style="overflow-y:auto">
@@ -2186,7 +2186,7 @@ function toonTab(tab, knop) {
           </select>
           <button onclick="inspectieGenereerRapport()" id="inspectie-rapport-knop"
             style="padding:7px 14px;background:#4a7a4a;color:#fff;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">
-            📄 Genereer inspectierapport
+            📄 Produceer inspectierapport
           </button>
         </div>
       </div>
@@ -3077,7 +3077,7 @@ async function genereer() {
     const ktekst = document.getElementById('ktekst');
     const gknop = document.getElementById('gknop');
     if (spin) spin.style.display = 'none';
-    if (ktekst) ktekst.textContent = 'Genereer ParnasSys-rapport';
+    if (ktekst) ktekst.textContent = 'Produceer rapport';
     if (gknop) gknop.disabled = false;
   }
 }
@@ -4250,7 +4250,7 @@ async function inspectieGenereerRapport() {
   } catch(e) {
     if (tekst) { tekst.textContent = 'Generatie mislukt: ' + e.message; }
   } finally {
-    if (knop) { knop.textContent = '📄 Genereer inspectierapport'; knop.disabled = false; }
+    if (knop) { knop.textContent = '📄 Produceer inspectierapport'; knop.disabled = false; }
   }
 }
 
@@ -5807,7 +5807,7 @@ async function genereerOpp() {
       }
     } catch(e) {}
   }
-  const prompt = `Genereer een wettelijk compleet Ontwikkelingsperspectief (OPP) conform passend onderwijs voor${naam ? ' ' + naam : ' een leerling'}${groep ? ' in groep ' + groep : ''}${behoefte ? ' met ' + behoefte : ''}.
+  const prompt = `Produceer een wettelijk compleet Ontwikkelingsperspectief (OPP) conform passend onderwijs voor${naam ? ' ' + naam : ' een leerling'}${groep ? ' in groep ' + groep : ''}${behoefte ? ' met ' + behoefte : ''}.
 Notities: "${notities}"${_oppLvsContext}${_oppNotitiesContext}
 Retourneer ALLEEN een JSON-object met:
 {"uitstroom":"Uitstroombestemming en motivatie in 3-4 zinnen","bevorderend":"Bevorderende factoren in 2-3 zinnen","belemmerend":"Belemmerende factoren in 2-3 zinnen","doelen":"SMART-geformuleerde doelen voor de komende periode","hoorrecht":"Samenvatting hoorrecht leerling en ouders in 2 zinnen","evaluatie":"Evaluatiemoment en -methode"}`;
@@ -5844,7 +5844,7 @@ Retourneer ALLEEN een JSON-object met:
       }
     }
   } catch(e) { resultaat.innerHTML = `<div class="fout">${e.message}</div>`; }
-  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('opp-ktekst').textContent='Genereer OPP'; setTimeout(oppLaadLijst, 500); }
+  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('opp-ktekst').textContent='Produceer OPP'; setTimeout(oppLaadLijst, 500); }
 }
 
 // ── Handelingsplan genereren ──────────────────────────────────
@@ -5883,7 +5883,7 @@ async function genereerHandelingsplan() {
       }
     } catch(e) {}
   }
-  const prompt = `Genereer een concreet handelingsplan voor${naam?' '+naam:' een leerling'}${groep?' in groep '+groep:''} met ${behoefte}.
+  const prompt = `Produceer een concreet handelingsplan voor${naam?' '+naam:' een leerling'}${groep?' in groep '+groep:''} met ${behoefte}.
 Notities: "${notities}"${_hpLvsContext}${_hpNotitiesContext}
 Retourneer ALLEEN een JSON-object met:
 {"doel":"Concreet doel voor de komende 6 weken","aanpak":"Bewezen interventies en hoe ze in te zetten in 3-4 zinnen","materialen":"Benodigde materialen of aanpassingen","evaluatie":"Hoe en wanneer evalueren","ouders":"Aanbeveling voor thuissituatie in 2 zinnen"}`;
@@ -5918,7 +5918,7 @@ Retourneer ALLEEN een JSON-object met:
       }
     }
   } catch(e) { resultaat.innerHTML = `<div class="fout">${e.message}</div>`; }
-  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('hp-ktekst').textContent='Genereer handelingsplan'; setTimeout(hpLaadLijst, 500); }
+  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('hp-ktekst').textContent='Produceer handelingsplan'; setTimeout(hpLaadLijst, 500); }
 }
 
 // ── Notities — database-backed (vervangt localStorage) ──────
