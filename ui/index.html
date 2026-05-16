@@ -1984,8 +1984,8 @@ function toonTab(tab, knop) {
     <!-- Genereerknop: altijd onderaan vastgezet -->
     <div style="flex-shrink:0;padding:10px 1.6rem;background:var(--warm);border-top:1px solid var(--warmrand)">
       <button class="genknop" id="gknop" onclick="genereer()">
-        <div class="spin" id="spin"></div>
-        <span id="ktekst">Genereer ParnasSys-rapport</span>
+        <div class="spin" id="spin" style="display:none"></div>
+        <span id="ktekst">Genereer rapport</span>
       </button>
     </div>
 
@@ -4964,6 +4964,10 @@ async function aawInit() {
 
 function aawSelecteerKlas(groep) {
   aawGeselecteerdeKlas = groep;
+  // Sync naar snelle notitie: filter leerlingen op dezelfde klas
+  if (groep && typeof notitieFilterOpKlas === 'function') {
+    notitieFilterOpKlas(groep);
+  }
   const leeg = document.getElementById('aaw-leeg');
   const lijst = document.getElementById('aaw-lijst');
   if (!groep) {
@@ -5939,6 +5943,13 @@ function notitieVulZijbalk(filterGroep) {
       });
     }
   }
+}
+
+function notitieFilterOpKlas(groep) {
+  window._notitieGroepFilter = groep;
+  const zoekEl = document.getElementById('notitie-zoek');
+  if (zoekEl) zoekEl.value = '';
+  notitieVulZijbalk(groep);
 }
 
 function notitieFilterLeerlingen(zoek) {
