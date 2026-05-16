@@ -5770,7 +5770,6 @@ async function genereerOpp() {
   const groep = document.getElementById('opp-groep')?.value || '';
   const behoefte = document.getElementById('opp-behoefte')?.value || '';
   const notities = document.getElementById('opp-notities')?.value.trim() || '';
-  if (notities.length < 20) { alert('Voer minimaal 20 tekens aan notities in.'); return; }
   const knop = document.getElementById('opp-knop');
   const spin = document.getElementById('opp-spin');
   const resultaat = document.getElementById('opp-resultaat');
@@ -5778,19 +5777,30 @@ async function genereerOpp() {
   document.getElementById('opp-ktekst').textContent = 'Verwerken...';
   // LVS-scores als leescontext
   let _oppLvsContext = '';
+  let _oppNotitiesContext = '';
   if (window._huidigeLeerlingId) {
     try {
-      const _r = await fetch(API_BASE + '/lvs/' + window._huidigeLeerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+      const [_r, _nr] = await Promise.all([
+        fetch(API_BASE + '/lvs/' + window._huidigeLeerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } }),
+        fetch(API_BASE + '/leerlingen/' + window._huidigeLeerlingId + '/notities', { headers: { 'Authorization': 'Bearer ' + huidigToken } })
+      ]);
       if (_r.ok) {
         const _p = await _r.json();
         const _s = (_p.scores || {});
         const _gevuld = LVS_DOMEINEN.filter(d => _s[d.k] && _s[d.k] > 0).map(d => d.l + ': ' + _s[d.k]).join(', ');
-        if (_gevuld) _oppLvsContext = '\nBekende LVS-scores (ter informatie): ' + _gevuld + '.';
+        if (_gevuld) _oppLvsContext = '\nBekende LVS-scores: ' + _gevuld + '.';
+      }
+      if (_nr.ok) {
+        const _nd = await _nr.json();
+        const _items = (_nd.notities || _nd || []).slice(0, 10);
+        if (_items.length) _oppNotitiesContext = '\nEerdere observaties:\n' + _items.map(function(n) {
+          return '- [' + (n.aangemaakt_op||'').slice(0,10) + '] ' + (n.tekst||'').slice(0,150);
+        }).join('\n');
       }
     } catch(e) {}
   }
   const prompt = `Genereer een wettelijk compleet Ontwikkelingsperspectief (OPP) conform passend onderwijs voor${naam ? ' ' + naam : ' een leerling'}${groep ? ' in groep ' + groep : ''}${behoefte ? ' met ' + behoefte : ''}.
-Notities: "${notities}"${_oppLvsContext}
+Notities: "${notities}"${_oppLvsContext}${_oppNotitiesContext}
 Retourneer ALLEEN een JSON-object met:
 {"uitstroom":"Uitstroombestemming en motivatie in 3-4 zinnen","bevorderend":"Bevorderende factoren in 2-3 zinnen","belemmerend":"Belemmerende factoren in 2-3 zinnen","doelen":"SMART-geformuleerde doelen voor de komende periode","hoorrecht":"Samenvatting hoorrecht leerling en ouders in 2 zinnen","evaluatie":"Evaluatiemoment en -methode"}`;
   // Stuur leerling_id mee zodat de backend de cascade naar LVS kan doen
@@ -5836,7 +5846,6 @@ async function genereerHandelingsplan() {
   const behoefte = document.getElementById('hp-behoefte')?.value || '';
   const notities = document.getElementById('hp-notities')?.value.trim() || '';
   if (!behoefte) { alert('Selecteer een ondersteuningsbehoefte.'); return; }
-  if (notities.length < 10) { alert('Voer notities in.'); return; }
   const knop = document.getElementById('hp-knop');
   const spin = document.getElementById('hp-spin');
   const resultaat = document.getElementById('hp-resultaat');
@@ -5844,19 +5853,30 @@ async function genereerHandelingsplan() {
   document.getElementById('hp-ktekst').textContent='Verwerken...';
   // LVS-scores als leescontext
   let _hpLvsContext = '';
+  let _hpNotitiesContext = '';
   if (window._huidigeLeerlingId) {
     try {
-      const _r2 = await fetch(API_BASE + '/lvs/' + window._huidigeLeerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } });
+      const [_r2, _nr2] = await Promise.all([
+        fetch(API_BASE + '/lvs/' + window._huidigeLeerlingId, { headers: { 'Authorization': 'Bearer ' + huidigToken } }),
+        fetch(API_BASE + '/leerlingen/' + window._huidigeLeerlingId + '/notities', { headers: { 'Authorization': 'Bearer ' + huidigToken } })
+      ]);
       if (_r2.ok) {
         const _p2 = await _r2.json();
         const _s2 = (_p2.scores || {});
         const _gevuld2 = LVS_DOMEINEN.filter(d => _s2[d.k] && _s2[d.k] > 0).map(d => d.l + ': ' + _s2[d.k]).join(', ');
-        if (_gevuld2) _hpLvsContext = '\nBekende LVS-scores (ter informatie): ' + _gevuld2 + '.';
+        if (_gevuld2) _hpLvsContext = '\nBekende LVS-scores: ' + _gevuld2 + '.';
+      }
+      if (_nr2.ok) {
+        const _nd2 = await _nr2.json();
+        const _items2 = (_nd2.notities || _nd2 || []).slice(0, 10);
+        if (_items2.length) _hpNotitiesContext = '\nEerdere observaties:\n' + _items2.map(function(n) {
+          return '- [' + (n.aangemaakt_op||'').slice(0,10) + '] ' + (n.tekst||'').slice(0,150);
+        }).join('\n');
       }
     } catch(e) {}
   }
   const prompt = `Genereer een concreet handelingsplan voor${naam?' '+naam:' een leerling'}${groep?' in groep '+groep:''} met ${behoefte}.
-Notities: "${notities}"${_hpLvsContext}
+Notities: "${notities}"${_hpLvsContext}${_hpNotitiesContext}
 Retourneer ALLEEN een JSON-object met:
 {"doel":"Concreet doel voor de komende 6 weken","aanpak":"Bewezen interventies en hoe ze in te zetten in 3-4 zinnen","materialen":"Benodigde materialen of aanpassingen","evaluatie":"Hoe en wanneer evalueren","ouders":"Aanbeveling voor thuissituatie in 2 zinnen"}`;
   // Stuur leerling_id mee voor cascade naar LVS
