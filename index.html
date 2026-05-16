@@ -2687,6 +2687,7 @@ function toonTab(tab, knop) {
     <!-- Zijbalk leerlingen -->
     <div style="width:180px;flex-shrink:0;border-right:1px solid var(--n-200);background:var(--n-50);display:flex;flex-direction:column;overflow:hidden">
       <div style="padding:10px 10px 6px;border-bottom:1px solid var(--warmrand)">
+        <div id="notitie-klas-indicator" style="display:none;font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.06em;margin-bottom:6px;padding:3px 8px;background:var(--accent-subtle);border-radius:var(--r-pill)"></div>
         <input type="text" id="notitie-zoek" placeholder="Zoek leerling…" oninput="notitieFilterLeerlingen(this.value)"
           style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
@@ -4973,6 +4974,11 @@ function aawSelecteerKlas(groep) {
   }
   if (leeg) leeg.style.display = 'none';
   aawToonKlas(groep);
+
+  // Sync notitie-tab: filter leerlingenlijst op dezelfde klas
+  if (typeof notitieVulZijbalk === 'function') {
+    notitieVulZijbalk(groep);
+  }
 }
 
 function aawRenderKlassen() {
@@ -5894,11 +5900,30 @@ function notitieRender() {
 }
 
 // ── Notitie-zijbalk ──────────────────────────────────────────
-function notitieVulZijbalk() {
+function notitieVulZijbalk(filterGroep) {
   const lijst = document.getElementById('notitie-leerlingen-lijst');
   if (!lijst) return;
+
+  // Sync zoekbalk met de klas-filter als meegegeven vanuit aanwezigheid
+  if (filterGroep) {
+    window._notitieGroepFilter = filterGroep;
+  }
+
   if (leerlingen && leerlingen.length > 0) {
-    notitieRenderZijbalk(leerlingen);
+    const gefilterd = window._notitieGroepFilter
+      ? leerlingen.filter(function(l){ return String(l.groep) === String(window._notitieGroepFilter); })
+      : leerlingen;
+    // Toon/verberg klas-indicator
+    const ind = document.getElementById('notitie-klas-indicator');
+    if (ind) {
+      if (window._notitieGroepFilter) {
+        ind.textContent = 'Groep ' + window._notitieGroepFilter;
+        ind.style.display = 'inline-block';
+      } else {
+        ind.style.display = 'none';
+      }
+    }
+    notitieRenderZijbalk(gefilterd);
   } else {
     // Leerlingen nog niet geladen — haal ze op
     lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>';
