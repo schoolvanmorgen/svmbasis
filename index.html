@@ -712,6 +712,7 @@ let lvsHuidig = null;
 let huidigeLeerling = null;  // { id, voornaam, groep, ondersteuningsbehoeftes, notities }
 
 function stelLeerlingIn(leerling) {
+  setTimeout(function() { if (typeof obsUpdateProfiel === 'function') obsUpdateProfiel(); }, 300);
   huidigeLeerling = leerling;
   window._huidigeLeerlingId = leerling ? leerling.id : null;
 
@@ -2542,7 +2543,11 @@ function toonTab(tab, knop) {
       </div>
 
       <!-- Tab: Notitie toevoegen -->
-      <div id="lvs-tab-notitie" class="lvs-inhoud" style="display:none;padding:10px 14px;overflow-y:auto;flex:1;min-height:0">
+      <div id="lvs-tab-notitie" class="lvs-inhoud" style="display:none;flex:1;min-height:0;overflow:hidden">
+        <div style="display:grid;grid-template-columns:1fr 1fr;height:100%;min-height:0;overflow:hidden">
+
+        <!-- Links: invoerformulier -->
+        <div style="overflow-y:auto;padding:16px 18px;border-right:1px solid var(--n-200);background:var(--n-0)">
         <div class="lvs-notitie-form">
           <div class="vlabel">TYPE</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap" id="lvs-notitie-type-wrap">
@@ -2775,8 +2780,35 @@ function toonTab(tab, knop) {
           <div class="vlabel" style="margin-top:8px">NOTITIE</div>
           <textarea id="lvs-notitie-tekst" rows="2" placeholder="Observatie, toetsresultaat, bijzonderheid…"
             style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:9px 11px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.6"></textarea>
-          <button onclick="lvsSlaNotitieOp()" style="align-self:flex-start;background:#4a7a4a;color:#fff;border:none;padding:7px 16px;font-size:11px;font-weight:600;letter-spacing:.06em;cursor:pointer;font-family:inherit">Opslaan</button>
+          <button onclick="lvsSlaNotitieOp()" style="align-self:flex-start;background:var(--accent);color:var(--n-0);border:none;padding:8px 20px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);border-radius:var(--r-md);margin-top:4px">Opslaan</button>
         </div>
+        </div><!-- einde invoer links -->
+
+        <!-- Rechts: leerlingprofiel -->
+        <div style="overflow-y:auto;padding:16px 18px;background:var(--n-50)">
+          <div class="vlabel" style="margin-bottom:12px">PROFIEL LEERLING</div>
+
+          <!-- Naam & groep -->
+          <div id="obs-profiel-naam" style="font-family:var(--font-display);font-size:18px;color:var(--n-900);margin-bottom:2px">—</div>
+          <div id="obs-profiel-groep" style="font-size:11px;color:var(--n-400);margin-bottom:16px"></div>
+
+          <!-- Ondersteuningsbehoeftes -->
+          <div id="obs-profiel-behoeftes" style="margin-bottom:16px"></div>
+
+          <!-- Scorebalken spiegel -->
+          <div class="vlabel" style="margin-bottom:8px">HUIDIGE SCORES</div>
+          <div id="obs-profiel-scores" style="display:flex;flex-direction:column;gap:8px">
+            <div style="color:var(--n-400);font-size:12px">Selecteer een leerling om het profiel te zien.</div>
+          </div>
+
+          <!-- Laatste observaties -->
+          <div class="vlabel" style="margin-top:16px;margin-bottom:8px">RECENTE OBSERVATIES</div>
+          <div id="obs-profiel-tijdlijn" style="display:flex;flex-direction:column;gap:6px">
+            <div style="color:var(--n-400);font-size:12px">—</div>
+          </div>
+        </div><!-- einde profiel rechts -->
+
+        </div><!-- einde grid -->
         </div>
       </div>
 
@@ -4864,6 +4896,87 @@ function lvsKiesType(knop) {
   knop.style.borderColor = '#4a7a4a';
   knop.style.fontWeight  = '600';
   document.getElementById('lvs-notitie-type').value = knop.dataset.type;
+}
+
+function obsUpdateProfiel() {
+  // Vul het rechterpaneel van "Observatie toevoegen" met leerlingdata
+  if (!lvsHuidig) return;
+
+  const naam = document.getElementById('obs-profiel-naam');
+  const groep = document.getElementById('obs-profiel-groep');
+  const behoeftes = document.getElementById('obs-profiel-behoeftes');
+  const scores = document.getElementById('obs-profiel-scores');
+  const tijdlijn = document.getElementById('obs-profiel-tijdlijn');
+
+  if (naam) naam.textContent = lvsHuidig.voornaam + (lvsHuidig.achternaam ? ' ' + lvsHuidig.achternaam : '');
+  if (groep) groep.textContent = 'Groep ' + (lvsHuidig.groep || '—');
+
+  // Ondersteuningsbehoeftes
+  const beh = lvsHuidig.ondersteuningsbehoeftes || [];
+  if (behoeftes) {
+    behoeftes.innerHTML = beh.length
+      ? beh.map(function(b) {
+          return '<span style="display:inline-block;margin:2px 4px 2px 0;padding:3px 10px;background:var(--accent-subtle);color:var(--accent);border-radius:var(--r-pill);font-size:11px;font-weight:500">' + b + '</span>';
+        }).join('')
+      : '';
+  }
+
+  // Scores uit huidige LVS-profielen
+  if (scores) {
+    const vakLabels = {
+      lezen: 'Lezen (DMT)', avi: 'AVI', rekenen: 'Rekenen', rekenen_basis: 'Basisbewerkingen',
+      spelling: 'Spelling', taalverzorging: 'Taalverzorging', woordenschat: 'Woordenschat',
+      begrijpend: 'Begr. lezen', begrijpend_luis: 'Begr. luisteren', engels: 'Engels',
+      sociaal: 'Sociaal-emotioneel', executief: 'Exec. functies', groeimeter: 'Groeimeter', werkhouding: 'Werkhouding'
+    };
+    const niveaus = { 95:'I+', 85:'I', 70:'II', 55:'III', 38:'IV', 22:'V', 10:'V-',
+                      5:'Start', 15:'M3', 25:'E3', 35:'M4', 43:'E4', 52:'M5', 60:'E5',
+                      68:'M6', 75:'E6', 83:'M7', 90:'E7', 97:'Plus' };
+    const kleurPct = function(p) {
+      if (p >= 70) return '#16a34a';
+      if (p >= 38) return '#d97706';
+      return '#dc2626';
+    };
+
+    const lvsScores = window._lvsHuidigeScores || {};
+    const gevuld = Object.keys(lvsScores).filter(function(k) { return lvsScores[k]; });
+
+    if (!gevuld.length) {
+      scores.innerHTML = '<div style="color:var(--n-400);font-size:12px">Nog geen scores ingevoerd.</div>';
+    } else {
+      scores.innerHTML = gevuld.map(function(vak) {
+        const pct = parseFloat(lvsScores[vak]) || 0;
+        const label = niveaus[pct] || lvsScores[vak];
+        const kleur = kleurPct(pct);
+        return '<div style="display:flex;align-items:center;gap:8px">'
+          + '<div style="width:110px;font-size:11px;color:var(--n-600);flex-shrink:0">' + (vakLabels[vak] || vak) + '</div>'
+          + '<div style="flex:1;height:6px;background:var(--n-100);border-radius:var(--r-pill);overflow:hidden">'
+          + '<div style="height:100%;width:' + pct + '%;background:' + kleur + ';border-radius:var(--r-pill);transition:width .3s"></div>'
+          + '</div>'
+          + '<div style="font-size:11px;font-weight:600;color:' + kleur + ';width:28px;text-align:right">' + label + '</div>'
+          + '</div>';
+      }).join('');
+    }
+  }
+
+  // Recente tijdlijn items
+  if (tijdlijn) {
+    const items = window._lvsHuidigeTijdlijn || [];
+    if (!items.length) {
+      tijdlijn.innerHTML = '<div style="color:var(--n-400);font-size:12px">Geen observaties.</div>';
+    } else {
+      tijdlijn.innerHTML = items.slice(0,5).map(function(item) {
+        const sentimentKleur = item.sentiment === 'positief' ? 'var(--success)' : item.sentiment === 'zorg' ? 'var(--danger)' : 'var(--n-400)';
+        return '<div style="padding:8px 10px;background:var(--n-0);border:1px solid var(--n-200);border-radius:var(--r-md);font-size:12px">'
+          + '<div style="display:flex;justify-content:space-between;margin-bottom:2px">'
+          + '<span style="font-weight:500;color:var(--n-700)">' + (item.datum || '') + '</span>'
+          + '<span style="font-size:10px;color:' + sentimentKleur + ';font-weight:600">' + (item.sentiment || '') + '</span>'
+          + '</div>'
+          + '<div style="color:var(--n-600);line-height:1.5">' + (item.tekst || '').slice(0,120) + '</div>'
+          + '</div>';
+      }).join('');
+    }
+  }
 }
 
 async function lvsSlaNotitieOp() {
