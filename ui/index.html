@@ -1901,6 +1901,8 @@ function toonTab(tab, knop) {
   <button class="tab" onclick="toonTab('notities',this)">Snelle notitie</button>
   <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
   <button class="tab" onclick="toonTab('rapport',this)">Rapport</button>
+  <button class="tab" onclick="toonTab('opp',this)">OPP</button>
+  <button class="tab" onclick="toonTab('handelingsplan',this)">Handelingsplan</button>
   <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
   <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
 </div>
@@ -2010,145 +2012,125 @@ function toonTab(tab, knop) {
 
 <!-- ── OPP Tab ── -->
 <div class="sectie" id="tab-opp">
-<div class="leerlingen-sidebar" style="display:flex;flex-direction:column;overflow:hidden">
+<div style="display:grid;grid-template-columns:280px 1fr;height:100%;min-height:0;overflow:hidden">
 
-  <!-- Header: knoppen -->
-  <div style="flex-shrink:0;padding:10px 12px 8px;border-bottom:1px solid var(--warmrand)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <div class="vlabel" style="margin-bottom:0">LEERLINGEN</div>
-      <button onclick="uitloggen()" style="background:transparent;color:var(--tz);border:1px solid var(--rand);border-radius:6px;padding:2px 7px;font-size:10px;cursor:pointer;font-family:inherit">Uitloggen</button>
+  <!-- Links: lijst van gemaakte OPP's -->
+  <div style="border-right:1px solid var(--n-200);background:var(--n-50);display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--n-200);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;font-weight:600;color:var(--n-900)">Gemaakte OPP's</div>
+      <button onclick="oppLaadLijst()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--font-body)">↺ Vernieuwen</button>
     </div>
-    <div style="display:flex;gap:4px">
-      <button onclick="openLeerlingModal()" style="flex:1;background:var(--oranje);color:#fff;border:none;border-radius:6px;padding:5px 4px;font-size:10px;cursor:pointer;font-family:inherit">+ Leerling</button>
-      <button onclick="openImportModal()" style="flex:1;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;border-radius:6px;padding:5px 4px;font-size:10px;cursor:pointer;font-family:inherit;font-weight:600">↑ Klas</button>
-    </div>
-  </div>
-
-  <!-- Scrollbare middelste sectie: leerlingen + geschiedenis + trend -->
-  <div style="flex:1;overflow-y:auto;padding:10px 12px;min-height:0">
-    <div id="leerlingen-lijst" style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px"></div>
-    <div>
-      <div class="vlabel" style="margin-bottom:4px">RAPPORTGESCHIEDENIS</div>
-      <div id="rapport-geschiedenis" style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--tz)">Selecteer een leerling.</div>
-    </div>
-    <div style="margin-top:8px">
-      <div id="rapport-trend-balk" style="display:none"></div>
+    <div id="opp-lijst" style="flex:1;overflow-y:auto;padding:8px">
+      <div style="color:var(--n-400);font-size:12px;padding:12px">Laden…</div>
     </div>
   </div>
 
-
-
-</div>
-<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;overflow:hidden">
-<div class="app" style="display:contents">
-  <div class="invoer">
-    <div>
-      <div class="ptitel">Ontwikkelingsperspectief</div>
-      <div class="psub">Vul notities in over het kind. De app genereert een wettelijk compleet OPP conform passend onderwijs.</div>
-    </div>
-    <div>
-      <div class="vlabel">LEERLING</div>
-      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:7px;margin-bottom:6px;font-size:12px">
-        <span style="font-weight:600;color:var(--gm)">●</span>
-        <span class="alb-naam" style="font-weight:500;color:var(--donker)"></span>
-        <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer">Wisselen</button>
+  <!-- Rechts: formulier + resultaat -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;overflow:hidden">
+    <div class="invoer" style="padding:24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
+      <div>
+        <div style="font-family:var(--font-display);font-size:20px;color:var(--n-900);margin-bottom:4px">Nieuw OPP</div>
+        <div style="font-size:13px;color:var(--n-500)">Genereert een wettelijk compleet Ontwikkelingsperspectief.</div>
       </div>
-      <div class="rij2">
+      <div>
+        <div class="vlabel">LEERLING</div>
+        <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:var(--r-md);margin-bottom:8px;font-size:13px">
+          <span style="font-weight:600;color:var(--accent)">●</span>
+          <span class="alb-naam" style="font-weight:500;color:var(--n-900)"></span>
+          <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--n-400);cursor:pointer">Wisselen</button>
+        </div>
         <input type="text" id="opp-naam" placeholder="Naam kind">
-        <select id="opp-groep">
-          <option value="">Groep...</option>
-          <option>1</option><option>2</option><option>3</option><option>4</option>
-          <option>5</option><option>6</option><option>7</option><option>8</option>
+      </div>
+      <div>
+        <div class="vlabel">ONDERSTEUNINGSBEHOEFTE</div>
+        <select id="opp-behoefte">
+          <option value="">Selecteer type…</option>
+          <option>Dyslexie</option><option>Dyscalculie</option>
+          <option>Hoogbegaafdheid</option><option>ADHD / concentratieproblemen</option>
+          <option>Autisme</option><option>Sociaal-emotionele problematiek</option>
+          <option>Taalontwikkelingsachterstand</option><option>Meervoudige ondersteuningsbehoefte</option>
+          <option>Anders</option>
         </select>
       </div>
-    </div>
-    <div>
-      <div class="vlabel">ONDERSTEUNINGSBEHOEFTE</div>
-      <select id="opp-behoefte">
-        <option value="">Selecteer type...</option>
-        <option>Dyslexie</option>
-        <option>Dyscalculie</option>
-        <option>Hoogbegaafdheid</option>
-        <option>ADHD / concentratieproblemen</option>
-        <option>Autisme</option>
-        <option>Sociaal-emotionele problematiek</option>
-        <option>Taalontwikkelingsachterstand</option>
-        <option>Meervoudige ondersteuningsbehoefte</option>
-        <option>Anders</option>
-      </select>
-    </div>
-    <div>
-      <div class="vlabel">NOTITIES</div>
-      <div class="nwrap">
-        <textarea id="opp-notities" style="min-height:220px" placeholder="Beschrijf wat je observeert, welke toetsresultaten er zijn, wat al is geprobeerd, hoe ouders en kind er zelf naar kijken..."></textarea>
-        <button class="mic-knop" onclick="toggleMic('opp-notities',this)" title="Spraak naar tekst">🎤</button>
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div class="vlabel">NOTITIES</div>
+        <div class="nwrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
+          <textarea id="opp-notities" style="flex:1;min-height:160px" placeholder="Beschrijf wat je observeert, toetsresultaten, wat al is geprobeerd, hoe ouders en kind er zelf naar kijken…"></textarea>
+          <button class="mic-knop" onclick="toggleMic('opp-notities',this)" title="Spraak naar tekst">🎤</button>
+        </div>
       </div>
+      <button class="genknop" id="opp-knop" onclick="genereerOpp()" style="width:100%">
+        <div class="spin" id="opp-spin" style="display:none"></div>
+        <span id="opp-ktekst">Genereer OPP</span>
+      </button>
     </div>
-    <button class="genknop" id="opp-knop" onclick="genereerOpp()">
-      <div class="spin" id="opp-spin"></div>
-      <span id="opp-ktekst">Genereer OPP</span>
-    </button>
+    <div class="resultaat" id="opp-resultaat" style="overflow-y:auto">
+      <div class="leeg-c" style="margin:40px 24px">📄<br><span style="font-size:13px;color:var(--n-400)">Vul notities in en genereer het OPP</span></div>
+    </div>
   </div>
-  <div class="resultaat" id="opp-resultaat">
-    <div class="leeg"><div class="leeg-c">📄</div><div class="leeg-t">Vul notities in en genereer het OPP</div></div>
-  </div>
+
 </div>
 </div><!-- einde tab-opp -->
 
 <!-- ── Handelingsplan Tab ── -->
 <div class="sectie" id="tab-handelingsplan">
-<div class="app">
-  <div class="invoer">
-    <div>
-      <div class="ptitel">Handelingsplan</div>
-      <div class="psub">Vul de ondersteuningsbehoefte en notities in. De app genereert concrete doelen en aanpak gebaseerd op bewezen interventies.</div>
+<div style="display:grid;grid-template-columns:280px 1fr;height:100%;min-height:0;overflow:hidden">
+
+  <!-- Links: lijst van gemaakte handelingsplannen -->
+  <div style="border-right:1px solid var(--n-200);background:var(--n-50);display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--n-200);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;font-weight:600;color:var(--n-900)">Gemaakte plannen</div>
+      <button onclick="hpLaadLijst()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--font-body)">↺ Vernieuwen</button>
     </div>
-    <div>
-      <div class="vlabel">LEERLING</div>
-      <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--gl);border:1px solid var(--gm);border-radius:7px;margin-bottom:6px;font-size:12px">
-        <span style="font-weight:600;color:var(--gm)">●</span>
-        <span class="alb-naam" style="font-weight:500;color:var(--donker)"></span>
-        <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--tz);cursor:pointer">Wisselen</button>
+    <div id="hp-lijst" style="flex:1;overflow-y:auto;padding:8px">
+      <div style="color:var(--n-400);font-size:12px;padding:12px">Laden…</div>
+    </div>
+  </div>
+
+  <!-- Rechts: formulier + resultaat -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;overflow:hidden">
+    <div class="invoer" style="padding:24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
+      <div>
+        <div style="font-family:var(--font-display);font-size:20px;color:var(--n-900);margin-bottom:4px">Nieuw handelingsplan</div>
+        <div style="font-size:13px;color:var(--n-500)">Concrete doelen en aanpak op basis van bewezen interventies.</div>
       </div>
-      <div class="rij2">
+      <div>
+        <div class="vlabel">LEERLING</div>
+        <div class="actieve-leerling-banner" style="display:none;align-items:center;gap:8px;padding:7px 10px;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:var(--r-md);margin-bottom:8px;font-size:13px">
+          <span style="font-weight:600;color:var(--accent)">●</span>
+          <span class="alb-naam" style="font-weight:500;color:var(--n-900)"></span>
+          <button onclick="stelLeerlingIn(null)" style="margin-left:auto;background:none;border:none;font-size:11px;color:var(--n-400);cursor:pointer">Wisselen</button>
+        </div>
         <input type="text" id="hp-naam" placeholder="Naam kind">
-        <select id="hp-groep">
-          <option value="">Groep...</option>
-          <option>1</option><option>2</option><option>3</option><option>4</option>
-          <option>5</option><option>6</option><option>7</option><option>8</option>
+      </div>
+      <div>
+        <div class="vlabel">ONDERSTEUNINGSBEHOEFTE <span style="color:var(--danger)">*</span></div>
+        <select id="hp-behoefte">
+          <option value="">Selecteer type (verplicht)…</option>
+          <option>Dyslexie</option><option>Dyscalculie</option>
+          <option>Hoogbegaafdheid</option><option>ADHD / concentratieproblemen</option>
+          <option>Autisme</option><option>Sociaal-emotionele problematiek</option>
+          <option>Taalontwikkelingsachterstand</option><option>Rekenproblemen (zonder diagnose)</option>
+          <option>Leesproblemen (zonder diagnose)</option>
         </select>
       </div>
-    </div>
-    <div>
-      <div class="vlabel">ONDERSTEUNINGSBEHOEFTE <span style="color:var(--r)">*</span></div>
-      <select id="hp-behoefte">
-        <option value="">Selecteer type (verplicht)...</option>
-        <option>Dyslexie</option>
-        <option>Dyscalculie</option>
-        <option>Hoogbegaafdheid</option>
-        <option>ADHD / concentratieproblemen</option>
-        <option>Autisme</option>
-        <option>Sociaal-emotionele problematiek</option>
-        <option>Taalontwikkelingsachterstand</option>
-        <option>Rekenproblemen (zonder diagnose)</option>
-        <option>Leesproblemen (zonder diagnose)</option>
-      </select>
-    </div>
-    <div>
-      <div class="vlabel">NOTITIES</div>
-      <div class="nwrap">
-        <textarea id="hp-notities" style="min-height:180px" placeholder="Beschrijf wat er speelt, wat al geprobeerd is, wat wel en niet werkt, hoe het kind zelf reageert op begeleiding..."></textarea>
-        <button class="mic-knop" onclick="toggleMic('hp-notities',this)" title="Spraak naar tekst">🎤</button>
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
+        <div class="vlabel">NOTITIES</div>
+        <div class="nwrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
+          <textarea id="hp-notities" style="flex:1;min-height:140px" placeholder="Beschrijf wat er speelt, wat al geprobeerd is, wat wel en niet werkt, hoe het kind zelf reageert…"></textarea>
+          <button class="mic-knop" onclick="toggleMic('hp-notities',this)" title="Spraak naar tekst">🎤</button>
+        </div>
       </div>
+      <button class="genknop" id="hp-knop" onclick="genereerHandelingsplan()" style="width:100%">
+        <div class="spin" id="hp-spin" style="display:none"></div>
+        <span id="hp-ktekst">Genereer handelingsplan</span>
+      </button>
     </div>
-    <button class="genknop" id="hp-knop" onclick="genereerHandelingsplan()">
-      <div class="spin" id="hp-spin"></div>
-      <span id="hp-ktekst">Genereer handelingsplan</span>
-    </button>
+    <div class="resultaat" id="hp-resultaat" style="overflow-y:auto">
+      <div class="leeg-c" style="margin:40px 24px">📋<br><span style="font-size:13px;color:var(--n-400)">Vul notities in en genereer het handelingsplan</span></div>
+    </div>
   </div>
-  <div class="resultaat" id="hp-resultaat">
-    <div class="leeg"><div class="leeg-c">📋</div><div class="leeg-t">Vul notities in en genereer het handelingsplan</div></div>
-  </div>
+
 </div>
 </div><!-- einde tab-handelingsplan -->
 
@@ -5651,6 +5633,138 @@ function toggleExtraOptie(type) {
 }
 
 // ── OPP genereren ─────────────────────────────────────────────
+// ── OPP & Handelingsplan lijst + PDF download ────────────
+
+async function oppLaadLijst() {
+  const el = document.getElementById('opp-lijst');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--n-400);font-size:12px;padding:12px">Laden…</div>';
+  try {
+    const res = await fetch(API_BASE + '/rapporten?type=opp', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const items = data.rapporten || data || [];
+    if (!items.length) {
+      el.innerHTML = '<div style="color:var(--n-400);font-size:12px;padding:12px">Nog geen OPP\u0027s aangemaakt.</div>';
+      return;
+    }
+    el.innerHTML = items.map(function(r) {
+      const datum = new Date(r.aangemaakt_op).toLocaleDateString('nl-NL');
+      const naam  = (r.rapport_data && r.rapport_data.naam) || r.leerling_naam || '—';
+      return '<div class="doc-item" data-id="' + r.id + '" data-type="opp" style="padding:10px 12px;border-radius:var(--r-md);cursor:pointer;border:1px solid var(--n-200);background:var(--n-0);margin-bottom:6px">';
+      return '<div class="doc-item" data-id="' + r.id + '" data-type="opp" style="padding:10px 12px;border-radius:var(--r-md);cursor:pointer;border:1px solid var(--n-200);background:var(--n-0);margin-bottom:6px">';
+        + '<div style="font-size:11px;color:var(--n-400);margin-top:2px">' + datum + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--n-400);font-size:12px;padding:12px">Laden mislukt.</div>';
+  }
+}
+
+async function oppToonDocument(id) {
+  const res = document.getElementById('opp-resultaat');
+  if (!res) return;
+  res.innerHTML = '<div style="padding:24px;color:var(--n-400);font-size:13px">Laden…</div>';
+  try {
+    const r = await fetch(API_BASE + '/rapporten/' + id, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    const tekst = (data.rapport_data && data.rapport_data.rapportcommentaar) || JSON.stringify(data.rapport_data, null, 2) || '—';
+    const naam  = (data.rapport_data && data.rapport_data.naam) || '—';
+    res.innerHTML = '<div class="rres" style="margin:20px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+      + '<div style="font-family:var(--font-display);font-size:18px">OPP — ' + naam + '</div>'
+      + '<button id="hp-download-knop" class="kknop">⬇ Download PDF</button>'
+      + '</div>'
+      + '<div style="font-size:13px;line-height:1.9;white-space:pre-wrap;opacity:.92">' + tekst + '</div>'
+      + '</div>';
+    const dlKnop = res.querySelector('#opp-download-knop');
+    if (dlKnop) dlKnop.addEventListener('click', function() { documentDownloadPdf(id, 'opp'); });
+  } catch(e) {
+    res.innerHTML = '<div style="padding:24px;color:var(--danger);font-size:13px">Laden mislukt.</div>';
+  }
+}
+
+async function hpLaadLijst() {
+  const el = document.getElementById('hp-lijst');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--n-400);font-size:12px;padding:12px">Laden…</div>';
+  try {
+    const res = await fetch(API_BASE + '/rapporten?type=handelingsplan', {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const items = data.rapporten || data || [];
+    if (!items.length) {
+      el.innerHTML = '<div style="color:var(--n-400);font-size:12px;padding:12px">Nog geen handelingsplannen aangemaakt.</div>';
+      return;
+    }
+    el.innerHTML = items.map(function(r) {
+      const datum = new Date(r.aangemaakt_op).toLocaleDateString('nl-NL');
+      const naam  = (r.rapport_data && r.rapport_data.naam) || r.leerling_naam || '—';
+      return '<div class="doc-item" data-id="' + r.id + '" data-type="hp" style="padding:10px 12px;border-radius:var(--r-md);cursor:pointer;border:1px solid var(--n-200);background:var(--n-0);margin-bottom:6px">';
+        + '<div style="font-size:13px;font-weight:500;color:var(--n-900)">' + naam + '</div>'
+        + '<div style="font-size:11px;color:var(--n-400);margin-top:2px">' + datum + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--n-400);font-size:12px;padding:12px">Laden mislukt.</div>';
+  }
+}
+
+async function hpToonDocument(id) {
+  const res = document.getElementById('hp-resultaat');
+  if (!res) return;
+  res.innerHTML = '<div style="padding:24px;color:var(--n-400);font-size:13px">Laden…</div>';
+  try {
+    const r = await fetch(API_BASE + '/rapporten/' + id, {
+      headers: { 'Authorization': 'Bearer ' + huidigToken }
+    });
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    const tekst = (data.rapport_data && data.rapport_data.rapportcommentaar) || JSON.stringify(data.rapport_data, null, 2) || '—';
+    const naam  = (data.rapport_data && data.rapport_data.naam) || '—';
+    res.innerHTML = '<div class="rres" style="margin:20px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+      + '<div style="font-family:var(--font-display);font-size:18px">Handelingsplan — ' + naam + '</div>'
+      + '<button id="hp-download-knop" class="kknop">⬇ Download PDF</button>'
+      + '</div>'
+      + '<div style="font-size:13px;line-height:1.9;white-space:pre-wrap;opacity:.92">' + tekst + '</div>'
+      + '</div>';
+    const dlKnop2 = res.querySelector('#hp-download-knop');
+    if (dlKnop2) dlKnop2.addEventListener('click', function() { documentDownloadPdf(id, 'handelingsplan'); });
+  } catch(e) {
+    res.innerHTML = '<div style="padding:24px;color:var(--danger);font-size:13px">Laden mislukt.</div>';
+  }
+}
+
+function documentDownloadPdf(id, type) {
+  // Genereer PDF via print-venster met de inhoud
+  const res = document.getElementById(type === 'opp' ? 'opp-resultaat' : 'hp-resultaat');
+  if (!res) return;
+  const inhoud = res.querySelector('.rres');
+  if (!inhoud) return;
+
+  const win = window.open('', '_blank');
+  win.document.write('<html><head><title>' + (type === 'opp' ? 'OPP' : 'Handelingsplan') + '</title>'
+    + '<style>body{font-family:Georgia,serif;font-size:13px;line-height:1.9;padding:40px;color:#222;max-width:720px;margin:0 auto}'
+    + 'h2{font-size:18px;margin-bottom:16px;border-bottom:2px solid #3d6b52;padding-bottom:8px;color:#3d6b52}'
+    + 'pre{white-space:pre-wrap;font-family:Georgia,serif;font-size:13px;line-height:1.9}'
+    + '@media print{body{padding:20px}}'
+    + '</style></head><body>');
+  win.document.write('<h2>' + inhoud.querySelector('div').textContent + '</h2>');
+  win.document.write('<pre>' + (inhoud.querySelector('div:last-child') ? inhoud.querySelector('div:last-child').textContent : '') + '</pre>');
+  win.document.write('</body></html>');
+  win.document.close();
+  win.focus();
+  setTimeout(function() { win.print(); }, 500);
+}
+
 async function genereerOpp() {
   const naam = document.getElementById('opp-naam')?.value.trim() || '';
   const groep = document.getElementById('opp-groep')?.value || '';
@@ -5712,7 +5826,7 @@ Retourneer ALLEEN een JSON-object met:
       }
     }
   } catch(e) { resultaat.innerHTML = `<div class="fout">${e.message}</div>`; }
-  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('opp-ktekst').textContent='Genereer OPP'; }
+  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('opp-ktekst').textContent='Genereer OPP'; setTimeout(oppLaadLijst, 500); }
 }
 
 // ── Handelingsplan genereren ──────────────────────────────────
@@ -5776,7 +5890,7 @@ Retourneer ALLEEN een JSON-object met:
       }
     }
   } catch(e) { resultaat.innerHTML = `<div class="fout">${e.message}</div>`; }
-  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('hp-ktekst').textContent='Genereer handelingsplan'; }
+  finally { knop.disabled=false; spin.style.display='none'; document.getElementById('hp-ktekst').textContent='Genereer handelingsplan'; setTimeout(hpLaadLijst, 500); }
 }
 
 // ── Notities — database-backed (vervangt localStorage) ──────
