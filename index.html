@@ -2879,6 +2879,23 @@ function laad(type) {
   document.getElementById('teller').textContent = `${v.notities.length} / 2000`;
 }
 
+function vulRapportKlasSelect() {
+  const sel = document.getElementById('rapport-klas');
+  if (!sel) return;
+  const huidig = sel.value;
+  const groepen = [...new Set((leerlingen||[]).map(function(l){ return l.groep; }).filter(Boolean))]
+    .sort(function(a,b){ return parseInt(a)-parseInt(b); });
+  sel.innerHTML = '<option value="">Kies groep…</option>';
+  groepen.forEach(function(g) {
+    const count = leerlingen.filter(function(l){ return l.groep === g; }).length;
+    const opt = document.createElement('option');
+    opt.value = g;
+    opt.textContent = 'Groep ' + g + ' — ' + count + ' leerlingen';
+    sel.appendChild(opt);
+  });
+  if (huidig && groepen.includes(huidig)) sel.value = huidig;
+}
+
 function rapportLaadKlas(groep) {
   const lijst = document.getElementById('rapport-leerlingen-lijst');
   if (!lijst) return;
