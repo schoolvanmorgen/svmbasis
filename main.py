@@ -120,6 +120,9 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
     """
@@ -1254,9 +1257,6 @@ async def health():
     """
     checks: dict = {}
     alles_ok = True
-    
-from fastapi.staticfiles import StaticFiles
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
     # Supabase ping — lichtgewicht, max 3s timeout
     try:
