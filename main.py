@@ -120,13 +120,8 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
-# Static files — optioneel zodat server niet crasht als map ontbreekt
-try:
-    from fastapi.staticfiles import StaticFiles
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-except Exception as _e:
-    import logging as _log
-    _log.getLogger("svm").warning(f"Static files niet geladen: {_e}")
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
@@ -204,7 +199,7 @@ async def startup():
     global _supabase_client, _claude_client
 
     _supabase_client = httpx.AsyncClient(
-        base_url=SUPABASE_URL,
+        base_url=SUPABASE_URL.rstrip('/') + '/',
         timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0),
         limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
         headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
@@ -619,7 +614,8 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
         raise HTTPException(status_code=401, detail="Niet ingelogd.")
     token = credentials.credentials
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        # Gebruik losse client voor auth — aparte timeout van pool
+        async with httpx.AsyncClient(timeout=15) as client:
             res = await client.get(
                 f"{SUPABASE_URL}/auth/v1/user",
                 headers={
@@ -627,14 +623,20 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
                     "Authorization": f"Bearer {token}"
                 }
             )
-            if res.status_code != 200:
+            logger.info(f"get_user status: {res.status_code}")
+            if res.status_code == 401:
                 raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+            if res.status_code != 200:
+                logger.error(f"get_user onverwacht: {res.status_code} {res.text[:100]}")
+                raise HTTPException(status_code=401, detail="Authenticatie mislukt.")
             return res.json()
     except HTTPException:
         raise
     except httpx.TimeoutException:
-        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar.")
+        logger.error(f"get_user timeout naar {SUPABASE_URL}")
+        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar (timeout).")
     except httpx.RequestError as e:
+        logger.error(f"get_user verbindingsfout: {e}")
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
 
 # ══════════════════════════════════════════════════════════
