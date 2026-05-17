@@ -2295,6 +2295,11 @@ function toonTab(tab, knop) {
           <option value="">Kies groep…</option>
         </select>
       </div>
+      <!-- Download knop -->
+      <div style="margin-top:8px">
+        <button onclick="downloadRapportenGroep()" style="width:100%;background:#fff;border:1.5px solid #4a7a4a;color:#4a7a4a;padding:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:6px">↓ Download rapporten groep</button>
+      </div>
+
       <div>
         <div class="vlabel" style="margin-bottom:3px">SCHOOLJAAR</div>
         <select id="rapport-schooljaar"
@@ -3171,6 +3176,61 @@ function vulRapportKlasSelect() {
   const groepEl = document.getElementById('groep');
   if (groepEl) maakOpties(groepEl, true);
   if (huidig && groepen.includes(huidig)) sel.value = huidig;
+}
+
+
+function downloadRapportenGroep() {
+  /**
+   * Download alle gegenereerde rapporten van de geselecteerde groep
+   * als een tekstbestand met de groepsnaam als bestandsnaam.
+   */
+  const groep = document.getElementById('rapport-klas')?.value;
+  if (!groep) { alert('Selecteer eerst een groep.'); return; }
+
+  // Verzamel alle rapporten uit de tijdlijn van leerlingen in deze groep
+  const klasLeerlingen = leerlingen.filter(function(l) { return String(l.groep) === String(groep); });
+  if (!klasLeerlingen.length) { alert('Geen leerlingen gevonden in deze groep.'); return; }
+
+  let tekst = 'RAPPORTEN GROEP ' + groep + '\n';
+  tekst += 'Gegenereerd op ' + new Date().toLocaleDateString('nl-NL') + '\n';
+  tekst += '='.repeat(50) + '\n\n';
+
+  let gevonden = 0;
+
+  // Haal rapporten op uit de al geladen LVS tijdlijn data
+  klasLeerlingen.forEach(function(l) {
+    const lvsData = lvsLeerlingen.find(function(lv) { return lv.id === l.id; });
+    const tijdlijn = lvsData ? (lvsData.tijdlijn || []) : [];
+    const rapporten = tijdlijn.filter(function(item) { return item.type === 'rapport'; });
+
+    if (rapporten.length > 0) {
+      tekst += l.voornaam + (l.achternaam ? ' ' + l.achternaam : '') + '\n';
+      tekst += '-'.repeat(30) + '\n';
+      rapporten.forEach(function(r) {
+        const datum = r.datum ? new Date(r.datum).toLocaleDateString('nl-NL') : '';
+        const inhoud = r.inhoud || r.tekst || '';
+        if (datum) tekst += 'Datum: ' + datum + '\n';
+        tekst += inhoud + '\n';
+        tekst += '\n';
+      });
+      tekst += '\n';
+      gevonden++;
+    }
+  });
+
+  if (gevonden === 0) {
+    alert('Geen rapporten gevonden voor groep ' + groep + '. Genereer eerst rapporten.');
+    return;
+  }
+
+  // Download als .txt bestand
+  const blob = new Blob([tekst], { type: 'text/plain;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'Rapporten_Groep_' + groep + '_' + new Date().getFullYear() + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function rapportTerug() {
@@ -4372,13 +4432,17 @@ function dossierRender(data) {
         const rd = r.rapport_data || {};
         const commentaar = rd.rapportcommentaar || rd.leerresultaten || '';
         const preview = typeof commentaar === 'string' ? commentaar.slice(0, 180) : '';
-        html += '<div style="padding:10px 12px;border:1px solid var(--warmrand);background:#fff;margin-bottom:6px">';
-        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
-        html += '<span style="font-size:10px;font-weight:700;color:#2a3a2a;background:#e8f5e9;padding:2px 7px">RAPPORT</span>';
+        const rid = 'rapport-' + (r.id || Math.random().toString(36).slice(2));
+        html += '<div style="padding:10px 12px;border:1px solid var(--warmrand);background:#fff;margin-bottom:6px;border-radius:6px">';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+        html += '<span style="font-size:10px;font-weight:700;color:#2a3a2a;background:#e8f5e9;padding:2px 7px;border-radius:3px">RAPPORT</span>';
         html += '<span style="font-size:10px;color:var(--tz)">' + new Date(r.datum).toLocaleDateString('nl-NL') + '</span>';
         if (r.leerkracht) html += '<span style="font-size:10px;color:var(--tz)">· ' + r.leerkracht + '</span>';
+
         html += '</div>';
-        if (preview) html += '<div style="font-size:11px;color:#444;line-height:1.6">' + preview + (preview.length >= 180 ? '…' : '') + '</div>';
+        if (preview) html += '<div style="font-size:11px;color:#444;line-height:1.6">' + esc(preview) + (commentaar.length > 180 ? '…' : '') + '</div>';
+        const volledig = typeof commentaar === 'string' ? commentaar : '';
+        html += '<div id="' + rid + '" style="display:none;font-size:12px;color:#333;line-height:1.8;white-space:pre-wrap;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">' + esc(volledig) + '</div>';
         html += '</div>';
       });
     }
