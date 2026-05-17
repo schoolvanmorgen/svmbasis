@@ -120,8 +120,13 @@ app.add_middleware(
     expose_headers=["X-Request-ID"],
 )
 
-from fastapi.staticfiles import StaticFiles
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Static files — optioneel zodat server niet crasht als map ontbreekt
+try:
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+except Exception as _e:
+    import logging as _log
+    _log.getLogger("svm").warning(f"Static files niet geladen: {_e}")
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
@@ -1453,17 +1458,10 @@ async def maak_leerling_aan(
     - Als er al een leerling bestaat met dezelfde voornaam+groep binnen de school,
       wordt die teruggegeven (zachte deduplicatie, geen error).
     """
-    logger.info(f"POST /leerlingen — voornaam={leerling.voornaam!r} groep={leerling.groep!r}")
     if not leerling.voornaam or not leerling.voornaam.strip():
         raise HTTPException(status_code=400, detail="Voornaam is verplicht.")
     token = credentials.credentials
-    logger.info(f"POST /leerlingen — token aanwezig: {bool(token)}")
-    try:
-        ctx = await get_school_context(user, token)
-        logger.info(f"POST /leerlingen — school_id={ctx.get('school_id')}")
-    except Exception as e:
-        logger.error(f"POST /leerlingen — get_school_context fout: {e}")
-        raise
+    ctx   = await get_school_context(user, token)
 
     # ── Deduplicatie: check op leerlingnummer binnen school ──
     if leerling.leerlingnummer and ctx["school_id"]:
