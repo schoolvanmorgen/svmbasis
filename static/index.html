@@ -2614,9 +2614,8 @@ function toonTab(tab, knop) {
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
 
-      <div style="padding:8px;border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:6px">
-        <button onclick="lvsVoegToe()" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">+ Leerling</button>
-        <button onclick="openImportModal()" style="width:100%;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:7px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">↑ Importeer klas</button>
+      <div style="padding:8px;border-top:1px solid var(--warmrand)">
+        <button onclick="if(_lvsHuidigeGroep) lvsRenderKlassen()" style="width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
       </div>
     </div>
 
@@ -4130,39 +4129,18 @@ function lvsRenderLeerlingen(groep) {
   const el = document.getElementById('lvs-lijst');
   if (!el) return;
   _lvsHuidigeGroep = groep;
-
   const lijst = lvsLeerlingen.filter(function(l) { return l.groep === groep; });
-
-  let html = '<button onclick="lvsRenderKlassen()" style="'
-    + 'display:block;width:100%;background:#2d6a2d;border:none;'
-    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
-    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
-    + '‹ Terug naar groepen</button>';
-
-  if (!lijst.length) {
-    html += '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in deze groep.</div>';
-    el.innerHTML = html;
-    return;
-  }
-
+  let html = '<button onclick="lvsRenderKlassen()" style="display:block;width:100%;background:#2d6a2d;border:none;color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">‹ Terug naar groepen</button>';
   html += lijst.map(function(l) {
-    const actief   = lvsHuidig && lvsHuidig?.id === l.id;
-    const signalen = _lvsSignalen[l.id] || [];
-    const hoogste  = signalen.length > 0 ? signalen[0] : null;
-    const badgeHtml = hoogste
-      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:'
-        + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + '">'
-        + (hoogste.urgentie === 'hoog' ? '⚠' : '!') + '</span>'
-      : '';
-    return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
+    const actief = lvsHuidig && lvsHuidig?.id === l.id;
+    const sig = (_lvsSignalen[l.id]||[])[0];
+    const badge = sig ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + (sig.urgentie==='hoog'?'#991b1b':'#92400e') + '">' + (sig.urgentie==='hoog'?'⚠':'!') + '</span>' : '';
+    return '<div class="lvs-item ' + (actief?'actief':'') + '" data-id="' + l.id + '">'
       + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
       + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div></div>'
-      + badgeHtml
-      + '</div>';
+      + badge + '</div>';
   }).join('');
-
   el.innerHTML = html;
-
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() { lvsSelecteer(item.dataset.id); });
   });
@@ -6576,31 +6554,15 @@ function notitieRenderLeerlingenVanGroep(groep) {
   const el = document.getElementById('notitie-leerlingen-lijst');
   if (!el) return;
   _notitieHuidigeGroep = groep;
-
   const lijst = leerlingen.filter(function(l) { return String(l.groep) === String(groep); });
-
-  let html = '<button onclick="notitieRenderKlassen()" style="'
-    + 'display:block;width:100%;background:#2d6a2d;border:none;'
-    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
-    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
-    + '‹ Terug naar groepen</button>';
-
+  let html = '<button onclick="notitieRenderKlassen()" style="display:block;width:100%;background:#2d6a2d;border:none;color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">‹ Terug naar groepen</button>';
   html += lijst.map(function(l) {
     const actief = window._huidigeLeerlingId === l.id;
-    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="'
-      + 'padding:9px 12px;cursor:pointer;margin-bottom:2px;'
-      + 'border-left:3px solid ' + (actief ? '#2d6a2d' : 'transparent') + ';'
-      + 'background:' + (actief ? '#f0f7f0' : 'transparent') + '">'
-      + '<div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
-      + '</div>';
+    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="padding:9px 12px;cursor:pointer;margin-bottom:2px;border-left:3px solid ' + (actief?'#2d6a2d':'transparent') + ';background:' + (actief?'#f0f7f0':'transparent') + '"><div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div></div>';
   }).join('');
-
   el.innerHTML = html;
-
   el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      notitieSelecteerLeerling(item.dataset.id);
-    });
+    item.addEventListener('click', function() { notitieSelecteerLeerling(item.dataset.id); });
   });
 }
 
