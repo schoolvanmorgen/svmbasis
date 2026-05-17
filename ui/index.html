@@ -3173,36 +3173,38 @@ function vulRapportKlasSelect() {
   if (huidig && groepen.includes(huidig)) sel.value = huidig;
 }
 
+function rapportTerug() {
+  const sel = document.getElementById('rapport-klas');
+  if (sel) sel.value = '';
+  const lijst = document.getElementById('rapport-leerlingen-lijst');
+  if (lijst) lijst.innerHTML = '<div style="font-size:11px;color:var(--tz);padding:8px 6px">Kies een groep hierboven.</div>';
+}
+
 function rapportLaadKlas(groep) {
-  // Sync batch-groep mee
   const batchSel = document.getElementById('batch-groep');
   if (batchSel && groep) batchSel.value = groep;
   const lijst = document.getElementById('rapport-leerlingen-lijst');
   if (!lijst) return;
   if (!groep) {
-    lijst.innerHTML = '<div style="font-size:11px;color:var(--tz);padding:8px 6px">Kies een groep.</div>';
+    lijst.innerHTML = '<div style="font-size:11px;color:var(--tz);padding:8px 6px">Kies een groep hierboven.</div>';
     return;
   }
   const klasLeerlingen = leerlingen
     .filter(function(l) { return String(l.groep) === String(groep); })
     .sort(function(a,b) { return (a.voornaam||'').localeCompare(b.voornaam||''); });
-
   if (!klasLeerlingen.length) {
     lijst.innerHTML = '<div style="font-size:11px;color:var(--tz);padding:8px 6px">Geen leerlingen in groep ' + groep + '.</div>';
     return;
   }
-
-  let html = '';
+  let html = '<button onclick="rapportTerug()" style="display:block;width:100%;background:#2d6a2d;border:none;color:#fff;font-size:12px;font-weight:700;font-family:inherit;padding:10px;text-align:center;cursor:pointer;margin-bottom:6px">‹ Terug naar groepen</button>';
   klasLeerlingen.forEach(function(l) {
     const ach = [l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
-    html += '<div class="rapport-leerling-item" data-lid="' + l.id + '"'
-      + ' style="padding:7px 8px;font-size:12px;cursor:pointer;border-radius:6px;margin-bottom:2px;color:var(--t)">'
+    html += '<div class="rapport-leerling-item" data-lid="' + l.id + '" style="padding:7px 8px;font-size:12px;cursor:pointer;border-radius:6px;margin-bottom:2px;color:var(--t)">'
       + '<div style="font-weight:500">' + esc(l.voornaam) + '</div>'
       + (ach ? '<div style="font-size:10px;color:var(--tz)">' + ach + '</div>' : '')
       + '</div>';
   });
   lijst.innerHTML = html;
-
   lijst.querySelectorAll('.rapport-leerling-item').forEach(function(el) {
     el.addEventListener('click', function() { rapportSelecteerLeerling(el.dataset.lid); });
     el.addEventListener('mouseover', function() { if (!el.classList.contains('actief')) el.style.background = '#f0f0f0'; });
@@ -5641,57 +5643,12 @@ async function aawVoegGroepToe() {
 }
 
 async function aawToonKlas(groep) {
-  const lijst = document.getElementById('aaw-lijst');
-  const leeg  = document.getElementById('aaw-leeg');
-  if (!lijst) return;
-
-  const klasLeerlingen = aawLeerlingen
-    .filter(function(l) { return String(l.groep) === String(groep); })
-    .sort(function(a,b) { return (a.voornaam||'').localeCompare(b.voornaam||''); });
-
-  if (!klasLeerlingen.length) {
-    lijst.innerHTML = '';
-    if (leeg) { leeg.style.display = 'block'; leeg.textContent = 'Geen leerlingen in groep ' + groep + '.'; }
-    aawTelBijwerken();
-    return;
-  }
-  if (leeg) leeg.style.display = 'none';
-
-  let html = '';
-  klasLeerlingen.forEach(function(l) {
-    const status = (aawStatus[aawDatum] || {})[l.id] || 'aanwezig';
-    const isAanwezig = status === 'aanwezig';
-    const isAfwezig  = status === 'afwezig';
-    const ach = [l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
-
-    const stijlAanwezig = isAanwezig
-      ? 'border:1.5px solid #4a7a4a;background:#4a7a4a;color:#fff'
-      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
-    const stijlAfwezig = isAfwezig
-      ? 'border:1.5px solid #991b1b;background:#991b1b;color:#fff'
-      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
-
-    html += '<div id="aaw-item-' + l.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#fff;border-bottom:1px solid var(--warmrand)">';
-    html += '<div style="font-size:14px;font-weight:500;color:var(--t)">' + l.voornaam;
-    if (ach) html += ' <span style="font-weight:400;color:var(--tz)">' + ach + '</span>';
-    html += '</div>';
-    html += '<div style="display:flex;gap:8px">';
-    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="aanwezig"'
-          + ' style="padding:8px 22px;' + stijlAanwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Aanwezig</button>';
-    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="afwezig"'
-          + ' style="padding:8px 22px;' + stijlAfwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Afwezig</button>';
-    html += '</div></div>';
-  });
-
-  lijst.innerHTML = html;
-
-  lijst.querySelectorAll('.aaw-status-knop').forEach(function(knop) {
-    knop.addEventListener('click', function() {
-      aawZetStatus(knop.dataset.id, knop.dataset.status);
-    });
-  });
-
-  aawTelBijwerken();
+  aawGeselecteerdeKlas = groep;
+  const sel = document.getElementById('aaw-klas-select');
+  if (sel) sel.value = groep;
+  const sleutel = aawDatumSleutel(aawDatum);
+  if (!aawRegistraties[sleutel]) await aawLaadDag(aawDatum);
+  aawRender();
 }
 
 // aawZetStatus: zie definitie hieronder (eerste versie verwijderd)
