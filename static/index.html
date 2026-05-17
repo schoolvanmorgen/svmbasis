@@ -2428,15 +2428,22 @@ function toonTab(tab, knop) {
 <div id="tab-lvs" style="display:none;flex:1;min-height:0;overflow:hidden;background:var(--n-0);flex-direction:column">
   <div style="display:flex;flex:1;min-height:0;overflow:hidden">
 
-    <!-- Zijbalk leerlingen -->
-    <div style="width:180px;flex-shrink:0;border-right:1px solid var(--n-200);background:var(--n-50);display:flex;flex-direction:column;overflow:hidden">
-      <div style="padding:10px 10px 6px;border-bottom:1px solid var(--warmrand)">
+    <!-- Zijbalk: klas → leerling navigatie -->
+    <div style="width:200px;flex-shrink:0;border-right:1px solid var(--n-200);background:var(--n-50);display:flex;flex-direction:column;overflow:hidden">
+
+      <!-- Zoekbalk + breadcrumb -->
+      <div style="padding:8px 10px 6px;border-bottom:1px solid var(--warmrand)">
         <input type="text" placeholder="Zoek leerling…" oninput="lvsFilter(this.value)"
-          style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
+          id="lvs-zoek"
+          style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;margin-bottom:6px">
+        <div id="lvs-nav-breadcrumb" style="font-size:11px;color:var(--n-500)">Kies een groep</div>
       </div>
+
+      <!-- Lijst (klassen of leerlingen) -->
       <div id="lvs-lijst" class="lvs-lijst" style="flex:1;overflow-y:auto;padding:6px">
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
+
       <div style="padding:8px;border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:6px">
         <button onclick="lvsVoegToe()" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">+ Leerling</button>
         <button onclick="openImportModal()" style="width:100%;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:7px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">↑ Importeer klas</button>
@@ -3894,30 +3901,114 @@ async function lvsSla() {
   });
 }
 
-function lvsRenderLijst(lijst) {
+// ── LVS navigatie state ────────────────────────────────
+let _lvsHuidigeGroep = null; // null = klassenoverzicht, 'groep X' = leerlingenlijst
+
+function lvsRenderKlassen() {
+  /**
+   * Toon het klassenoverzicht — eerste niveau van de LVS navigatie.
+   * Groepeert alle leerlingen per groep en toont één knop per klas.
+   */
   const el = document.getElementById('lvs-lijst');
+  const bc = document.getElementById('lvs-nav-breadcrumb');
   if (!el) return;
-  if (!lijst.length) {
-    el.innerHTML = '<div style="color:#444;font-size:11px;padding:10px">Nog geen leerlingen.</div>';
+
+  _lvsHuidigeGroep = null;
+  if (bc) bc.innerHTML = '<span style="color:var(--n-500);font-size:11px">Kies een groep</span>';
+
+  // Groepeer leerlingen per groep
+  const groepen = {};
+  lvsLeerlingen.forEach(function(l) {
+    const g = l.groep || '?';
+    if (!groepen[g]) groepen[g] = [];
+    groepen[g].push(l);
+  });
+
+  if (!Object.keys(groepen).length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Nog geen leerlingen.</div>';
     return;
   }
-  el.innerHTML = lijst.map(l => {
-    const actief   = lvsHuidig && lvsHuidig?.id === l.id;
+
+  // Sorteer groepen numeriek
+  const gesorteerd = Object.keys(groepen).sort(function(a, b) {
+    return parseInt(a) - parseInt(b) || a.localeCompare(b);
+  });
+
+  el.innerHTML = gesorteerd.map(function(groep) {
+    const aantal = groepen[groep].length;
+    // Tel signalen in deze klas
+    const aantalSignalen = groepen[groep].reduce(function(sum, l) {
+      return sum + (_lvsSignalen[l.id] || []).length;
+    }, 0);
+    const signaalBadge = aantalSignalen > 0
+      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:#991b1b;background:#fef2f2;padding:1px 6px;border-radius:10px">' + aantalSignalen + '</span>'
+      : '';
+    return '<div class="lvs-klas-item" data-groep="' + esc(groep) + '" style="'
+      + 'display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;'
+      + 'border-radius:var(--r-md);margin-bottom:3px;background:#fff;'
+      + 'border:1px solid var(--n-200);transition:all var(--t-fast)">'
+      + '<div style="width:36px;height:36px;background:var(--accent-subtle);border-radius:50%;'
+      + 'display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;'
+      + 'color:var(--accent);flex-shrink:0">' + esc(groep) + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:13px;font-weight:600;color:var(--n-900)">Groep ' + esc(groep) + '</div>'
+      + '<div style="font-size:10px;color:var(--n-400)">' + aantal + ' leerling' + (aantal !== 1 ? 'en' : '') + '</div>'
+      + '</div>'
+      + signaalBadge
+      + '<span style="color:var(--n-400);font-size:14px">›</span>'
+      + '</div>';
+  }).join('');
+
+  // Event delegation
+  el.querySelectorAll('.lvs-klas-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      lvsRenderLeerlingen(item.dataset.groep);
+    });
+  });
+}
+
+function lvsRenderLeerlingen(groep) {
+  /**
+   * Toon leerlingen van een specifieke klas — tweede niveau.
+   * Toont een "← Terug" knop om terug te gaan naar het klassenoverzicht.
+   */
+  const el = document.getElementById('lvs-lijst');
+  const bc = document.getElementById('lvs-nav-breadcrumb');
+  if (!el) return;
+
+  _lvsHuidigeGroep = groep;
+
+  // Breadcrumb met terugknop
+  if (bc) {
+    bc.innerHTML = '<button onclick="lvsRenderKlassen()" style="'
+      + 'background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);'
+      + 'font-family:inherit;padding:0;display:flex;align-items:center;gap:4px">'
+      + '‹ Groep ' + esc(groep) + '</button>';
+  }
+
+  const lijst = lvsLeerlingen.filter(function(l) { return l.groep === groep; });
+
+  if (!lijst.length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in groep ' + esc(groep) + '.</div>';
+    return;
+  }
+
+  el.innerHTML = lijst.map(function(l) {
+    const actief = lvsHuidig && lvsHuidig?.id === l.id;
     const signalen = _lvsSignalen[l.id] || [];
     const hoogste  = signalen.length > 0 ? signalen[0] : null;
-    const badgeTekst = hoogste ? (hoogste.urgentie === 'hoog' ? '⚠' : '!') : '';
-    const badgeKleur = hoogste ? (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') : '';
-    const badgeHtml  = badgeTekst
-      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + badgeKleur + ';flex-shrink:0" title="' + hoogste.tekst + '">' + badgeTekst + '</span>'
+    const badgeHtml = hoogste
+      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + ';flex-shrink:0">'
+        + (hoogste.urgentie === 'hoog' ? '⚠' : '!') + '</span>'
       : '';
     return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
       + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
-      + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div><div class="lvs-item-groep">Groep ' + (l.groep || '?') + '</div></div>'
+      + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div></div>'
       + badgeHtml
       + '</div>';
   }).join('');
 
-  // Event delegation — UUID-veilig
+  // Event delegation
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() {
       lvsSelecteer(item.dataset.id);
@@ -3925,9 +4016,32 @@ function lvsRenderLijst(lijst) {
   });
 }
 
+// Behoud lvsRenderLijst als alias voor backwards compat
+function lvsRenderLijst(lijst) {
+  lvsRenderKlassen();
+}
+
 function lvsFilter(zoek) {
-  const gefilterd = lvsLeerlingen.filter(l => l.naam.toLowerCase().includes(zoek.toLowerCase()));
-  lvsRenderLijst(gefilterd);
+  if (!zoek) { lvsRenderKlassen(); return; }
+  // Zoeken over alle leerlingen, ongeacht klas
+  const el = document.getElementById('lvs-lijst');
+  const bc = document.getElementById('lvs-nav-breadcrumb');
+  if (bc) bc.innerHTML = '<span style="color:var(--n-500);font-size:11px">Zoekresultaten</span>';
+  const gefilterd = lvsLeerlingen.filter(function(l) {
+    return l.naam.toLowerCase().includes(zoek.toLowerCase());
+  });
+  if (!el) return;
+  el.innerHTML = gefilterd.map(function(l) {
+    const actief = lvsHuidig && lvsHuidig?.id === l.id;
+    return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
+      + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
+      + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div>'
+      + '<div class="lvs-item-groep">Groep ' + esc(l.groep || '?') + '</div></div>'
+      + '</div>';
+  }).join('');
+  el.querySelectorAll('.lvs-item').forEach(function(item) {
+    item.addEventListener('click', function() { lvsSelecteer(item.dataset.id); });
+  });
 }
 
 async function lvsSelecteer(id) {
@@ -4949,15 +5063,20 @@ async function lvsInit() {
     lvsInitVanuitLeerlingen();
   }
 
-  lvsRenderLijst(lvsLeerlingen);
+  // Toon klassenoverzicht als startpunt — niet direct alle leerlingen
+  lvsRenderKlassen();
 
+  // Als er al een actieve leerling is, ga direct naar die klas
   const actieveId = window._huidigeLeerlingId;
-  const startId = (actieveId && lvsLeerlingen.find(l => l.id === actieveId))
-    ? actieveId
-    : (lvsLeerlingen.length > 0 ? lvsLeerlingen[0].id : null);
-  if (startId) lvsSelecteer(startId);
+  if (actieveId) {
+    const actieveLeerling = lvsLeerlingen.find(function(l) { return l.id === actieveId; });
+    if (actieveLeerling) {
+      lvsRenderLeerlingen(actieveLeerling.groep);
+      lvsSelecteer(actieveId);
+    }
+  }
 
-  // Laad signalen op de achtergrond voor alle groepen in de lijst
+  // Laad signalen op de achtergrond
   lvsLaadSignalen();
 }
 
