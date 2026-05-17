@@ -13,6 +13,26 @@
 <style>
 /* PERMANENT: aanwezigheid raster */
 #aaw-lijst{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))!important;gap:10px!important;padding:4px 0!important}
+
+/* MOBIEL: scrollen en layout */
+@media(max-width:768px){
+  #app-scherm{height:auto!important;min-height:100dvh!important;overflow-y:auto!important}
+  #tab-inhoud{overflow:visible!important;height:auto!important;flex:none!important}
+  .sectie.actief{height:auto!important;overflow:visible!important;min-height:60vh}
+  #tab-notities{height:auto!important;overflow:visible!important}
+  #tab-notities>div{flex-direction:column!important;height:auto!important;overflow:visible!important}
+  #tab-notities>div>div:first-child{width:100%!important;max-height:35vh;overflow-y:auto;border-right:none!important;border-bottom:1px solid var(--n-200)}
+  #tab-lvs>div{flex-direction:column!important;height:auto!important}
+  #tab-lvs>div>div:first-child{width:100%!important;max-height:40vh;border-right:none!important;border-bottom:1px solid var(--n-200)}
+  #tab-rapport-wrap{grid-template-columns:1fr!important;height:auto!important}
+  #hoofdtabbar>div:first-child{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tab-kolom-hoofd{font-size:9px;padding:5px 8px 3px}
+  .tab-sub{font-size:11px;height:26px;padding:0 8px}
+  #globale-leerling-selector{display:none!important}
+  button{min-height:36px}
+}
+/* PERMANENT: aanwezigheid raster */
+#aaw-lijst{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))!important;gap:10px!important;padding:4px 0!important}
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 
 /* ─── TOKENS ─────────────────────────────────────────── */
@@ -950,7 +970,9 @@ function toonApp() {
         herstelTab = opgeslagen;
       }
     } catch(e) {}
-    toonTabVanGroep(herstelTab, herstelTab === 'notities' ? 'dagelijks' : herstelTab === 'lvs' ? 'dagelijks' : herstelTab === 'aanwezigheid' ? 'dagelijks' : 'dagelijks', null);
+    if (window.innerWidth <= 768) herstelTab = 'notities';
+    var groepNaam = ['notities','lvs','aanwezigheid'].includes(herstelTab) ? 'dagelijks' : herstelTab === 'rapport' ? 'rapporten' : ['opp','handelingsplan','ib','inspectie'].includes(herstelTab) ? 'inspectie' : 'jaar';
+    toonTabVanGroep(herstelTab, groepNaam, null);
   }, 50);
   // Vertraagd IB/Inspectie tabs tonen (na schoolContext laden)
   setTimeout(function() {
@@ -3046,11 +3068,16 @@ function toonTab(tab, knop) {
 
       <!-- Invoer onderaan -->
       <div style="flex-shrink:0;padding:1rem 1.8rem;background:var(--warm);border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:10px">
-        <div class="vlabel">NIEUWE NOTITIE</div>
-        <textarea id="notitie-tekst" rows="3" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf een notitie voor de geselecteerde leerling…"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="vlabel">NIEUWE NOTITIE</div>
+          <button onclick="toggleMic('notitie-tekst',this)" title="Spraakopname starten"
+            class="mic-knop"
+            style="width:56px;height:56px;font-size:26px;background:#2d6a2d;box-shadow:0 3px 10px rgba(45,106,45,.4)">🎤</button>
+        </div>
+        <textarea id="notitie-tekst" rows="3" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf of spreek een notitie…"></textarea>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <button onclick="notitieOpslaan()" style="background:#4a7a4a;color:#fff;border:none;padding:9px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-family:inherit">Opslaan</button>
-          <div id="notitie-doorstroom-bevestiging" style="display:none;font-size:11px;color:#4a7a4a;font-weight:500">✓ Notitie opgeslagen en doorgestuurd naar rapport, OPP en handelingsplan</div>
+          <div id="notitie-doorstroom-bevestiging" style="display:none;font-size:11px;color:#4a7a4a;font-weight:500">✓ Notitie opgeslagen</div>
         </div>
       </div>
 
