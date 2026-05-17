@@ -5670,7 +5670,7 @@ async function aawToonKlas(groep) {
     const borderKleur = isAfwezig ? '#991b1b' : isAanwezig ? '#4a7a4a' : '#c07000';
     const bgKleur     = isAfwezig ? '#fff5f5' : isAanwezig ? '#f0f7f0' : '#fffbeb';
 
-    html += '<div style="border:2px solid ' + borderKleur + ';background:' + bgKleur + ';'
+    html += '<div class="aaw-kaartje" data-id="' + l.id + '" style="border:2px solid ' + borderKleur + ';background:' + bgKleur + ';'
       + 'border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;'
       + 'align-items:center;text-align:center">';
 
@@ -5711,8 +5711,31 @@ async function aawToonKlas(groep) {
 function aawZetStatus(leerlingId, status) {
   if (!aawStatus[aawDatum]) aawStatus[aawDatum] = {};
   aawStatus[aawDatum][leerlingId] = status;
-  // Herrender de klas
-  if (aawGeselecteerdeKlas) aawToonKlas(aawGeselecteerdeKlas);
+
+  // Update het kaartje in-place — geen volledige herrender
+  const kaartje = document.querySelector('.aaw-kaartje[data-id="' + leerlingId + '"]');
+  if (kaartje) {
+    const isAanwezig = status === 'aanwezig';
+    const isAfwezig  = status === 'afwezig';
+    kaartje.style.borderColor = isAfwezig ? '#991b1b' : '#4a7a4a';
+    kaartje.style.background  = isAfwezig ? '#fff5f5' : '#f0f7f0';
+
+    const knopAan = kaartje.querySelector('[data-status="aanwezig"]');
+    const knopAf  = kaartje.querySelector('[data-status="afwezig"]');
+
+    if (knopAan) {
+      knopAan.style.background   = isAanwezig ? '#4a7a4a' : '#fff';
+      knopAan.style.color        = isAanwezig ? '#fff' : '#888';
+      knopAan.style.borderColor  = isAanwezig ? '#4a7a4a' : '#ddd';
+    }
+    if (knopAf) {
+      knopAf.style.background    = isAfwezig ? '#991b1b' : '#fff';
+      knopAf.style.color         = isAfwezig ? '#fff' : '#888';
+      knopAf.style.borderColor   = isAfwezig ? '#991b1b' : '#ddd';
+    }
+  }
+
+  aawTelBijwerken();
 }
 
 function aawTelBijwerken() {
