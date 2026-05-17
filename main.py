@@ -105,9 +105,12 @@ async def _check_rate_limit(request: Request) -> None:
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    """Pas rate limiting toe op AI-endpoints vóór de handler wordt uitgevoerd."""
-    ai_paths = ["/rapporten/batch", "/opp", "/handelingsplan", "/analyseer"]
-    if any(request.url.path.startswith(p) for p in ai_paths):
+    """Pas rate limiting toe op AI-endpoints vóór de handler wordt uitgevoerd.
+    Alleen zware AI-aanroepen worden beperkt — niet data endpoints zoals /leerlingen.
+    """
+    AI_PATHS = ["/rapporten/batch", "/opp", "/handelingsplan", "/analyseer",
+                "/inspectie/rapport", "/overdracht"]
+    if any(request.url.path.startswith(p) for p in AI_PATHS):
         await _check_rate_limit(request)
     response = await call_next(request)
     return response
@@ -614,23 +617,21 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
         raise HTTPException(status_code=401, detail="Niet ingelogd.")
     token = credentials.credentials
     try:
-        client = _get_supabase_client()
-        res = await client.get(
-            "/auth/v1/user",
-            headers={
-                "apikey": SUPABASE_ANON_KEY,
-                "Authorization": f"Bearer {token}"
-            }
-        )
-        if res.status_code == 401:
-            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
-        if res.status_code != 200:
-            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
-        return res.json()
+        async with httpx.AsyncClient(timeout=10) as client:
+            res = await client.get(
+                f"{SUPABASE_URL}/auth/v1/user",
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Authorization": f"Bearer {token}"
+                }
+            )
+            if res.status_code != 200:
+                raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+            return res.json()
     except HTTPException:
         raise
     except httpx.TimeoutException:
-        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar (timeout).")
+        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar.")
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
 
