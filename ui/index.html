@@ -1481,35 +1481,45 @@ async function verwijderRapport(id) {
 }
 
 
-function batchDownloadPDF(groep, fouten_detail) {
+async function batchDownloadPDF(groep) {
   var klasLln = leerlingen.filter(function(l){ return String(l.groep)===String(groep); });
+  if (!klasLln.length) return;
+
   var paginas = '';
   var gevonden = 0;
 
-  klasLln.forEach(function(l){
-    // Haal meest recente rapport op uit lvsLeerlingen tijdlijn
-    var lvsData = lvsLeerlingen.find(function(lv){ return lv.id===l.id; });
-    var tijdlijn = lvsData ? (lvsData.tijdlijn||[]) : [];
-    var rapporten = tijdlijn.filter(function(r){ return r.type==='rapport'; });
-    if (!rapporten.length) return;
+  // Haal rapporten op voor elke leerling via dossier API
+  for (var i = 0; i < klasLln.length; i++) {
+    var l = klasLln[i];
+    try {
+      var res = await fetch(API_BASE + '/dossier/' + l.id, {
+        headers: { 'Authorization': 'Bearer ' + huidigToken }
+      });
+      if (!res.ok) continue;
+      var data = await res.json();
+      // Verzamel alle rapporten uit alle schooljaren
+      var sjaren = data.schooljaren || {};
+      Object.values(sjaren).forEach(function(sj) {
+        (sj.rapporten || []).forEach(function(r) {
+          var rd = r.rapport_data || {};
+          var commentaar = rd.rapportcommentaar || rd.leerresultaten || '';
+          if (!commentaar) return;
+          var naam = [l.voornaam, l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
+          var datum = r.datum ? new Date(r.datum).toLocaleDateString('nl-NL') : '';
+          var inhoud = (commentaar||'').split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('\n').join('<br>');
 
-    var r = rapporten[0]; // meest recent
-    var naam = [l.voornaam, l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
-    var datum = r.datum ? new Date(r.datum).toLocaleDateString('nl-NL') : '';
-    var inhoud = (r.inhoud || r.tekst || '')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+          paginas += '<div class="pagina">'
+            + '<div class="kop"><h2>' + naam + '</h2>'
+            + '<p>Groep ' + groep + (datum ? ' &nbsp;&middot;&nbsp; ' + datum : '') + '</p></div>'
+            + '<div class="inhoud">' + inhoud + '</div>'
+            + '</div>';
+          gevonden++;
+        });
+      });
+    } catch(e) { /* stil falen */ }
+  }
 
-    paginas += '<div class="pagina">'
-      + '<div class="kop">'
-      + '<h2>' + naam + '</h2>'
-      + '<p>Groep ' + groep + (datum ? ' &nbsp;&middot;&nbsp; ' + datum : '') + '</p>'
-      + '</div>'
-      + '<div class="inhoud">' + inhoud + '</div>'
-      + '</div>';
-    gevonden++;
-  });
-
-  if (!gevonden) return;
+  if (!gevonden) { alert('Geen rapporten gevonden om te downloaden.'); return; }
 
   var css = '<style>'
     + '*{margin:0;padding:0;box-sizing:border-box}'
@@ -1584,8 +1594,8 @@ async function startBatchRapporten() {
     if (gegenereerd > 0) {
       html += '<div style="margin-top:6px;font-size:10px;color:var(--tz)">Rapporten worden nu gedownload als PDF…</div>';
       await laadLeerlingen();
-      // Download automatisch als PDF
-      batchDownloadPDF(groep, fouten_detail || []);
+      // Wacht kort zodat leerlingen geladen zijn, download dan PDF
+      setTimeout(function() { batchDownloadPDF(groep); }, 1500);
     }
 
     voortgang.innerHTML = html;
@@ -3244,8 +3254,8 @@ function downloadRapportenGroep() {
     rapporten.forEach(function(r) {
       var naam = [l.voornaam, l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
       var datum = r.datum ? new Date(r.datum).toLocaleDateString('nl-NL') : '';
-      var inhoud = (r.inhoud || r.tekst || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-      paginas += '<div class="pagina">'
+      var inhoud = (r.inhoud || r.tekst || '').split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('\n').join('<br>');
+
         + '<div class="kop"><h2>' + naam + '</h2>'
         + '<p>Groep ' + groep + (datum ? ' &nbsp;&middot;&nbsp; ' + datum : '') + '</p></div>'
         + '<div class="inhoud">' + inhoud + '</div>'
@@ -4472,17 +4482,17 @@ function dossierRender(data) {
         const commentaar = rd.rapportcommentaar || rd.leerresultaten || '';
         const preview = typeof commentaar === 'string' ? commentaar.slice(0, 180) : '';
         const rid = 'rapport-' + (r.id || Math.random().toString(36).slice(2));
-        html += '<div style="padding:10px 12px;border:1px solid var(--warmrand);background:#fff;margin-bottom:6px;border-radius:6px">';
-        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+        const volledig = typeof commentaar === 'string' ? commentaar : '';
+        const isIngeklapt = volledig.length > 300;
+        html += '<details style="padding:10px 12px;border:1px solid var(--warmrand);background:#fff;margin-bottom:6px;border-radius:6px;cursor:pointer">';
+        html += '<summary style="display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer">';
         html += '<span style="font-size:10px;font-weight:700;color:#2a3a2a;background:#e8f5e9;padding:2px 7px;border-radius:3px">RAPPORT</span>';
         html += '<span style="font-size:10px;color:var(--tz)">' + new Date(r.datum).toLocaleDateString('nl-NL') + '</span>';
-        if (r.leerkracht) html += '<span style="font-size:10px;color:var(--tz)">· ' + r.leerkracht + '</span>';
-
-        html += '</div>';
-        if (preview) html += '<div style="font-size:11px;color:#444;line-height:1.6">' + esc(preview) + (commentaar.length > 180 ? '…' : '') + '</div>';
-        const volledig = typeof commentaar === 'string' ? commentaar : '';
-        html += '<div id="' + rid + '" style="display:none;font-size:12px;color:#333;line-height:1.8;white-space:pre-wrap;margin-top:8px;padding-top:8px;border-top:1px solid #f0f0f0">' + esc(volledig) + '</div>';
-        html += '</div>';
+        if (r.leerkracht) html += '<span style="font-size:10px;color:var(--tz)"> · ' + esc(r.leerkracht) + '</span>';
+        html += '<span style="margin-left:auto;font-size:10px;color:#4a7a4a;font-weight:600">Klik om te openen ▾</span>';
+        html += '</summary>';
+        html += '<div style="font-size:12px;color:#333;line-height:1.9;white-space:pre-wrap;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0">' + esc(volledig) + '</div>';
+        html += '</details>';
       });
     }
 
