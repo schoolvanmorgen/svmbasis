@@ -2931,8 +2931,7 @@ function toonTab(tab, knop) {
           style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
       <!-- Terugknop — altijd zichtbaar boven de lijst -->
-      <div id="notitie-nav-breadcrumb" style="flex-shrink:0;padding:6px 8px 0"></div>
-      <div id="notitie-leerlingen-lijst" style="flex:1;overflow-y:auto;padding:6px">
+      <div id="notitie-leerlingen-lijst" style="flex:1;overflow-y:auto">
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
 
@@ -4382,20 +4381,32 @@ function dossierRender(data) {
       });
     }
 
-    // Notities (max 3 tonen)
+    // Notities + Observaties (alle types tonen)
     if (sjData.notities.length > 0) {
-      const zichtbaar = sjData.notities.slice(0, 3);
+      const typeKleur = {
+        notitie: '#4a7a4a', observatie: '#1565c0', toets: '#6a1b9a',
+        gesprek: '#e65100', bijzonderheid: '#c62828'
+      };
+      const typeLabel = {
+        notitie: 'NOTITIE', observatie: 'OBSERVATIE', toets: 'TOETS',
+        gesprek: 'GESPREK', bijzonderheid: 'BIJZONDERHEID'
+      };
+      const zichtbaar = sjData.notities.slice(0, 5);
       zichtbaar.forEach(function(n) {
-        const kleur = kleuren[n.sentiment] || kleuren.neutraal;
+        const type  = n.type || 'notitie';
+        const kleur = typeKleur[type] || '#555';
+        const badge = typeLabel[type] || type.toUpperCase();
         html += '<div style="padding:8px 12px;border-left:3px solid ' + kleur + ';background:#fafafa;margin-bottom:4px">';
-        html += '<div style="font-size:10px;color:var(--tz);margin-bottom:2px">' + new Date(n.datum).toLocaleDateString('nl-NL');
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">';
+        html += '<span style="font-size:9px;font-weight:700;color:' + kleur + ';background:' + kleur + '15;padding:1px 5px;border-radius:2px">' + badge + '</span>';
+        html += '<span style="font-size:10px;color:var(--tz)">' + new Date(n.datum).toLocaleDateString('nl-NL');
         if (n.leerkracht) html += ' · ' + n.leerkracht;
-        html += '</div>';
-        html += '<div style="font-size:11px;color:#333;line-height:1.5">' + n.tekst.slice(0, 150) + (n.tekst.length > 150 ? '…' : '') + '</div>';
+        html += '</span></div>';
+        html += '<div style="font-size:11px;color:#333;line-height:1.5">' + esc(n.tekst.slice(0, 200)) + (n.tekst.length > 200 ? '…' : '') + '</div>';
         html += '</div>';
       });
-      if (sjData.notities.length > 3) {
-        html += '<div style="font-size:10px;color:var(--tz);padding:4px 0">+ ' + (sjData.notities.length - 3) + ' meer notities dit schooljaar</div>';
+      if (sjData.notities.length > 5) {
+        html += '<div style="font-size:10px;color:var(--tz);padding:4px 0">+ ' + (sjData.notities.length - 5) + ' meer items dit schooljaar</div>';
       }
     }
 
@@ -4857,79 +4868,72 @@ function lvsRenderDomeinen() {
   if (!lvsHuidig) return;
   const l = lvsHuidig;
 
-  // Alle vakken in volgorde — compact horizontale balken
   const volgorde = [
-    {k:'lezen',           l:'Lezen (DMT)'},
+    {k:'lezen',           l:'DMT'},
     {k:'avi',             l:'AVI'},
-    {k:'dmt',             l:'DMT'},
+    {k:'dmt',             l:'DMT2'},
     {k:'spelling',        l:'Spelling'},
-    {k:'taalverzorging',  l:'Taalverzorging'},
-    {k:'woordenschat',    l:'Woordenschat'},
+    {k:'taalverzorging',  l:'Taalverz.'},
+    {k:'woordenschat',    l:'Woorden'},
     {k:'rekenen',         l:'Rekenen'},
     {k:'rekenen_basis',   l:'Basisbew.'},
-    {k:'begrijpend',      l:'Begr. lezen'},
-    {k:'begrijpend_luis', l:'Begr. luisteren'},
+    {k:'begrijpend',      l:'Begr.lezen'},
+    {k:'begrijpend_luis', l:'Begr.luis.'},
     {k:'engels',          l:'Engels'},
-    {k:'sociaal',         l:'Sociaal-em.'},
-    {k:'executief',       l:'Exec. functies'},
-    {k:'groeimeter',      l:'Groeimeter'},
-    {k:'werkhouding',     l:'Werkhouding'},
+    {k:'sociaal',         l:'Sociaal'},
+    {k:'executief',       l:'Executief'},
+    {k:'groeimeter',      l:'Groei'},
+    {k:'werkhouding',     l:'Werkhoud.'},
   ];
 
-  // Scheidingslijnen per categorie
-  const catBreak = new Set(['spelling','rekenen','begrijpend','sociaal']);
+  // Maximale balkshoogte in px
+  const BALK_H = 120;
 
-  let html = '<div style="padding:10px 16px 6px">';
+  let html = '<div style="padding:12px 16px 8px;height:100%;box-sizing:border-box;display:flex;flex-direction:column">';
 
-  // Legenda compact bovenaan
-  html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px">';
-  [
-    {k:'#4caf50',l:'I–II Boven'},
-    {k:'#2196f3',l:'III Gemiddeld'},
-    {k:'#ff9800',l:'IV Aandacht'},
-    {k:'#e53935',l:'V Zorg'},
-    {k:'#e0e0e0',l:'Geen score'},
-  ].forEach(function(item) {
-    html += '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#555">'
-      + '<div style="width:12px;height:6px;background:' + item.k + ';border-radius:1px"></div>'
-      + item.l + '</div>';
-  });
+  // Legenda
+  html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;flex-shrink:0">';
+  [{k:'#4caf50',l:'I–II Boven'},{k:'#2196f3',l:'III Gemiddeld'},{k:'#ff9800',l:'IV Aandacht'},{k:'#e53935',l:'V Zorg'}]
+    .forEach(function(item) {
+      html += '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#555">'
+        + '<div style="width:10px;height:10px;background:' + item.k + ';border-radius:2px"></div>'
+        + item.l + '</div>';
+    });
   html += '</div>';
 
-  // Horizontale balken — alles in één tabel
-  html += '<div style="display:flex;flex-direction:column;gap:0">';
+  // Verticale staafdiagrammen
+  html += '<div style="display:flex;align-items:flex-end;gap:6px;flex:1;overflow-x:auto;padding-bottom:4px;min-height:0">';
 
   volgorde.forEach(function(d) {
-    const score   = l.scores[d.k] || 0;
-    const vorig   = (l.vorige || {})[d.k] || 0;
-    const diff    = score - vorig;
-    const label   = score > 0 ? scoreNaarLabel(score, d.type) : '—';
-    const kleur   = _niveauKleur(score);
-    const balkW   = score > 0 ? Math.max(3, score) : 0;
-    const pijl    = diff > 5 ? ' ↑' : diff < -5 ? ' ↓' : '';
-    const pijlKleur = diff > 5 ? '#2e7d32' : '#c62828';
-    const separator = catBreak.has(d.k) ? 'border-top:2px solid #f0f0f0;margin-top:4px;padding-top:4px;' : '';
+    const score  = l.scores[d.k] || 0;
+    const vorig  = (l.vorige || {})[d.k] || 0;
+    const diff   = score - vorig;
+    const label  = score > 0 ? scoreNaarLabel(score) : '—';
+    const kleur  = _niveauKleur(score);
+    const balkH  = score > 0 ? Math.max(6, Math.round(score / 100 * BALK_H)) : 0;
+    const pijl   = diff > 5 ? '↑' : diff < -5 ? '↓' : '';
+    const pijlK  = diff > 5 ? '#2e7d32' : '#c62828';
 
-    html += '<div style="display:grid;grid-template-columns:110px 1fr 48px;'
-      + 'align-items:center;gap:8px;padding:3px 0;' + separator + '">';
+    html += '<div style="display:flex;flex-direction:column;align-items:center;'
+      + 'gap:3px;flex:1;min-width:44px;max-width:70px">';
 
-    // Label
-    html += '<div style="font-size:11px;color:#444;white-space:nowrap;overflow:hidden;'
-      + 'text-overflow:ellipsis">' + d.l + '</div>';
+    // Score label bovenaan
+    html += '<div style="font-size:11px;font-weight:700;color:' + (score > 0 ? kleur.tekst : '#bbb') + ';line-height:1">'
+      + label + (pijl ? '<span style="color:' + pijlK + ';font-size:10px">' + pijl + '</span>' : '')
+      + '</div>';
 
-    // Balk
-    html += '<div style="height:10px;background:#f0f0f0;border-radius:3px;overflow:hidden;position:relative">';
-    if (balkW > 0) {
-      html += '<div style="height:100%;width:' + balkW + '%;background:' + kleur.balk
-        + ';border-radius:3px;transition:width .4s ease"></div>';
+    // Verticale balk container
+    html += '<div style="width:100%;height:' + BALK_H + 'px;background:#f0f0f0;border-radius:3px;'
+      + 'display:flex;align-items:flex-end;overflow:hidden">';
+    if (balkH > 0) {
+      html += '<div style="width:100%;height:' + balkH + 'px;background:' + kleur.balk
+        + ';border-radius:3px;transition:height .4s ease"></div>';
     }
     html += '</div>';
 
-    // Score label + pijl
-    html += '<div style="text-align:right;font-size:12px;font-weight:700;color:'
-      + (score > 0 ? kleur.tekst : '#bbb') + '">' + label
-      + (pijl ? '<span style="color:' + pijlKleur + '">' + pijl + '</span>' : '')
-      + '</div>';
+    // Vaklabel onderaan
+    html += '<div style="font-size:9px;color:#666;text-align:center;line-height:1.2;'
+      + 'word-break:break-word;max-width:100%">' + d.l + '</div>';
 
     html += '</div>';
   });
