@@ -122,50 +122,63 @@ header {
 }
 
 /* Hoofd-tab knop */
-.tab-hoofd {
-  height: 40px;
-  padding: 0 18px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: var(--font-body);
-  color: var(--n-400);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  white-space: nowrap;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  transition: color .15s;
+/* Tab kolom — elke hoofdgroep is een kolom */
+.tab-kolom {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  border-bottom: 3px solid transparent;
+  transition: border-color .15s;
 }
-.tab-hoofd:hover { color: var(--n-700); }
-.tab-hoofd.actief {
-  color: var(--accent);
+.tab-kolom.actief {
   border-bottom-color: var(--accent);
+  background: var(--accent-subtle);
 }
 
-/* Sub-tab — tweede rij */
+/* Kolom kopje */
+.tab-kolom-hoofd {
+  padding: 8px 16px 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--n-400);
+  cursor: pointer;
+  transition: color .1s;
+  user-select: none;
+}
+.tab-kolom.actief .tab-kolom-hoofd { color: var(--accent); }
+.tab-kolom-hoofd:hover { color: var(--n-700); }
+
+/* Sub-tabs rij binnen kolom */
+.tab-kolom-subs {
+  padding: 0 8px 6px;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+/* Sub-tab knop */
 .tab-sub {
-  height: 34px;
-  padding: 0 14px;
-  font-size: 13px;
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
   font-family: var(--font-body);
   color: var(--n-500);
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color .1s;
+  transition: background .1s, color .1s;
 }
-.tab-sub:hover { color: var(--n-900); }
+.tab-sub:hover { background: var(--n-100); color: var(--n-900); }
 .tab-sub.actief {
   color: var(--accent);
   font-weight: 600;
-  border-bottom-color: var(--accent);
+  background: rgba(61,107,82,.1);
 }
+
+/* Verwijder oude .tab-hoofd als die nog ergens staat */
+.tab-hoofd { display: none; }
 
 .tab {
   padding: 0 16px;
@@ -1991,21 +2004,17 @@ window.addEventListener('DOMContentLoaded', initAuth);
 let _actieveGroep  = 'dagelijks';
 let _actieveSubTab = 'notities';
 
-function selecteerGroep(groepNaam, knop) {
-  /** Wissel naar een andere hoofdgroep — toont de bijbehorende sub-tabs. */
+function selecteerGroep(groepNaam) {
+  /** Markeer de actieve kolom — sub-tabs zijn altijd zichtbaar. */
   _actieveGroep = groepNaam;
 
-  // Hoofd-tab styling
-  document.querySelectorAll('.tab-hoofd').forEach(function(b) { b.classList.remove('actief'); });
-  if (knop) knop.classList.add('actief');
-
-  // Toon juiste sub-tab rij
+  // Kolom actief markeren
   ['dagelijks','rapporten','inspectie','jaar'].forEach(function(g) {
-    var el = document.getElementById('subtabs-' + g);
-    if (el) el.style.display = g === groepNaam ? 'flex' : 'none';
+    var kol = document.getElementById('kolom-' + g);
+    if (kol) kol.classList.toggle('actief', g === groepNaam);
   });
 
-  // Klik de eerste zichtbare sub-tab automatisch aan
+  // Klik de eerste actieve sub-tab van de geselecteerde groep
   var subtabs = document.querySelectorAll('#subtabs-' + groepNaam + ' .tab-sub:not([style*="display:none"])');
   if (subtabs.length > 0) subtabs[0].click();
 }
@@ -2205,36 +2214,44 @@ function toonTab(tab, knop) {
 
 <div id="hoofdtabbar" style="flex-shrink:0;border-bottom:1px solid var(--n-200);background:var(--n-0)">
 
-  <!-- Rij 1: Hoofd-categorieën — volle breedte -->
-  <div style="display:flex;align-items:stretch;border-bottom:1px solid var(--n-100);padding:0 28px;gap:0;width:100%">
-    <button class="tab-hoofd actief" onclick="selecteerGroep('dagelijks',this)" data-groep="dagelijks" style="flex:1;justify-content:center">Dagelijks</button>
-    <button class="tab-hoofd" onclick="selecteerGroep('rapporten',this)" data-groep="rapporten" style="flex:1;justify-content:center">Rapporten</button>
-    <button class="tab-hoofd" onclick="selecteerGroep('inspectie',this)" data-groep="inspectie" style="flex:1;justify-content:center">Inspectie</button>
-    <button class="tab-hoofd" onclick="selecteerGroep('jaar',this)" data-groep="jaar" style="flex:1;justify-content:center">Begin van het jaar</button>
-  </div>
+  <!-- Één rij: 4 kolommen, elk met kopje + sub-tabs altijd zichtbaar -->
+  <div style="display:flex;align-items:stretch;width:100%">
 
-  <!-- Rij 2: Sub-tabs — gecentreerd onder actieve groep -->
-  <div style="display:flex;align-items:stretch;padding:0 28px;gap:2px;min-height:36px;border-bottom:1px solid var(--n-100)">
-
-    <div id="subtabs-dagelijks" style="display:flex;gap:2px">
-      <button class="tab-sub actief" onclick="toonTabVanGroep('notities','dagelijks',this)">Snelle notitie</button>
-      <button class="tab-sub" onclick="toonTabVanGroep('lvs','dagelijks',this)">Leerlingvolgsysteem</button>
-      <button class="tab-sub" onclick="toonTabVanGroep('aanwezigheid','dagelijks',this)">Aanwezigheid</button>
+    <!-- Dagelijks -->
+    <div class="tab-kolom actief" id="kolom-dagelijks" style="flex:1;border-right:1px solid var(--n-100)">
+      <div class="tab-kolom-hoofd" onclick="selecteerGroep('dagelijks')" data-groep="dagelijks">Dagelijks</div>
+      <div id="subtabs-dagelijks" class="tab-kolom-subs" style="display:flex">
+        <button class="tab-sub actief" onclick="toonTabVanGroep('notities','dagelijks',this)">Snelle notitie</button>
+        <button class="tab-sub" onclick="toonTabVanGroep('lvs','dagelijks',this)">LVS</button>
+        <button class="tab-sub" onclick="toonTabVanGroep('aanwezigheid','dagelijks',this)">Aanwezigheid</button>
+      </div>
     </div>
 
-    <div id="subtabs-rapporten" style="display:none;gap:2px">
-      <button class="tab-sub" onclick="toonTabVanGroep('rapport','rapporten',this)">Rapport genereren</button>
+    <!-- Rapporten -->
+    <div class="tab-kolom" id="kolom-rapporten" style="flex:1;border-right:1px solid var(--n-100)">
+      <div class="tab-kolom-hoofd" onclick="selecteerGroep('rapporten')" data-groep="rapporten">Rapporten</div>
+      <div id="subtabs-rapporten" class="tab-kolom-subs" style="display:flex">
+        <button class="tab-sub" onclick="toonTabVanGroep('rapport','rapporten',this)">Rapport genereren</button>
+      </div>
     </div>
 
-    <div id="subtabs-inspectie" style="display:none;gap:2px">
-      <button class="tab-sub" onclick="toonTabVanGroep('opp','inspectie',this)">OPP</button>
-      <button class="tab-sub" onclick="toonTabVanGroep('handelingsplan','inspectie',this)">Handelingsplan</button>
-      <button class="tab-sub" id="tab-ib-knop" onclick="toonTabVanGroep('ib','inspectie',this)" style="display:none">IB-overzicht</button>
-      <button class="tab-sub" id="tab-inspectie-knop" onclick="toonTabVanGroep('inspectie_tab','inspectie',this)" style="display:none">Inspectie rapport</button>
+    <!-- Inspectie -->
+    <div class="tab-kolom" id="kolom-inspectie" style="flex:1;border-right:1px solid var(--n-100)">
+      <div class="tab-kolom-hoofd" onclick="selecteerGroep('inspectie')" data-groep="inspectie">Inspectie</div>
+      <div id="subtabs-inspectie" class="tab-kolom-subs" style="display:flex">
+        <button class="tab-sub" onclick="toonTabVanGroep('opp','inspectie',this)">OPP</button>
+        <button class="tab-sub" onclick="toonTabVanGroep('handelingsplan','inspectie',this)">Handelingsplan</button>
+        <button class="tab-sub" id="tab-ib-knop" onclick="toonTabVanGroep('ib','inspectie',this)" style="display:none">IB-overzicht</button>
+        <button class="tab-sub" id="tab-inspectie-knop" onclick="toonTabVanGroep('inspectie_tab','inspectie',this)" style="display:none">Inspectie rapport</button>
+      </div>
     </div>
 
-    <div id="subtabs-jaar" style="display:none;gap:2px">
-      <button class="tab-sub" onclick="toonTabVanGroep('klas','jaar',this)">Klas toevoegen</button>
+    <!-- Begin van het jaar -->
+    <div class="tab-kolom" id="kolom-jaar" style="flex:1">
+      <div class="tab-kolom-hoofd" onclick="selecteerGroep('jaar')" data-groep="jaar">Begin van het jaar</div>
+      <div id="subtabs-jaar" class="tab-kolom-subs" style="display:flex">
+        <button class="tab-sub" onclick="toonTabVanGroep('klas','jaar',this)">Klas toevoegen</button>
+      </div>
     </div>
 
   </div>
