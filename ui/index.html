@@ -1465,7 +1465,7 @@ async function voegKlasToe() {
   if (!groep) { alert('Kies een groep.'); return; }
   if (!namen.length) { alert('Voer minimaal één naam in.'); return; }
   const voortgang = document.getElementById('klas-voortgang');
-  const knop = document.getElementById('klas-knop');
+  const knop = document.getElementById('modal-klas-knop');
   knop.disabled = true;
   for (let i = 0; i < namen.length; i++) {
     if (voortgang) voortgang.textContent = (i+1) + ' / ' + namen.length + ' toegevoegd…';
@@ -1742,7 +1742,7 @@ function klasVerwerk(csv) {
     if (info) { info.textContent = '✗ Voornaam/Roepnaam kolom niet gevonden. Controleer de kolomnamen.'; info.style.background='#fff5f5'; info.style.color='#991b1b'; info.style.borderColor='#fca5a5'; }
     document.getElementById('klas-preview').style.display = 'flex';
     document.getElementById('klas-lijst').innerHTML = '';
-    document.getElementById('klas-knop').disabled = true;
+    const _kknop = document.getElementById('klas-knop') || document.getElementById('modal-klas-knop'); if(_kknop) _kknop.disabled = true;
     return;
   }
 
@@ -2022,7 +2022,7 @@ function toonTab(tab, knop) {
       <div id="klas-voortgang" style="display:none;font-size:12px;color:#3a5a3a;font-weight:500"></div>
       <div style="display:flex;gap:8px">
         <button onclick="sluitLeerlingModal()" style="flex:1;background:transparent;border:1px solid #ccc;padding:9px;font-size:12px;cursor:pointer;font-family:inherit;color:#333">Annuleren</button>
-        <button onclick="voegKlasToe()" id="klas-knop" style="flex:1;background:#4a7a4a;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Hele klas toevoegen</button>
+        <button onclick="voegKlasToe()" id="modal-klas-knop" style="flex:1;background:#4a7a4a;color:#fff;border:none;padding:9px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Hele klas toevoegen</button>
       </div>
     </div>
     <div id="ltab-inhoud-3" style="padding:20px;display:none;flex-direction:column;gap:10px">
