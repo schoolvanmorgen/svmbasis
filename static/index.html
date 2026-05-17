@@ -110,13 +110,81 @@ header {
   align-items: stretch;
   border-bottom: 1px solid var(--n-200);
   background: var(--n-0);
-  padding: 0 28px;
   flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-  gap: 4px;
+  min-height: 48px;
+  position: relative;
+  z-index: 100;
 }
-.tabbar::-webkit-scrollbar { display: none; }
+
+/* Tab groep container */
+.tab-groep {
+  position: relative;
+}
+
+/* Hoofd-tab knop */
+.tab-hoofd {
+  height: 48px;
+  padding: 0 22px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  color: var(--n-500);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color .15s, background .15s;
+  letter-spacing: .01em;
+}
+.tab-hoofd:hover { color: var(--n-900); background: var(--n-50); }
+.tab-hoofd.actief {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--accent-subtle);
+}
+.tab-groep-pijl { font-size: 9px; transition: transform .15s; }
+.tab-hoofd.open .tab-groep-pijl,
+.tab-hoofd.actief.open .tab-groep-pijl { transform: rotate(180deg); }
+
+/* Sub-menu dropdown */
+.tab-sub-menu {
+  position: absolute;
+  top: 47px;
+  left: 0;
+  background: var(--n-0);
+  border: 1px solid var(--n-200);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.10);
+  z-index: 300;
+  min-width: 190px;
+  padding: 4px 0;
+}
+
+/* Sub-tab knop */
+.tab-sub {
+  display: block;
+  width: 100%;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--n-700);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background .1s;
+  white-space: nowrap;
+}
+.tab-sub:hover { background: var(--n-50); color: var(--n-900); }
+.tab-sub.actief {
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--accent-subtle);
+}
 
 .tab {
   padding: 0 16px;
@@ -1935,11 +2003,59 @@ function sluitLeerlingModal() {
 
 window.addEventListener('DOMContentLoaded', initAuth);
 
-function toonTab(tab, knop) {
-  // Sla actieve tab op voor herstel bij terugkomen
-  try { localStorage.setItem('svm_actieve_tab', tab); } catch(e) {}
+// ══════════════════════════════════════════════════════════
+// NAVIGATIE: Gegroepeerde tabbar
+// ══════════════════════════════════════════════════════════
 
-  // Reset knoppen
+let _actieveGroep  = 'dagelijks';
+let _actieveSubTab = 'notities';
+
+function toggleGroep(groepNaam, event) {
+  if (event) event.stopPropagation();
+  const submenu = document.getElementById('submenu-' + groepNaam);
+  const knop    = document.querySelector('[data-groep="' + groepNaam + '"]');
+  const wasOpen = knop && knop.classList.contains('open');
+
+  // Sluit alle submenus
+  document.querySelectorAll('.tab-sub-menu').forEach(function(m) { m.style.display = 'none'; });
+  document.querySelectorAll('.tab-hoofd').forEach(function(b) { b.classList.remove('open'); });
+
+  if (!wasOpen) {
+    if (submenu) submenu.style.display = 'block';
+    if (knop)    knop.classList.add('open');
+  }
+}
+
+function toonTabVanGroep(tabNaam, groepNaam, subKnop) {
+  _actieveGroep  = groepNaam;
+  _actieveSubTab = tabNaam;
+
+  // Sub-tab actief
+  document.querySelectorAll('.tab-sub').forEach(function(b) { b.classList.remove('actief'); });
+  if (subKnop) subKnop.classList.add('actief');
+
+  // Hoofd-tab actief
+  document.querySelectorAll('.tab-hoofd').forEach(function(b) { b.classList.remove('actief','open'); });
+  const hk = document.querySelector('[data-groep="' + groepNaam + '"]');
+  if (hk) hk.classList.add('actief');
+
+  // Sluit submenu
+  document.querySelectorAll('.tab-sub-menu').forEach(function(m) { m.style.display = 'none'; });
+
+  toonTab(tabNaam === 'inspectie_tab' ? 'inspectie' : tabNaam, null);
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.tab-groep')) {
+    document.querySelectorAll('.tab-sub-menu').forEach(function(m) { m.style.display = 'none'; });
+    document.querySelectorAll('.tab-hoofd').forEach(function(b) { b.classList.remove('open'); });
+  }
+});
+
+function toonTab(tab, knop) {
+  try { localStorage.setItem('svm_actieve_tab', tab); } catch(e) { /* niet-kritiek */ }
+
+  // Reset oude .tab knoppen (backwards compat)
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('actief'));
   if (knop) knop.classList.add('actief');
 
@@ -2116,16 +2232,53 @@ function toonTab(tab, knop) {
   </div>
 </header>
 
-<div class="tabbar">
-  <button class="tab" onclick="toonTab('klas',this)">+ Klas toevoegen</button>
-  <button class="tab actief" onclick="toonTab('aanwezigheid',this)">Aanwezigheid</button>
-  <button class="tab" onclick="toonTab('notities',this)">Snelle notitie</button>
-  <button class="tab" onclick="toonTab('lvs',this)">Leerlingvolgsysteem</button>
-  <button class="tab" onclick="toonTab('rapport',this)">Rapport</button>
-  <button class="tab" onclick="toonTab('opp',this)">OPP</button>
-  <button class="tab" onclick="toonTab('handelingsplan',this)">Handelingsplan</button>
-  <button class="tab" id="tab-ib-knop" onclick="toonTab('ib',this)" style="display:none">IB-overzicht</button>
-  <button class="tab" id="tab-inspectie-knop" onclick="toonTab('inspectie',this)" style="display:none">Inspectie</button>
+<div class="tabbar" id="hoofdtabbar" style="display:flex;align-items:stretch;border-bottom:1px solid var(--n-200);background:var(--n-0);padding:0;flex-shrink:0;gap:0;min-height:48px">
+
+  <!-- Groep 1: Dagelijks -->
+  <div class="tab-groep" id="groep-dagelijks">
+    <button class="tab-hoofd actief" onclick="toggleGroep('dagelijks', event)" data-groep="dagelijks">
+      Dagelijks <span class="tab-groep-pijl">▾</span>
+    </button>
+    <div class="tab-sub-menu" id="submenu-dagelijks">
+      <button class="tab-sub actief" onclick="toonTabVanGroep('notities','dagelijks',this)">Snelle notitie</button>
+      <button class="tab-sub" onclick="toonTabVanGroep('lvs','dagelijks',this)">Leerlingvolgsysteem</button>
+      <button class="tab-sub" onclick="toonTabVanGroep('aanwezigheid','dagelijks',this)">Aanwezigheid</button>
+    </div>
+  </div>
+
+  <!-- Groep 2: Rapporten -->
+  <div class="tab-groep" id="groep-rapporten">
+    <button class="tab-hoofd" onclick="toggleGroep('rapporten', event)" data-groep="rapporten">
+      Rapporten <span class="tab-groep-pijl">▾</span>
+    </button>
+    <div class="tab-sub-menu" id="submenu-rapporten" style="display:none">
+      <button class="tab-sub" onclick="toonTabVanGroep('rapport','rapporten',this)">Rapport genereren</button>
+    </div>
+  </div>
+
+  <!-- Groep 3: Inspectie -->
+  <div class="tab-groep" id="groep-inspectie">
+    <button class="tab-hoofd" onclick="toggleGroep('inspectie', event)" data-groep="inspectie">
+      Inspectie <span class="tab-groep-pijl">▾</span>
+    </button>
+    <div class="tab-sub-menu" id="submenu-inspectie" style="display:none">
+      <button class="tab-sub" onclick="toonTabVanGroep('opp','inspectie',this)">OPP</button>
+      <button class="tab-sub" onclick="toonTabVanGroep('handelingsplan','inspectie',this)">Handelingsplan</button>
+      <button class="tab-sub" id="tab-ib-knop" onclick="toonTabVanGroep('ib','inspectie',this)" style="display:none">IB-overzicht</button>
+      <button class="tab-sub" id="tab-inspectie-knop" onclick="toonTabVanGroep('inspectie_tab','inspectie',this)" style="display:none">Inspectie rapport</button>
+    </div>
+  </div>
+
+  <!-- Groep 4: Begin van het jaar -->
+  <div class="tab-groep" id="groep-jaar">
+    <button class="tab-hoofd" onclick="toggleGroep('jaar', event)" data-groep="jaar">
+      Begin van het jaar <span class="tab-groep-pijl">▾</span>
+    </button>
+    <div class="tab-sub-menu" id="submenu-jaar" style="display:none">
+      <button class="tab-sub" onclick="toonTabVanGroep('klas','jaar',this)">Klas toevoegen</button>
+    </div>
+  </div>
+
 </div>
 <div id="tab-inhoud" style="flex:1;overflow:hidden;min-height:0;background:transparent">
 <div id="tab-rapport-wrap" style="display:grid;grid-template-columns:160px 340px 1fr;height:100%;min-height:0">
