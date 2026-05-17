@@ -2614,8 +2614,7 @@ function toonTab(tab, knop) {
       </div>
 
       <div style="padding:8px;border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:6px">
-        <button onclick="lvsVoegToe()" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">+ Leerling</button>
-        <button onclick="openImportModal()" style="width:100%;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:7px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">↑ Importeer klas</button>
+        <button onclick="if(_lvsHuidigeGroep) lvsRenderKlassen()" style="width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.01em">‹ Terug naar groepen</button>
       </div>
     </div>
 
@@ -2915,7 +2914,7 @@ function toonTab(tab, knop) {
 
   <!-- Leerlingenlijst -->
   <div style="flex:1;overflow-y:auto;padding:20px 24px">
-    <div id="aaw-lijst" style="display:flex;flex-direction:column;gap:0"></div>
+    <div id="aaw-lijst"></div>
     <div id="aaw-leeg" style="color:var(--tz);font-size:13px;padding:40px 0;text-align:center">Selecteer een klas om de leerlingen te zien.</div>
   </div>
 
@@ -5661,31 +5660,47 @@ async function aawToonKlas(groep) {
   }
   if (leeg) leeg.style.display = 'none';
 
-  let html = '';
+  // Horizontaal grid — alle leerlingen in kaartjes naast elkaar
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:16px 20px">';
   klasLeerlingen.forEach(function(l) {
-    const status = (aawStatus[aawDatum] || {})[l.id] || 'aanwezig';
+    const status     = (aawStatus[aawDatum] || {})[l.id] || 'aanwezig';
     const isAanwezig = status === 'aanwezig';
     const isAfwezig  = status === 'afwezig';
-    const ach = [l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
+    const isLaat     = status === 'laat';
 
-    const stijlAanwezig = isAanwezig
-      ? 'border:1.5px solid #4a7a4a;background:#4a7a4a;color:#fff'
-      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
-    const stijlAfwezig = isAfwezig
-      ? 'border:1.5px solid #991b1b;background:#991b1b;color:#fff'
-      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
+    const borderKleur = isAfwezig ? '#991b1b' : isAanwezig ? '#4a7a4a' : '#c07000';
+    const bgKleur     = isAfwezig ? '#fff5f5' : isAanwezig ? '#f0f7f0' : '#fffbeb';
 
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#fff;border-bottom:1px solid var(--warmrand)">';
-    html += '<div style="font-size:14px;font-weight:500;color:var(--t)">' + l.voornaam;
-    if (ach) html += ' <span style="font-weight:400;color:var(--tz)">' + ach + '</span>';
+    html += '<div style="border:2px solid ' + borderKleur + ';background:' + bgKleur + ';'
+      + 'border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;'
+      + 'align-items:center;text-align:center">';
+
+    // Naam
+    html += '<div style="font-size:13px;font-weight:600;color:#1a2a1a;line-height:1.2">'
+      + esc(l.voornaam) + '</div>';
+
+    // Status knoppen
+    html += '<div style="display:flex;gap:4px;width:100%">';
+    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="aanwezig" style="'
+      + 'flex:1;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;'
+      + 'border-radius:5px;border:1.5px solid ' + (isAanwezig ? '#4a7a4a' : '#ddd') + ';'
+      + 'background:' + (isAanwezig ? '#4a7a4a' : '#fff') + ';'
+      + 'color:' + (isAanwezig ? '#fff' : '#888') + '">✓</button>';
+    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="afwezig" style="'
+      + 'flex:1;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;'
+      + 'border-radius:5px;border:1.5px solid ' + (isAfwezig ? '#991b1b' : '#ddd') + ';'
+      + 'background:' + (isAfwezig ? '#991b1b' : '#fff') + ';'
+      + 'color:' + (isAfwezig ? '#fff' : '#888') + '">✗</button>';
+    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="laat" style="'
+      + 'flex:1;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;'
+      + 'border-radius:5px;border:1.5px solid ' + (isLaat ? '#c07000' : '#ddd') + ';'
+      + 'background:' + (isLaat ? '#c07000' : '#fff') + ';'
+      + 'color:' + (isLaat ? '#fff' : '#888') + '">⏱</button>';
     html += '</div>';
-    html += '<div style="display:flex;gap:8px">';
-    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="aanwezig"'
-          + ' style="padding:8px 22px;' + stijlAanwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Aanwezig</button>';
-    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="afwezig"'
-          + ' style="padding:8px 22px;' + stijlAfwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Afwezig</button>';
-    html += '</div></div>';
+
+    html += '</div>';
   });
+  html += '</div>';
 
   lijst.innerHTML = html;
 
