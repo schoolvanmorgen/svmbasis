@@ -614,21 +614,23 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
         raise HTTPException(status_code=401, detail="Niet ingelogd.")
     token = credentials.credentials
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            res = await client.get(
-                f"{SUPABASE_URL}/auth/v1/user",
-                headers={
-                    "apikey": SUPABASE_ANON_KEY,
-                    "Authorization": f"Bearer {token}"
-                }
-            )
-            if res.status_code != 200:
-                raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
-            return res.json()
+        client = _get_supabase_client()
+        res = await client.get(
+            "/auth/v1/user",
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Authorization": f"Bearer {token}"
+            }
+        )
+        if res.status_code == 401:
+            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+        if res.status_code != 200:
+            raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+        return res.json()
     except HTTPException:
         raise
     except httpx.TimeoutException:
-        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar.")
+        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar (timeout).")
     except httpx.RequestError as e:
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
 
