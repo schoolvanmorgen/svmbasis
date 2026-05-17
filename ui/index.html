@@ -6486,7 +6486,7 @@ function notitieVulZijbalk(filterGroep) {
     if (huidigToken) {
       laadLeerlingen().then(() => {
         if (leerlingen.length) {
-          notitieRenderZijbalk(leerlingen);
+          notitieRenderKlassen();
         } else {
           lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Nog geen leerlingen toegevoegd.</div>';
         }
