@@ -5666,7 +5666,6 @@ async function aawToonKlas(groep) {
     const status     = (aawStatus[aawDatum] || {})[l.id] || 'aanwezig';
     const isAanwezig = status === 'aanwezig';
     const isAfwezig  = status === 'afwezig';
-    const isLaat     = status === 'laat';
 
     const borderKleur = isAfwezig ? '#991b1b' : isAanwezig ? '#4a7a4a' : '#c07000';
     const bgKleur     = isAfwezig ? '#fff5f5' : isAanwezig ? '#f0f7f0' : '#fffbeb';
@@ -5691,11 +5690,7 @@ async function aawToonKlas(groep) {
       + 'border-radius:5px;border:1.5px solid ' + (isAfwezig ? '#991b1b' : '#ddd') + ';'
       + 'background:' + (isAfwezig ? '#991b1b' : '#fff') + ';'
       + 'color:' + (isAfwezig ? '#fff' : '#888') + '">✗</button>';
-    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="laat" style="'
-      + 'flex:1;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;'
-      + 'border-radius:5px;border:1.5px solid ' + (isLaat ? '#c07000' : '#ddd') + ';'
-      + 'background:' + (isLaat ? '#c07000' : '#fff') + ';'
-      + 'color:' + (isLaat ? '#fff' : '#888') + '">⏱</button>';
+
     html += '</div>';
 
     html += '</div>';
@@ -5774,9 +5769,9 @@ function aawRender() {
   }
   const tellen = { aanwezig: 0, afwezig: 0, laat: 0, onbekend: 0 };
   klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id] || {}).status || 'onbekend']++; });
-  document.getElementById('aaw-tel-aanwezig').textContent = tellen.aanwezig;
-  document.getElementById('aaw-tel-afwezig').textContent = tellen.afwezig;
-  document.getElementById('aaw-tel-laat').textContent = tellen.laat;
+  const telAan = document.getElementById('aaw-tel-aanwezig'); if (telAan) telAan.textContent = tellen.aanwezig;
+  const telAf  = document.getElementById('aaw-tel-afwezig');  if (telAf)  telAf.textContent  = tellen.afwezig;
+  const telLaat = document.getElementById('aaw-tel-laat'); if (telLaat) telLaat.textContent = tellen.laat;
   const statusBg  = { aanwezig:'#f0faf0', laat:'#fffbeb', afwezig:'#fff5f5', onbekend:'#fff' };
   const statusRnd = { aanwezig:'#4a7a4a', laat:'#92661a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
   el.innerHTML = klasLeerlingen.map(function(l) {
