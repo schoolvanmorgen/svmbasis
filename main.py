@@ -614,22 +614,29 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
         raise HTTPException(status_code=401, detail="Niet ingelogd.")
     token = credentials.credentials
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(timeout=15) as client:
+            url = SUPABASE_URL.rstrip('/') + '/auth/v1/user'
             res = await client.get(
-                f"{SUPABASE_URL}/auth/v1/user",
+                url,
                 headers={
                     "apikey": SUPABASE_ANON_KEY,
                     "Authorization": f"Bearer {token}"
                 }
             )
-            if res.status_code != 200:
+            logger.info(f"get_user → {url} → {res.status_code}")
+            if res.status_code == 401:
                 raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
+            if res.status_code != 200:
+                logger.error(f"get_user fout: {res.status_code} {res.text[:100]}")
+                raise HTTPException(status_code=401, detail="Authenticatie mislukt.")
             return res.json()
     except HTTPException:
         raise
     except httpx.TimeoutException:
-        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar.")
+        logger.error(f"get_user timeout")
+        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar (timeout).")
     except httpx.RequestError as e:
+        logger.error(f"get_user verbindingsfout: {e}")
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
 
 # ══════════════════════════════════════════════════════════
@@ -765,7 +772,7 @@ async def supabase_get(path: str, token: str, params: dict | None = None) -> lis
     client = _get_supabase_client()
     try:
         res = await client.get(
-            f"/rest/v1/{path}",
+            f"{path}",
             headers={"Authorization": f"Bearer {token}"},
             params=params,
         )
@@ -796,7 +803,7 @@ async def supabase_post(path: str, token: str, data: dict) -> list | dict:
     client = _get_supabase_client()
     try:
         res = await client.post(
-            f"/rest/v1/{path}",
+            f"{path}",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Prefer": "return=representation",
@@ -828,7 +835,7 @@ async def supabase_patch(path: str, token: str, data: dict) -> list | dict:
     client = _get_supabase_client()
     try:
         res = await client.patch(
-            f"/rest/v1/{path}",
+            f"{path}",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Prefer": "return=representation",
@@ -860,7 +867,7 @@ async def supabase_delete(path: str, token: str) -> None:
     client = _get_supabase_client()
     try:
         res = await client.delete(
-            f"/rest/v1/{path}",
+            f"{path}",
             headers={"Authorization": f"Bearer {token}"},
         )
         if res.status_code == 401:
@@ -1262,7 +1269,7 @@ async def health():
     try:
         client = _get_supabase_client()
         res = await client.get(
-            "/rest/v1/",
+            "",
             headers={"apikey": SUPABASE_ANON_KEY},
             timeout=3.0,
         )
