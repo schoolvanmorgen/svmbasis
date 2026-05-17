@@ -199,7 +199,7 @@ async def startup():
     global _supabase_client, _claude_client
 
     _supabase_client = httpx.AsyncClient(
-        base_url=SUPABASE_URL.rstrip('/') + '/',
+        base_url=SUPABASE_URL.rstrip('/') + '/rest/v1/',
         timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0),
         limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
         headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
@@ -614,8 +614,7 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
         raise HTTPException(status_code=401, detail="Niet ingelogd.")
     token = credentials.credentials
     try:
-        # Gebruik losse client voor auth — aparte timeout van pool
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=10) as client:
             res = await client.get(
                 f"{SUPABASE_URL}/auth/v1/user",
                 headers={
@@ -623,20 +622,14 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
                     "Authorization": f"Bearer {token}"
                 }
             )
-            logger.info(f"get_user status: {res.status_code}")
-            if res.status_code == 401:
-                raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
             if res.status_code != 200:
-                logger.error(f"get_user onverwacht: {res.status_code} {res.text[:100]}")
-                raise HTTPException(status_code=401, detail="Authenticatie mislukt.")
+                raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
             return res.json()
     except HTTPException:
         raise
     except httpx.TimeoutException:
-        logger.error(f"get_user timeout naar {SUPABASE_URL}")
-        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar (timeout).")
+        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar.")
     except httpx.RequestError as e:
-        logger.error(f"get_user verbindingsfout: {e}")
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
 
 # ══════════════════════════════════════════════════════════
