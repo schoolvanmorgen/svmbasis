@@ -6621,14 +6621,20 @@ function notitieRenderZijbalk(lijst) {
 function notitieSelecteerLeerling(id) {
   const l = leerlingen.find(x => x.id === id);
   if (!l) return;
-  // Zet als actieve leerling (sync met rest van de app)
   stelLeerlingIn(l);
-  // Update zijbalk highlight
-  notitieRenderZijbalk(
-    document.getElementById('notitie-zoek')?.value
-      ? leerlingen.filter(x => x.voornaam.toLowerCase().includes(document.getElementById('notitie-zoek').value.toLowerCase()))
-      : leerlingen
-  );
+
+  // Update highlight zonder de lijst te herbouwen — terugknop blijft staan
+  if (_notitieHuidigeGroep) {
+    // We zijn in groepsweergave — herbouw de groepslijst met nieuwe highlight
+    notitieRenderLeerlingenVanGroep(_notitieHuidigeGroep);
+  } else {
+    // Zoekresultaten of alle leerlingen — herbouw zonder terugknop
+    const zoek = document.getElementById('notitie-zoek')?.value || '';
+    const gefilterd = zoek
+      ? leerlingen.filter(x => x.voornaam.toLowerCase().includes(zoek.toLowerCase()))
+      : leerlingen;
+    notitieRenderZijbalk(gefilterd);
+  }
   // Toon header
   const header = document.getElementById('notitie-leerling-header');
   const naamEl = document.getElementById('notitie-actieve-naam');
