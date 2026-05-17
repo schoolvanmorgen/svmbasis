@@ -1845,11 +1845,24 @@ async function klasImporteer() {
   }
 
   if (voortgang) {
+    const totaal = nieuw + dubbel;
     let html = '';
-    if (nieuw > 0)   html += '<div style="color:#2d6a2d;font-weight:600">✓ ' + nieuw + ' leerlingen geïmporteerd</div>';
-    if (dubbel > 0)  html += '<div style="color:#92400e">⚠ ' + dubbel + ' al aanwezig (overgeslagen)</div>';
-    if (fout > 0)    html += '<div style="color:#991b1b">✗ ' + fout + ' mislukt</div>';
-    html += '<div style="font-size:11px;color:var(--tz);margin-top:6px">De klas is nu zichtbaar in alle secties.</div>';
+
+    if (totaal > 0) {
+      html += '<div style="background:#f0faf0;border:1.5px solid #4a7a4a;border-radius:10px;padding:16px 18px;margin-bottom:8px">';
+      html += '<div style="font-size:16px;font-weight:700;color:#2d6a2d;margin-bottom:6px">✓ Klas succesvol geladen</div>';
+      html += '<div style="font-size:13px;color:#2d6a2d;margin-bottom:4px">' + totaal + ' leerlingen staan nu in het systeem</div>';
+      if (nieuw > 0)   html += '<div style="font-size:12px;color:#2d6a2d">• ' + nieuw + ' nieuw toegevoegd</div>';
+      if (dubbel > 0)  html += '<div style="font-size:12px;color:#4a7a4a">• ' + dubbel + ' al aanwezig (overgeslagen)</div>';
+      html += '</div>';
+      html += '<div style="font-size:12px;color:var(--n-500);padding:0 4px">De klas is nu zichtbaar in <strong>aanwezigheid</strong>, <strong>LVS</strong>, <strong>notities</strong> en <strong>rapport</strong>.</div>';
+    } else if (fout > 0) {
+      html += '<div style="background:#fff5f5;border:1.5px solid #dc2626;border-radius:10px;padding:16px 18px">';
+      html += '<div style="font-size:14px;font-weight:700;color:#991b1b;margin-bottom:4px">✗ Importeren mislukt</div>';
+      html += '<div style="font-size:12px;color:#991b1b">' + fout + ' leerlingen konden niet worden toegevoegd. Probeer opnieuw.</div>';
+      html += '</div>';
+    }
+
     voortgang.innerHTML = html;
   }
 
