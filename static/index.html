@@ -1273,25 +1273,27 @@ async function laadLeerlingenRest(offset) {
 
 
 function vulAlleKlasSelects() {
-  /** Vul alle klas-dropdowns vanuit de globale leerlingenlijst. */
-  const groepen = [...new Set(leerlingen.map(function(l) { return l.groep; }).filter(Boolean))]
-    .sort(function(a,b) { return parseInt(a)-parseInt(b) || a.localeCompare(b); });
-
-  ['rapport-klas','batch-groep','opp-klas-select','hp-klas-select','ib-klas-select'].forEach(function(id) {
+  const groepen = [...new Set(leerlingen.map(function(l){return l.groep;}).filter(Boolean))]
+    .sort(function(a,b){return parseInt(a)-parseInt(b)||a.localeCompare(b);});
+  ['rapport-klas','batch-groep','opp-klas-select','hp-klas-select','ib-klas-select','rapport-schooljaar'].forEach(function(id){
+    if (id === 'rapport-schooljaar') return;
     const sel = document.getElementById(id);
     if (!sel) return;
     const huidig = sel.value;
     sel.innerHTML = '<option value="">Kies groep…</option>';
-    groepen.forEach(function(g) {
+    groepen.forEach(function(g){
       const opt = document.createElement('option');
-      opt.value = g;
-      opt.textContent = 'Groep ' + g;
+      opt.value = g; opt.textContent = 'Groep ' + g;
       sel.appendChild(opt);
     });
     if (huidig && groepen.includes(huidig)) sel.value = huidig;
-    else if (groepen.length === 1) { sel.value = groepen[0]; sel.dispatchEvent(new Event('change')); }
+    else if (groepen.length >= 1) {
+      sel.value = groepen[0];
+      sel.dispatchEvent(new Event('change'));
+    }
   });
 }
+
 function toonLeerlingenLijst() {
   const lijst = document.getElementById('leerlingen-lijst');
   if (!lijst) return;
@@ -2055,6 +2057,8 @@ function toonTabVanGroep(tabNaam, groepNaam, subKnop) {
 }
 
 function toonTab(tab, knop) {
+  // Vul klas-selects bij elke tab-wissel
+  if (typeof vulAlleKlasSelects === 'function') vulAlleKlasSelects();
   try { localStorage.setItem('svm_actieve_tab', tab); } catch(e) { /* niet-kritiek */ }
 
   // Reset oude .tab knoppen (backwards compat)
@@ -2635,8 +2639,9 @@ function toonTab(tab, knop) {
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
 
-      <div style="padding:8px;border-top:1px solid var(--warmrand)">
-        <button id="lvs-terug-onderaan" onclick="lvsRenderKlassen()" style="display:none;width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
+      <div style="padding:8px;border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:6px">
+        <button onclick="lvsVoegToe()" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">+ Leerling</button>
+        <button onclick="openImportModal()" style="width:100%;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:7px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">↑ Importeer klas</button>
       </div>
     </div>
 
@@ -2955,9 +2960,7 @@ function toonTab(tab, knop) {
       <div id="notitie-leerlingen-lijst" style="flex:1;overflow-y:auto">
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
-      <div style="padding:8px;border-top:1px solid var(--warmrand)">
-        <button id="notitie-terug-onderaan" onclick="notitieRenderKlassen()" style="display:none;width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
-      </div>
+
     </div>
 
     <!-- Hoofdpaneel -->
@@ -4140,10 +4143,6 @@ function lvsRenderKlassen() {
       + '</div>';
   }).join('');
 
-  // Verberg onderste terugknop in groepsoverzicht
-  const terugOnder = document.getElementById('lvs-terug-onderaan');
-  if (terugOnder) terugOnder.style.display = 'none';
-
   // Event delegation
   el.querySelectorAll('.lvs-klas-item').forEach(function(item) {
     item.addEventListener('click', function() {
@@ -4156,24 +4155,42 @@ function lvsRenderLeerlingen(groep) {
   const el = document.getElementById('lvs-lijst');
   if (!el) return;
   _lvsHuidigeGroep = groep;
+
   const lijst = lvsLeerlingen.filter(function(l) { return l.groep === groep; });
-  let html = '<button onclick="lvsRenderKlassen()" style="display:block;width:100%;background:#2d6a2d;border:none;color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">‹ Terug naar groepen</button>';
+
+  let html = '<button onclick="lvsRenderKlassen()" style="'
+    + 'display:block;width:100%;background:#2d6a2d;border:none;'
+    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
+    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
+    + '‹ Terug naar groepen</button>';
+
+  if (!lijst.length) {
+    html += '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in deze groep.</div>';
+    el.innerHTML = html;
+    return;
+  }
+
   html += lijst.map(function(l) {
-    const actief = lvsHuidig && lvsHuidig?.id === l.id;
-    const sig = (_lvsSignalen[l.id]||[])[0];
-    const badge = sig ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + (sig.urgentie==='hoog'?'#991b1b':'#92400e') + '">' + (sig.urgentie==='hoog'?'⚠':'!') + '</span>' : '';
-    return '<div class="lvs-item ' + (actief?'actief':'') + '" data-id="' + l.id + '">'
+    const actief   = lvsHuidig && lvsHuidig?.id === l.id;
+    const signalen = _lvsSignalen[l.id] || [];
+    const hoogste  = signalen.length > 0 ? signalen[0] : null;
+    const badgeHtml = hoogste
+      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:'
+        + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + '">'
+        + (hoogste.urgentie === 'hoog' ? '⚠' : '!') + '</span>'
+      : '';
+    return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
       + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
       + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div></div>'
-      + badge + '</div>';
+      + badgeHtml
+      + '</div>';
   }).join('');
+
   el.innerHTML = html;
+
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() { lvsSelecteer(item.dataset.id); });
   });
-  // Toon onderste terugknop
-  const terugOnder2 = document.getElementById('lvs-terug-onderaan');
-  if (terugOnder2) terugOnder2.style.display = 'block';
 }
 
 // Behoud lvsRenderLijst als alias voor backwards compat
@@ -4202,9 +4219,6 @@ function lvsFilter(zoek) {
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() { lvsSelecteer(item.dataset.id); });
   });
-  // Toon onderste terugknop
-  const terugOnder2 = document.getElementById('lvs-terug-onderaan');
-  if (terugOnder2) terugOnder2.style.display = 'block';
 }
 
 async function lvsSelecteer(id) {
@@ -5420,7 +5434,6 @@ function aawRenderKlassen() {
   }
 }
 
-// aawRenderKlassen duplicate DEFINITIEF verwijderd
 
 
 // ── Leerling toevoegen vanuit aanwezigheidstab ──────────────
@@ -5744,38 +5757,50 @@ function aawRender() {
   const el = document.getElementById('aaw-lijst');
   if (!el) return;
   if (!aawGeselecteerdeKlas) {
-    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Selecteer een klas hierboven.</div>';
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Selecteer een klas hierboven.</div>';
     return;
   }
   const sleutel = aawDatumSleutel(aawDatum);
   const dagData = aawRegistraties[sleutel] || {};
   const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
   if (!klasLeerlingen.length) {
-    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px 0">Geen leerlingen in groep ' + aawGeselecteerdeKlas + '.</div>';
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Geen leerlingen gevonden.</div>';
     return;
   }
-  const tellen = { aanwezig: 0, afwezig: 0, laat: 0, onbekend: 0 };
-  klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id] || {}).status || 'onbekend']++; });
-  document.getElementById('aaw-tel-aanwezig').textContent = tellen.aanwezig;
-  document.getElementById('aaw-tel-afwezig').textContent = tellen.afwezig;
-  const _telLaat = document.getElementById('aaw-tel-laat'); if (_telLaat) _telLaat.textContent = tellen.laat;
-  const statusBg  = { aanwezig:'#f0faf0', laat:'#fffbeb', afwezig:'#fff5f5', onbekend:'#fff' };
-  const statusRnd = { aanwezig:'#4a7a4a', laat:'#92661a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
+  const tellen = { aanwezig:0, afwezig:0, onbekend:0 };
+  klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id]||{}).status||'onbekend']++; });
+  const telAan = document.getElementById('aaw-tel-aanwezig'); if(telAan) telAan.textContent = tellen.aanwezig;
+  const telAf  = document.getElementById('aaw-tel-afwezig');  if(telAf)  telAf.textContent  = tellen.afwezig;
+  const telLaat = document.getElementById('aaw-tel-laat'); if(telLaat) telLaat.textContent = '';
+
+  const statusBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
+  const statusRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
+
+  // VERTICALE lijst — één rij per leerling
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+  el.style.gap = '0';
+  el.style.padding = '0';
+
   el.innerHTML = klasLeerlingen.map(function(l) {
-    const d = dagData[l.id] || { status: 'onbekend' };
-    const ini = l.voornaam.slice(0,2).toUpperCase();
+    const d   = dagData[l.id] || { status: 'onbekend' };
     const bg  = statusBg[d.status]  || '#fff';
     const rnd = statusRnd[d.status] || 'var(--rand)';
     function knop(lbl, val, icoon) {
       const actief = d.status === val;
-      return '<button onclick="aawZetStatus(this.getAttribute(\'data-id\'),this.getAttribute(\'data-val\'))" data-id="' + l.id + '" data-val="' + val + '" style="flex:1;padding:8px 2px;border:1.5px solid ' + (actief ? statusRnd[val] : 'var(--rand)') + ';background:' + (actief ? statusBg[val] : '#fff') + ';color:' + (actief ? statusRnd[val] : '#888') + ';font-size:11px;font-weight:' + (actief?'600':'400') + ';cursor:pointer;font-family:inherit;text-align:center;line-height:1.4">' + icoon + '<br>' + lbl + '</button>';
+      return '<button onclick="aawZetStatus(\'' + l.id + '\',\'' + val + '\')" style="'
+        + 'padding:8px 20px;border:1.5px solid ' + (actief ? statusRnd[val] : '#ddd') + ';'
+        + 'background:' + (actief ? statusBg[val] : '#fff') + ';'
+        + 'color:' + (actief ? statusRnd[val] : '#999') + ';'
+        + 'font-size:12px;font-weight:' + (actief?'700':'400') + ';cursor:pointer;'
+        + 'font-family:inherit;border-radius:6px">' + icoon + ' ' + lbl + '</button>';
     }
-    return '<div id="aaw-item-' + l.id + '" style="background:' + bg + ';border:1.5px solid ' + rnd + ';padding:14px;display:flex;flex-direction:column;gap:10px">'
-      + '<div style="display:flex;align-items:center;gap:10px">'
-      + '<div style="width:36px;height:36px;background:#4a7a4a;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">' + ini + '</div>'
-      + '<div style="font-size:14px;font-weight:500;color:var(--t)">' + esc(l.voornaam) + '</div>'
-      + '</div>'
-      + '<div style="display:flex;gap:6px">' + knop('Aanwezig','aanwezig','✓') + knop('Te laat','laat','◷') + knop('Afwezig','afwezig','✕') + '</div>'
+    return '<div id="aaw-item-' + l.id + '" style="'
+      + 'display:flex;align-items:center;justify-content:space-between;'
+      + 'padding:12px 20px;background:' + bg + ';border-bottom:1px solid #f0f0f0;'
+      + 'border-left:4px solid ' + rnd + '">'
+      + '<div style="font-size:14px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
+      + '<div style="display:flex;gap:8px">' + knop('Aanwezig','aanwezig','✓') + knop('Afwezig','afwezig','✗') + '</div>'
       + '</div>';
   }).join('');
 }
@@ -5783,35 +5808,40 @@ function aawRender() {
 function aawZetStatus(id, status) {
   const sleutel = aawDatumSleutel(aawDatum);
   if (!aawRegistraties[sleutel]) aawRegistraties[sleutel] = {};
-  if (!aawRegistraties[sleutel][id]) aawRegistraties[sleutel][id] = { status: 'onbekend', reden: '', opmerking: '' };
+  if (!aawRegistraties[sleutel][id]) aawRegistraties[sleutel][id] = { status: 'onbekend' };
   aawRegistraties[sleutel][id].status = status;
 
-  // Update alleen het item in-place — scherm blijft staan
+  const statusBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
+  const statusRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
+
+  // Update alleen dit item in-place
   const item = document.getElementById('aaw-item-' + id);
   if (item) {
-    const statusBg  = { aanwezig:'#f0faf0', laat:'#fffbeb', afwezig:'#fff5f5', onbekend:'#fff' };
-    const statusRnd = { aanwezig:'#4a7a4a', laat:'#92661a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
     item.style.background   = statusBg[status]  || '#fff';
-    item.style.borderColor  = statusRnd[status] || 'var(--rand)';
-    // Update knopstijlen
-    item.querySelectorAll('button[data-val]').forEach(function(knop) {
-      const isActief = knop.dataset.val === status;
-      const v = knop.dataset.val;
-      knop.style.borderColor  = isActief ? (statusRnd[v] || '#888') : 'var(--rand)';
-      knop.style.background   = isActief ? (statusBg[v]  || '#eee') : '#fff';
-      knop.style.color        = isActief ? (statusRnd[v] || '#333') : '#888';
-      knop.style.fontWeight   = isActief ? '600' : '400';
+    item.style.borderLeftColor = statusRnd[status] || 'var(--rand)';
+    item.querySelectorAll('button').forEach(function(btn) {
+      const oc = btn.getAttribute('onclick') || '';
+      const vm = oc.match(/['"](aanwezig|afwezig|onbekend)['"]\)/);
+      const val = vm ? vm[1] : null;
+      if (!val) return;
+      const actief = val === status;
+      btn.style.borderColor  = actief ? (statusRnd[val]||'#888') : '#ddd';
+      btn.style.background   = actief ? (statusBg[val] ||'#eee') : '#fff';
+      btn.style.color        = actief ? (statusRnd[val]||'#333') : '#999';
+      btn.style.fontWeight   = actief ? '700' : '400';
     });
   }
 
   // Update tellers
-  const dagData      = aawRegistraties[sleutel] || {};
-  const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
-  const tellen = { aanwezig:0, afwezig:0, laat:0, onbekend:0 };
-  klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id]||{}).status||'onbekend']++; });
-  const telAan  = document.getElementById('aaw-tel-aanwezig'); if (telAan)  telAan.textContent  = tellen.aanwezig;
-  const telAf   = document.getElementById('aaw-tel-afwezig');  if (telAf)   telAf.textContent   = tellen.afwezig;
-  const telLaat = document.getElementById('aaw-tel-laat');     if (telLaat) telLaat.textContent = tellen.laat;
+  const dagData = aawRegistraties[sleutel] || {};
+  const klas = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
+  let aan = 0, af = 0;
+  klas.forEach(function(l) {
+    const s = (dagData[l.id]||{}).status||'onbekend';
+    if (s==='aanwezig') aan++; else if (s==='afwezig') af++;
+  });
+  const telAan = document.getElementById('aaw-tel-aanwezig'); if(telAan) telAan.textContent = aan;
+  const telAf  = document.getElementById('aaw-tel-afwezig');  if(telAf)  telAf.textContent  = af;
 }
 
 async function aawVandaag() {
@@ -6559,8 +6589,7 @@ function notitieRenderKlassen() {
       + '</div>';
   }).join('');
 
-  const terugOnderN = document.getElementById('notitie-terug-onderaan');
-  if (terugOnderN) terugOnderN.style.display = 'none';
+  // Event delegation
   el.querySelectorAll('.notitie-klas-item').forEach(function(item) {
     item.addEventListener('click', function() {
       notitieRenderLeerlingenVanGroep(item.dataset.groep);
@@ -6572,18 +6601,31 @@ function notitieRenderLeerlingenVanGroep(groep) {
   const el = document.getElementById('notitie-leerlingen-lijst');
   if (!el) return;
   _notitieHuidigeGroep = groep;
+
   const lijst = leerlingen.filter(function(l) { return String(l.groep) === String(groep); });
-  let html = '<button onclick="notitieRenderKlassen()" style="display:block;width:100%;background:#2d6a2d;border:none;color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">‹ Terug naar groepen</button>';
+
+  let html = '<button onclick="notitieRenderKlassen()" style="'
+    + 'display:block;width:100%;background:#2d6a2d;border:none;'
+    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
+    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
+    + '‹ Terug naar groepen</button>';
+
   html += lijst.map(function(l) {
     const actief = window._huidigeLeerlingId === l.id;
-    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="padding:9px 12px;cursor:pointer;margin-bottom:2px;border-left:3px solid ' + (actief?'#2d6a2d':'transparent') + ';background:' + (actief?'#f0f7f0':'transparent') + '"><div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div></div>';
+    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="'
+      + 'padding:9px 12px;cursor:pointer;margin-bottom:2px;'
+      + 'border-left:3px solid ' + (actief ? '#2d6a2d' : 'transparent') + ';'
+      + 'background:' + (actief ? '#f0f7f0' : 'transparent') + '">'
+      + '<div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
+      + '</div>';
   }).join('');
+
   el.innerHTML = html;
-  // Toon onderste terugknop
-  const terugOnder = document.getElementById('notitie-terug-onderaan');
-  if (terugOnder) terugOnder.style.display = 'block';
+
   el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
-    item.addEventListener('click', function() { notitieSelecteerLeerling(item.dataset.id); });
+    item.addEventListener('click', function() {
+      notitieSelecteerLeerling(item.dataset.id);
+    });
   });
 }
 
