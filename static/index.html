@@ -3461,8 +3461,6 @@ async function genereer() {
     huidigeSectieData = parsed;
     toonResultaten(parsed, naam, groep);
     if (window._huidigeLeerlingId) slaRapportOp(parsed);
-    // Werk LVS bij met scores en tijdlijn uit het rapport
-    await werkLvsVanuitRapportBij(parsed, naam, groep);
   } catch (err) {
     if (r) r.innerHTML = '<div class="fout">' + err.message + '</div>';
   } finally {
