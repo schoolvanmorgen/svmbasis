@@ -948,7 +948,10 @@ function toonApp() {
         herstelTab = opgeslagen;
       }
     } catch(e) {}
-    toonTabVanGroep(herstelTab, herstelTab === 'notities' ? 'dagelijks' : herstelTab === 'lvs' ? 'dagelijks' : herstelTab === 'aanwezigheid' ? 'dagelijks' : 'dagelijks', null);
+    // Op mobiel altijd starten op snelle notitie
+    if (window.innerWidth <= 768) { herstelTab = 'notities'; }
+    const groepNaam = ['notities','lvs','aanwezigheid'].includes(herstelTab) ? 'dagelijks' : ['rapport'].includes(herstelTab) ? 'rapporten' : ['opp','handelingsplan','ib','inspectie'].includes(herstelTab) ? 'inspectie' : 'jaar';
+    toonTabVanGroep(herstelTab, groepNaam, null);
   }, 50);
   // Vertraagd IB/Inspectie tabs tonen (na schoolContext laden)
   setTimeout(function() {
@@ -3044,8 +3047,13 @@ function toonTab(tab, knop) {
 
       <!-- Invoer onderaan -->
       <div style="flex-shrink:0;padding:1rem 1.8rem;background:var(--warm);border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:10px">
-        <div class="vlabel">NIEUWE NOTITIE</div>
-        <textarea id="notitie-tekst" rows="3" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf een notitie voor de geselecteerde leerling…"></textarea>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="vlabel">NIEUWE NOTITIE</div>
+          <!-- Grote spraakknop — zichtbaar op alle schermen, extra groot op mobiel -->
+          <button class="mic-knop mic-knop-groot" onclick="toggleMic('notitie-tekst',this)" title="Spraak naar tekst (Whisper)"
+            style="width:52px;height:52px;font-size:24px;box-shadow:0 2px 8px rgba(61,107,82,.4)">🎤</button>
+        </div>
+        <textarea id="notitie-tekst" rows="3" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf of spreek een notitie…"></textarea>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <button onclick="notitieOpslaan()" style="background:#4a7a4a;color:#fff;border:none;padding:9px 20px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-family:inherit">Opslaan</button>
           <div id="notitie-doorstroom-bevestiging" style="display:none;font-size:11px;color:#4a7a4a;font-weight:500">✓ Notitie opgeslagen en doorgestuurd naar rapport, OPP en handelingsplan</div>
@@ -5805,41 +5813,55 @@ async function aawLaadDag(datum) {
 }
 
 function aawRender() {
-  var el = document.getElementById('aaw-lijst');
+  const el = document.getElementById('aaw-lijst');
   if (!el) return;
   if (!aawGeselecteerdeKlas) {
-    el.setAttribute('style','');
-    el.innerHTML = '<div style="color:#888;font-size:13px;padding:20px">Selecteer een klas hierboven.</div>';
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Selecteer een klas hierboven.</div>';
     return;
   }
-  var sleutel = aawDatumSleutel(aawDatum);
-  var dagData = aawRegistraties[sleutel] || {};
-  var kl = aawLeerlingen.filter(function(l){ return l.groep === aawGeselecteerdeKlas; });
-  if (!kl.length) {
-    el.setAttribute('style','');
-    el.innerHTML = '<div style="color:#888;font-size:13px;padding:20px">Geen leerlingen gevonden.</div>';
+  const sleutel = aawDatumSleutel(aawDatum);
+  const dagData = aawRegistraties[sleutel] || {};
+  const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
+  if (!klasLeerlingen.length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Geen leerlingen gevonden.</div>';
     return;
   }
-  var aan=0,af=0;
-  kl.forEach(function(l){ var s=(dagData[l.id]||{}).status||'x'; if(s==='aanwezig')aan++; else if(s==='afwezig')af++; });
-  var t1=document.getElementById('aaw-tel-aanwezig'); if(t1)t1.textContent=aan;
-  var t2=document.getElementById('aaw-tel-afwezig');  if(t2)t2.textContent=af;
-  var t3=document.getElementById('aaw-tel-laat');     if(t3)t3.textContent='';
-  el.setAttribute('style','display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:4px 0');
-  el.innerHTML = kl.map(function(l){
-    var d=dagData[l.id]||{status:'onbekend'};
-    var st=d.status||'onbekend';
-    var brd=st==='aanwezig'?'#4a7a4a':st==='afwezig'?'#991b1b':'#ddd';
-    var bg=st==='aanwezig'?'#f0faf0':st==='afwezig'?'#fff5f5':'#fff';
-    function k(lbl,val){
-      var a=st===val,kb=val==='aanwezig'?'#4a7a4a':'#991b1b';
-      return '<button class="aaw-status-knop" data-id="'+l.id+'" data-status="'+val+'" style="flex:1;padding:7px 2px;border:1.5px solid '+(a?kb:'#ddd')+';background:'+(a?kb:'#fff')+';color:'+(a?'#fff':'#999')+';font-size:12px;font-weight:'+(a?700:400)+';cursor:pointer;font-family:inherit;border-radius:5px">'+lbl+'</button>';
+  const tellen = { aanwezig:0, afwezig:0, onbekend:0 };
+  klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id]||{}).status||'onbekend']++; });
+  const telAan = document.getElementById('aaw-tel-aanwezig'); if(telAan) telAan.textContent = tellen.aanwezig;
+  const telAf  = document.getElementById('aaw-tel-afwezig');  if(telAf)  telAf.textContent  = tellen.afwezig;
+  const telLaat = document.getElementById('aaw-tel-laat'); if(telLaat) telLaat.textContent = '';
+
+  const statusBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
+  const statusRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
+
+  // VERTICALE lijst — één rij per leerling
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+  el.style.gap = '0';
+  el.style.padding = '0';
+
+  el.innerHTML = klasLeerlingen.map(function(l) {
+    const d   = dagData[l.id] || { status: 'onbekend' };
+    const bg  = statusBg[d.status]  || '#fff';
+    const rnd = statusRnd[d.status] || 'var(--rand)';
+    function knop(lbl, val, icoon) {
+      const actief = d.status === val;
+      return '<button onclick="aawZetStatus(\'' + l.id + '\',\'' + val + '\')" style="'
+        + 'padding:8px 20px;border:1.5px solid ' + (actief ? statusRnd[val] : '#ddd') + ';'
+        + 'background:' + (actief ? statusBg[val] : '#fff') + ';'
+        + 'color:' + (actief ? statusRnd[val] : '#999') + ';'
+        + 'font-size:12px;font-weight:' + (actief?'700':'400') + ';cursor:pointer;'
+        + 'font-family:inherit;border-radius:6px">' + icoon + ' ' + lbl + '</button>';
     }
-    return '<div id="aaw-item-'+l.id+'" style="border:2px solid '+brd+';background:'+bg+';border-radius:10px;padding:12px 8px;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="font-size:13px;font-weight:600;color:#1a2a1a;text-align:center">'+esc(l.voornaam)+'</div><div style="display:flex;gap:4px;width:100%">'+k('✓ Aan','aanwezig')+k('✗ Af','afwezig')+'</div></div>';
+    return '<div id="aaw-item-' + l.id + '" style="'
+      + 'display:flex;align-items:center;justify-content:space-between;'
+      + 'padding:12px 20px;background:' + bg + ';border-bottom:1px solid #f0f0f0;'
+      + 'border-left:4px solid ' + rnd + '">'
+      + '<div style="font-size:14px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
+      + '<div style="display:flex;gap:8px">' + knop('Aanwezig','aanwezig','✓') + knop('Afwezig','afwezig','✗') + '</div>'
+      + '</div>';
   }).join('');
-  el.querySelectorAll('.aaw-status-knop').forEach(function(btn){
-    btn.addEventListener('click',function(){ aawZetStatus(btn.dataset.id,btn.dataset.status); });
-  });
 }
 
 function aawZetStatus(id, status) {
