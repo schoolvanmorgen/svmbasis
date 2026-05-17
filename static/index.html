@@ -5357,10 +5357,10 @@ function aawSelecteerKlas(groep) {
 function aawRenderKlassen() {
   const sel = document.getElementById('aaw-klas-select');
   if (!sel) return;
-  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))]
-    .sort(function(a,b) { return parseInt(a) - parseInt(b); });
 
-  // Bouw opties dynamisch op basis van echte leerlingdata
+  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))]
+    .sort(function(a,b) { return parseInt(a) - parseInt(b) || a.localeCompare(b); });
+
   const huidig = sel.value;
   sel.innerHTML = '<option value="">Kies groep…</option>';
   groepen.forEach(function(g) {
@@ -5371,12 +5371,19 @@ function aawRenderKlassen() {
     sel.appendChild(opt);
   });
 
-  // Herstel vorige selectie of selecteer automatisch als er maar één klas is
   if (huidig && groepen.includes(huidig)) {
+    // Herstel vorige selectie
     sel.value = huidig;
   } else if (groepen.length === 1) {
+    // Automatisch selecteren als er maar één klas is
     sel.value = groepen[0];
-    aawSelecteerKlas(groepen[0]);
+    aawGeselecteerdeKlas = groepen[0];
+    aawToonKlas(groepen[0]);
+  } else if (groepen.length > 1 && !aawGeselecteerdeKlas) {
+    // Meerdere klassen: toon de eerste automatisch
+    sel.value = groepen[0];
+    aawGeselecteerdeKlas = groepen[0];
+    aawToonKlas(groepen[0]);
   }
 }
 
