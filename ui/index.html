@@ -2943,6 +2943,7 @@ function toonTab(tab, knop) {
         <input type="text" id="notitie-zoek" placeholder="Zoek leerling…" oninput="notitieFilterLeerlingen(this.value)"
           style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:7px 10px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">
       </div>
+      <div id="notitie-nav-breadcrumb" style="padding:4px 10px 2px;font-size:11px;color:var(--n-500);min-height:20px"></div>
       <div id="notitie-leerlingen-lijst" style="flex:1;overflow-y:auto;padding:6px">
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
@@ -6459,20 +6460,13 @@ function notitieVulZijbalk(filterGroep) {
   }
 
   if (leerlingen && leerlingen.length > 0) {
-    const gefilterd = window._notitieGroepFilter
-      ? leerlingen.filter(function(l){ return String(l.groep) === String(window._notitieGroepFilter); })
-      : leerlingen;
-    // Toon/verberg klas-indicator
-    const ind = document.getElementById('notitie-klas-indicator');
-    if (ind) {
-      if (window._notitieGroepFilter) {
-        ind.textContent = 'Groep ' + window._notitieGroepFilter;
-        ind.style.display = 'inline-block';
-      } else {
-        ind.style.display = 'none';
-      }
+    if (window._notitieGroepFilter) {
+      // Toon direct leerlingen van gefilterde klas
+      notitieRenderLeerlingenVanGroep(window._notitieGroepFilter);
+    } else {
+      // Toon klassenoverzicht
+      notitieRenderKlassen();
     }
-    notitieRenderZijbalk(gefilterd);
   } else {
     // Leerlingen nog niet geladen — haal ze op
     lijst.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>';
@@ -6504,6 +6498,72 @@ function notitieFilterLeerlingen(zoek) {
   notitieRenderZijbalk(gefilterd);
 }
 
+// ── Notitie navigatie state ────────────────────────────
+let _notitieHuidigeGroep = null;
+
+function notitieRenderKlassen() {
+  /** Toon klassenoverzicht als eerste stap — klik dan op klas voor leerlingen. */
+  const el = document.getElementById('notitie-leerlingen-lijst');
+  const bc = document.getElementById('notitie-nav-breadcrumb');
+  if (!el) return;
+
+  _notitieHuidigeGroep = null;
+  if (bc) bc.innerHTML = '<span style="font-size:11px;color:var(--n-500)">Kies een groep</span>';
+
+  const groepen = {};
+  leerlingen.forEach(function(l) {
+    const g = l.groep || '?';
+    if (!groepen[g]) groepen[g] = [];
+    groepen[g].push(l);
+  });
+
+  const gesorteerd = Object.keys(groepen).sort(function(a,b) {
+    return parseInt(a) - parseInt(b) || a.localeCompare(b);
+  });
+
+  if (!gesorteerd.length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Nog geen leerlingen.</div>';
+    return;
+  }
+
+  el.innerHTML = gesorteerd.map(function(g) {
+    const n = groepen[g].length;
+    return '<div class="notitie-klas-item" data-groep="' + esc(g) + '" style="'
+      + 'display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;'
+      + 'border-radius:6px;margin-bottom:3px;background:#fff;border:1px solid var(--n-200)">'
+      + '<div style="width:30px;height:30px;border-radius:50%;background:var(--accent-subtle);'
+      + 'display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent)">' + esc(g) + '</div>'
+      + '<div><div style="font-size:13px;font-weight:600;color:var(--n-900)">Groep ' + esc(g) + '</div>'
+      + '<div style="font-size:10px;color:var(--n-400)">' + n + ' leerling' + (n !== 1 ? 'en' : '') + '</div></div>'
+      + '<span style="margin-left:auto;color:var(--n-400)">›</span>'
+      + '</div>';
+  }).join('');
+
+  // Event delegation
+  el.querySelectorAll('.notitie-klas-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      notitieRenderLeerlingenVanGroep(item.dataset.groep);
+    });
+  });
+}
+
+function notitieRenderLeerlingenVanGroep(groep) {
+  /** Toon leerlingen van een klas — tweede niveau. */
+  const el = document.getElementById('notitie-leerlingen-lijst');
+  const bc = document.getElementById('notitie-nav-breadcrumb');
+  if (!el) return;
+
+  _notitieHuidigeGroep = groep;
+  if (bc) {
+    bc.innerHTML = '<button onclick="notitieRenderKlassen()" style="'
+      + 'background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);'
+      + 'font-family:inherit;padding:0">‹ Groep ' + esc(groep) + '</button>';
+  }
+
+  const lijst = leerlingen.filter(function(l) { return String(l.groep) === String(groep); });
+  notitieRenderZijbalk(lijst);
+}
+
 function notitieRenderZijbalk(lijst) {
   const el = document.getElementById('notitie-leerlingen-lijst');
   if (!el) return;
@@ -6511,15 +6571,22 @@ function notitieRenderZijbalk(lijst) {
     el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen gevonden.</div>';
     return;
   }
-  el.innerHTML = lijst.map(l => {
+  el.innerHTML = lijst.map(function(l) {
     const actief = window._huidigeLeerlingId === l.id;
     return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="'
-      + 'padding:9px 14px;cursor:pointer;border-left:2px solid ' + (actief ? '#4a7a4a' : 'transparent') + ';'
-      + 'background:' + (actief ? '#f8f8f8' : '#fff') + ';transition:all .1s">'
+      + 'padding:8px 10px;cursor:pointer;border-radius:6px;margin-bottom:2px;'
+      + 'border-left:2px solid ' + (actief ? 'var(--accent)' : 'transparent') + ';'
+      + 'background:' + (actief ? 'var(--accent-subtle)' : '#fff') + ';transition:all .1s">'
       + '<div style="font-size:12px;font-weight:500;color:#2a3a2a">' + esc(l.voornaam) + '</div>'
-      + '<div style="font-size:10px;color:var(--tz);margin-top:1px">Groep ' + (l.groep || '?') + '</div>'
       + '</div>';
   }).join('');
+
+  // Event delegation — UUID-veilig
+  el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      notitieSelecteerLeerling(item.dataset.id);
+    });
+  });
 }
 
 function notitieSelecteerLeerling(id) {
