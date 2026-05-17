@@ -4341,7 +4341,7 @@ async function lvsSelecteer(id) {
       + '→ ' + oppMeta.uitstroombestemming.slice(0, 50) + (oppMeta.uitstroombestemming.length > 50 ? '…' : '')
       + '</span>';
   }
-  lvsRenderLijst(lvsLeerlingen);
+  if (_lvsHuidigeGroep) { lvsRenderLeerlingen(_lvsHuidigeGroep); } else { lvsRenderKlassen(); }
   lvsRenderDomeinen();
   lvsRenderRadar();
   lvsRenderTijdlijn();
@@ -5145,39 +5145,23 @@ function lvsRenderTijdlijn() {
     groeimeter:'#3a6a6a', toets:'#1a4a8a', algemeen:'#666'
   };
 
-  // Filter: alleen notities en observaties — geen rapporten
-  var zichtbaar = lvsHuidig.tijdlijn.filter(function(item){
-    return item.type !== 'rapport' && item.type !== 'opp' && item.type !== 'handelingsplan';
-  });
-
-  if (!zichtbaar.length) {
-    el.innerHTML = '<div style="color:#444;font-size:12px">Nog geen notities of observaties.</div>';
-    return;
-  }
-
-  el.innerHTML = zichtbaar.map(function(item) {
+  el.innerHTML = lvsHuidig.tijdlijn.map(function(item) {
     const label  = domeinLabels[item.type] || item.type || 'Observatie';
     const kleur  = dotKleur[item.type] || '#4a7a4a';
     const sKleur = sentimentKleur[item.sentiment] || '#555';
     const sIcon  = item.sentiment ? (sentimentIcoon[item.sentiment] || '·') : '';
-    const tekst  = item.tekst || '';
-    const preview = tekst.length > 120 ? tekst.slice(0, 120) + '…' : tekst;
-    const heeftMeer = tekst.length > 120;
-    return '<details class="lvs-tl-item" style="cursor:pointer;margin-bottom:4px">'
-      + '<summary style="list-style:none;display:flex;gap:10px;align-items:flex-start;padding:6px 0">'
-      + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0;border-radius:50%">'
-      + (item.type==='toets'?'T':item.type==='observatie'||item.type==='algemeen'?'O':'N') + '</div>'
-      + '<div style="flex:1;min-width:0">'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
+    const bronLabels = { notitie:'uit notitie', aanwezigheid:'aanwezigheidssignaal', rapport:'rapport', toets:'toets' };
+    const bron = item.bron && bronLabels[item.bron] ? ' · ' + bronLabels[item.bron] : '';
+    return '<div class="lvs-tl-item">'
+      + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0">' + (item.type==='rapport'?'R':item.type==='toets'?'T':item.type==='opp'?'O':item.type==='observatie'?'O':'N') + '</div>'
+      + '<div class="lvs-tl-inhoud" style="flex:1;min-width:0">'
+      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">'
       + '<span style="font-size:10px;font-weight:700;color:' + kleur + ';letter-spacing:.04em;text-transform:uppercase">' + label + '</span>'
       + (sIcon ? '<span style="font-size:11px;color:' + sKleur + ';font-weight:600">' + sIcon + '</span>' : '')
-      + '<span style="font-size:10px;color:#999">' + item.datum + '</span>'
-      + (heeftMeer ? '<span style="font-size:10px;color:#4a7a4a;margin-left:auto">▾ lees meer</span>' : '')
+      + '<span style="font-size:10px;color:#999">' + item.datum + bron + '</span>'
       + '</div>'
-      + '<div style="font-size:12px;color:#333;line-height:1.5">' + esc(preview) + '</div>'
-      + '</div></summary>'
-      + (heeftMeer ? '<div style="padding:8px 0 4px 36px;font-size:12px;color:#333;line-height:1.7;white-space:pre-wrap">' + esc(tekst) + '</div>' : '')
-      + '</details>';
+      + '<div class="lvs-tl-tekst" style="font-size:12px;color:#333;line-height:1.5">' + esc(item.tekst) + '</div>'
+      + '</div></div>';
   }).join('');
 }
 
@@ -5821,41 +5805,55 @@ async function aawLaadDag(datum) {
 }
 
 function aawRender() {
-  var el = document.getElementById('aaw-lijst');
+  const el = document.getElementById('aaw-lijst');
   if (!el) return;
   if (!aawGeselecteerdeKlas) {
-    el.setAttribute('style','');
-    el.innerHTML = '<div style="color:#888;font-size:13px;padding:20px">Selecteer een klas hierboven.</div>';
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Selecteer een klas hierboven.</div>';
     return;
   }
-  var sleutel = aawDatumSleutel(aawDatum);
-  var dagData = aawRegistraties[sleutel] || {};
-  var klasLln = aawLeerlingen.filter(function(l){ return l.groep === aawGeselecteerdeKlas; });
-  if (!klasLln.length) {
-    el.setAttribute('style','');
-    el.innerHTML = '<div style="color:#888;font-size:13px;padding:20px">Geen leerlingen gevonden.</div>';
+  const sleutel = aawDatumSleutel(aawDatum);
+  const dagData = aawRegistraties[sleutel] || {};
+  const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
+  if (!klasLeerlingen.length) {
+    el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Geen leerlingen gevonden.</div>';
     return;
   }
-  var aan=0, af=0;
-  klasLln.forEach(function(l){ var s=(dagData[l.id]||{}).status||'x'; if(s==='aanwezig')aan++; else if(s==='afwezig')af++; });
-  var t1=document.getElementById('aaw-tel-aanwezig'); if(t1)t1.textContent=aan;
-  var t2=document.getElementById('aaw-tel-afwezig');  if(t2)t2.textContent=af;
-  var t3=document.getElementById('aaw-tel-laat');     if(t3)t3.textContent='';
-  el.setAttribute('style','display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:4px 0');
-  el.innerHTML = klasLln.map(function(l){
-    var d=dagData[l.id]||{status:'onbekend'};
-    var st=d.status||'onbekend';
-    var brd=st==='aanwezig'?'#4a7a4a':st==='afwezig'?'#991b1b':'#ddd';
-    var bg=st==='aanwezig'?'#f0faf0':st==='afwezig'?'#fff5f5':'#fff';
-    function k(lbl,val,ico){
-      var a=st===val, kb=val==='aanwezig'?'#4a7a4a':'#991b1b';
-      return '<button class="aaw-status-knop" data-id="'+l.id+'" data-status="'+val+'" style="flex:1;padding:6px 2px;border:1.5px solid '+(a?kb:'#ddd')+';background:'+(a?kb:'#fff')+';color:'+(a?'#fff':'#999')+';font-size:11px;font-weight:'+(a?700:400)+';cursor:pointer;font-family:inherit;border-radius:5px">'+ico+'</button>';
+  const tellen = { aanwezig:0, afwezig:0, onbekend:0 };
+  klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id]||{}).status||'onbekend']++; });
+  const telAan = document.getElementById('aaw-tel-aanwezig'); if(telAan) telAan.textContent = tellen.aanwezig;
+  const telAf  = document.getElementById('aaw-tel-afwezig');  if(telAf)  telAf.textContent  = tellen.afwezig;
+  const telLaat = document.getElementById('aaw-tel-laat'); if(telLaat) telLaat.textContent = '';
+
+  const statusBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
+  const statusRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
+
+  // VERTICALE lijst — één rij per leerling
+  el.style.display = 'flex';
+  el.style.flexDirection = 'column';
+  el.style.gap = '0';
+  el.style.padding = '0';
+
+  el.innerHTML = klasLeerlingen.map(function(l) {
+    const d   = dagData[l.id] || { status: 'onbekend' };
+    const bg  = statusBg[d.status]  || '#fff';
+    const rnd = statusRnd[d.status] || 'var(--rand)';
+    function knop(lbl, val, icoon) {
+      const actief = d.status === val;
+      return '<button onclick="aawZetStatus(\'' + l.id + '\',\'' + val + '\')" style="'
+        + 'padding:8px 20px;border:1.5px solid ' + (actief ? statusRnd[val] : '#ddd') + ';'
+        + 'background:' + (actief ? statusBg[val] : '#fff') + ';'
+        + 'color:' + (actief ? statusRnd[val] : '#999') + ';'
+        + 'font-size:12px;font-weight:' + (actief?'700':'400') + ';cursor:pointer;'
+        + 'font-family:inherit;border-radius:6px">' + icoon + ' ' + lbl + '</button>';
     }
-    return '<div id="aaw-item-'+l.id+'" style="border:2px solid '+brd+';background:'+bg+';border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="font-size:13px;font-weight:600;color:#1a2a1a;text-align:center">'+esc(l.voornaam)+'</div><div style="display:flex;gap:4px;width:100%">'+k('✓','aanwezig','✓ Aan')+k('✗','afwezig','✗ Af')+'</div></div>';
+    return '<div id="aaw-item-' + l.id + '" style="'
+      + 'display:flex;align-items:center;justify-content:space-between;'
+      + 'padding:12px 20px;background:' + bg + ';border-bottom:1px solid #f0f0f0;'
+      + 'border-left:4px solid ' + rnd + '">'
+      + '<div style="font-size:14px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
+      + '<div style="display:flex;gap:8px">' + knop('Aanwezig','aanwezig','✓') + knop('Afwezig','afwezig','✗') + '</div>'
+      + '</div>';
   }).join('');
-  el.querySelectorAll('.aaw-status-knop').forEach(function(btn){
-    btn.addEventListener('click',function(){ aawZetStatus(btn.dataset.id,btn.dataset.status); });
-  });
 }
 
 function aawZetStatus(id, status) {
