@@ -2571,210 +2571,101 @@ function toonTab(tab, knop) {
           <input type="hidden" id="lvs-notitie-type" value="notitie">
           <div class="vlabel" style="margin-top:10px">SCORES BIJWERKEN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
 
-          <!-- Technisch lezen -->
-          <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin:5px 0 3px">TECHNISCH LEZEN</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Lezen (DMT)</div>
-              <select id="lvs-s-lezen" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
-              </select>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">AVI niveau</div>
-              <select id="lvs-s-avi" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="5">Start</option>
-                <option value="15">M3</option>
-                <option value="25">E3</option>
-                <option value="35">M4</option>
-                <option value="43">E4</option>
-                <option value="52">M5</option>
-                <option value="60">E5</option>
-                <option value="68">M6</option>
-                <option value="75">E6</option>
-                <option value="83">M7</option>
-                <option value="90">E7</option>
-                <option value="97">Plus</option>
-              </select>
-            </div>
-          </div>
+          <!-- Compact score grid — alle vakken in één oogopslag -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px">
 
-          <!-- Rekenen -->
-          <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin:5px 0 3px">REKENEN</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rekenen-Wiskunde</div>
-              <select id="lvs-s-rekenen" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <!-- Kolom 1: Lezen -->
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Lezen DMT</div>
+              <select id="lvs-s-lezen" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
               </select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Basisbewerkingen</div>
-              <select id="lvs-s-rekenen_basis" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">AVI</div>
+              <select id="lvs-s-avi" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="5">Start</option><option value="15">M3</option><option value="25">E3</option><option value="35">M4</option><option value="43">E4</option><option value="52">M5</option><option value="60">E5</option><option value="68">M6</option><option value="75">E6</option><option value="83">M7</option><option value="90">E7</option><option value="97">Plus</option>
               </select>
             </div>
-          </div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">DMT</div>
+              <select id="lvs-s-dmt" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
+              </select>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Spelling</div>
+              <select id="lvs-s-spelling" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
+              </select>
+            </div>
 
-          <!-- Taal -->
-          <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin:5px 0 3px">TAAL</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Spelling</div>
-              <select id="lvs-s-spelling" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Taalverzorg.</div>
+              <select id="lvs-s-taalverzorging" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
               </select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Taalverzorging</div>
-              <select id="lvs-s-taalverzorging" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Woordenschat</div>
+              <select id="lvs-s-woordenschat" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
               </select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Woordenschat</div>
-              <select id="lvs-s-woordenschat" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rekenen</div>
+              <select id="lvs-s-rekenen" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
               </select>
             </div>
-          </div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Basisbew.</div>
+              <select id="lvs-s-rekenen_basis" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
+              </select>
+            </div>
 
-          <!-- Begrijpen & Engels -->
-          <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin:5px 0 3px">BEGRIJPEN &amp; ENGELS</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Begr. lezen</div>
-              <select id="lvs-s-begrijpend" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Begr. lezen</div>
+              <select id="lvs-s-begrijpend" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
               </select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Begr. luisteren</div>
-              <select id="lvs-s-begrijpend_luis" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Begr. luist.</div>
+              <select id="lvs-s-begrijpend_luis" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
               </select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Engels</div>
-              <select id="lvs-s-engels" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">I+</option>
-                <option value="85">I</option>
-                <option value="70">II</option>
-                <option value="55">III</option>
-                <option value="38">IV</option>
-                <option value="22">V</option>
-                <option value="10">V-</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Engels</div>
+              <select id="lvs-s-engels" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">I+</option><option value="85">I</option><option value="70">II</option><option value="55">III</option><option value="38">IV</option><option value="22">V</option><option value="10">V-</option>
               </select>
             </div>
-          </div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Sociaal-em.</div>
+              <select id="lvs-s-sociaal" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">A+</option><option value="85">A</option><option value="70">B</option><option value="55">C</option><option value="38">D</option><option value="22">E</option>
+              </select>
+            </div>
 
-          <!-- Sociaal-emotioneel -->
-          <div style="font-size:10px;font-weight:700;color:#888;letter-spacing:.05em;margin:5px 0 3px">SOCIAAL-EMOTIONEEL</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Sociaal-emotioneel</div>
-              <select id="lvs-s-sociaal" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">A+</option>
-                <option value="85">A</option>
-                <option value="70">B</option>
-                <option value="55">C</option>
-                <option value="38">D</option>
-                <option value="22">E</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Exec. funct.</div>
+              <select id="lvs-s-executief" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">A+</option><option value="85">A</option><option value="70">B</option><option value="55">C</option><option value="38">D</option><option value="22">E</option>
               </select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Exec. functies</div>
-              <select id="lvs-s-executief" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">A+</option>
-                <option value="85">A</option>
-                <option value="70">B</option>
-                <option value="55">C</option>
-                <option value="38">D</option>
-                <option value="22">E</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Groeimeter</div>
+              <select id="lvs-s-groeimeter" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">A+</option><option value="85">A</option><option value="70">B</option><option value="55">C</option><option value="38">D</option><option value="22">E</option>
               </select>
             </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Groeimeter</div>
-              <select id="lvs-s-groeimeter" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">A+</option>
-                <option value="85">A</option>
-                <option value="70">B</option>
-                <option value="55">C</option>
-                <option value="38">D</option>
-                <option value="22">E</option>
-              </select>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:3px">
-              <div style="font-size:11px;color:var(--tm);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Werkhouding</div>
-              <select id="lvs-s-werkhouding" style="width:100%;border:1px solid var(--rand);padding:3px 5px;font-size:11px;font-family:inherit;outline:none;background:#fff">
-                <option value="">—</option>
-                <option value="95">A+</option>
-                <option value="85">A</option>
-                <option value="70">B</option>
-                <option value="55">C</option>
-                <option value="38">D</option>
-                <option value="22">E</option>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:10px;color:var(--n-500);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Werkhouding</div>
+              <select id="lvs-s-werkhouding" style="width:100%;border:1px solid var(--rand);padding:2px 4px;font-size:11px;font-family:inherit;outline:none;background:#fff;border-radius:4px">
+                <option value="">—</option><option value="95">A+</option><option value="85">A</option><option value="70">B</option><option value="55">C</option><option value="38">D</option><option value="22">E</option>
               </select>
             </div>
           </div>
