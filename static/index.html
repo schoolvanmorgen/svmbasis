@@ -1271,6 +1271,27 @@ async function laadLeerlingenRest(offset) {
   } catch(e) { /* stil falen — eerste batch is al zichtbaar */ }
 }
 
+
+function vulAlleKlasSelects() {
+  /** Vul alle klas-dropdowns vanuit de globale leerlingenlijst. */
+  const groepen = [...new Set(leerlingen.map(function(l) { return l.groep; }).filter(Boolean))]
+    .sort(function(a,b) { return parseInt(a)-parseInt(b) || a.localeCompare(b); });
+
+  ['rapport-klas','batch-groep','opp-klas-select','hp-klas-select','ib-klas-select'].forEach(function(id) {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const huidig = sel.value;
+    sel.innerHTML = '<option value="">Kies groep…</option>';
+    groepen.forEach(function(g) {
+      const opt = document.createElement('option');
+      opt.value = g;
+      opt.textContent = 'Groep ' + g;
+      sel.appendChild(opt);
+    });
+    if (huidig && groepen.includes(huidig)) sel.value = huidig;
+    else if (groepen.length === 1) { sel.value = groepen[0]; sel.dispatchEvent(new Event('change')); }
+  });
+}
 function toonLeerlingenLijst() {
   const lijst = document.getElementById('leerlingen-lijst');
   if (!lijst) return;
@@ -2615,7 +2636,7 @@ function toonTab(tab, knop) {
       </div>
 
       <div style="padding:8px;border-top:1px solid var(--warmrand)">
-        <button onclick="if(_lvsHuidigeGroep) lvsRenderKlassen()" style="width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
+        <button id="lvs-terug-onderaan" onclick="lvsRenderKlassen()" style="display:none;width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
       </div>
     </div>
 
@@ -2934,7 +2955,9 @@ function toonTab(tab, knop) {
       <div id="notitie-leerlingen-lijst" style="flex:1;overflow-y:auto">
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
-
+      <div style="padding:8px;border-top:1px solid var(--warmrand)">
+        <button id="notitie-terug-onderaan" onclick="notitieRenderKlassen()" style="display:none;width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
+      </div>
     </div>
 
     <!-- Hoofdpaneel -->
@@ -4117,6 +4140,10 @@ function lvsRenderKlassen() {
       + '</div>';
   }).join('');
 
+  // Verberg onderste terugknop in groepsoverzicht
+  const terugOnder = document.getElementById('lvs-terug-onderaan');
+  if (terugOnder) terugOnder.style.display = 'none';
+
   // Event delegation
   el.querySelectorAll('.lvs-klas-item').forEach(function(item) {
     item.addEventListener('click', function() {
@@ -4144,6 +4171,9 @@ function lvsRenderLeerlingen(groep) {
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() { lvsSelecteer(item.dataset.id); });
   });
+  // Toon onderste terugknop
+  const terugOnder2 = document.getElementById('lvs-terug-onderaan');
+  if (terugOnder2) terugOnder2.style.display = 'block';
 }
 
 // Behoud lvsRenderLijst als alias voor backwards compat
@@ -4172,6 +4202,9 @@ function lvsFilter(zoek) {
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() { lvsSelecteer(item.dataset.id); });
   });
+  // Toon onderste terugknop
+  const terugOnder2 = document.getElementById('lvs-terug-onderaan');
+  if (terugOnder2) terugOnder2.style.display = 'block';
 }
 
 async function lvsSelecteer(id) {
@@ -5387,24 +5420,8 @@ function aawRenderKlassen() {
   }
 }
 
-function aawRenderKlassen() {
-  const el = document.getElementById('aaw-klassen-lijst');
-  if (!el) return;
-  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))].sort(function(a,b) {
-    return parseInt(a) - parseInt(b);
-  });
-  if (!groepen.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--tz);padding:10px 0">Nog geen leerlingen — voeg ze hieronder toe.</div>';
-    aawToonLeerlingToevoegen();
-    return;
-  }
-  el.style.display = 'flex'; el.style.gap = '6px'; el.style.flexWrap = 'wrap';
-  el.innerHTML = groepen.map(function(g) {
-    const actief = aawGeselecteerdeKlas === g;
-    const aantal = aawLeerlingen.filter(function(l) { return l.groep === g; }).length;
-    return '<button onclick="aawToonKlas(this.getAttribute(\'data-g\'))" data-g="' + g + '" style="padding:6px 16px;border:1.5px solid ' + (actief ? '#2a3a2a' : 'var(--rand)') + ';background:' + (actief ? '#2a3a2a' : '#fff') + ';color:' + (actief ? '#fff' : 'var(--tm)') + ';font-size:12px;font-weight:' + (actief ? '600' : '400') + ';cursor:pointer;font-family:inherit">Groep ' + g + ' <span style="opacity:.6;font-size:11px">(' + aantal + ')</span></button>';
-  }).join('');
-}
+// aawRenderKlassen duplicate DEFINITIEF verwijderd
+
 
 // ── Leerling toevoegen vanuit aanwezigheidstab ──────────────
 function aawToonLeerlingToevoegen() {
@@ -6542,7 +6559,8 @@ function notitieRenderKlassen() {
       + '</div>';
   }).join('');
 
-  // Event delegation
+  const terugOnderN = document.getElementById('notitie-terug-onderaan');
+  if (terugOnderN) terugOnderN.style.display = 'none';
   el.querySelectorAll('.notitie-klas-item').forEach(function(item) {
     item.addEventListener('click', function() {
       notitieRenderLeerlingenVanGroep(item.dataset.groep);
@@ -6561,6 +6579,9 @@ function notitieRenderLeerlingenVanGroep(groep) {
     return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="padding:9px 12px;cursor:pointer;margin-bottom:2px;border-left:3px solid ' + (actief?'#2d6a2d':'transparent') + ';background:' + (actief?'#f0f7f0':'transparent') + '"><div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div></div>';
   }).join('');
   el.innerHTML = html;
+  // Toon onderste terugknop
+  const terugOnder = document.getElementById('notitie-terug-onderaan');
+  if (terugOnder) terugOnder.style.display = 'block';
   el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
     item.addEventListener('click', function() { notitieSelecteerLeerling(item.dataset.id); });
   });
