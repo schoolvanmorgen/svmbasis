@@ -1275,8 +1275,7 @@ async function laadLeerlingenRest(offset) {
 function vulAlleKlasSelects() {
   const groepen = [...new Set(leerlingen.map(function(l){return l.groep;}).filter(Boolean))]
     .sort(function(a,b){return parseInt(a)-parseInt(b)||a.localeCompare(b);});
-  ['rapport-klas','batch-groep','opp-klas-select','hp-klas-select','ib-klas-select','rapport-schooljaar'].forEach(function(id){
-    if (id === 'rapport-schooljaar') return;
+  ['rapport-klas','batch-groep','opp-klas-select','hp-klas-select','ib-klas-select'].forEach(function(id){
     const sel = document.getElementById(id);
     if (!sel) return;
     const huidig = sel.value;
@@ -1286,11 +1285,8 @@ function vulAlleKlasSelects() {
       opt.value = g; opt.textContent = 'Groep ' + g;
       sel.appendChild(opt);
     });
+    // Herstel vorige selectie maar trigger GEEN automatische change
     if (huidig && groepen.includes(huidig)) sel.value = huidig;
-    else if (groepen.length >= 1) {
-      sel.value = groepen[0];
-      sel.dispatchEvent(new Event('change'));
-    }
   });
 }
 
@@ -2639,9 +2635,8 @@ function toonTab(tab, knop) {
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
       </div>
 
-      <div style="padding:8px;border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:6px">
-        <button onclick="lvsVoegToe()" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">+ Leerling</button>
-        <button onclick="openImportModal()" style="width:100%;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:7px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">↑ Importeer klas</button>
+      <div style="padding:8px;border-top:1px solid var(--warmrand);flex-shrink:0">
+        <button id="lvs-terug-onderaan" onclick="lvsRenderKlassen()" style="display:none;width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
       </div>
     </div>
 
@@ -2959,6 +2954,9 @@ function toonTab(tab, knop) {
       <!-- Terugknop — altijd zichtbaar boven de lijst -->
       <div id="notitie-leerlingen-lijst" style="flex:1;overflow-y:auto">
         <div style="color:var(--tz);font-size:12px;padding:10px">Laden…</div>
+      </div>
+      <div style="padding:8px;border-top:1px solid var(--warmrand);flex-shrink:0">
+        <button id="notitie-terug-onderaan" onclick="notitieRenderKlassen()" style="display:none;width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">‹ Terug naar groepen</button>
       </div>
 
     </div>
@@ -4143,11 +4141,10 @@ function lvsRenderKlassen() {
       + '</div>';
   }).join('');
 
-  // Event delegation
+  const t = document.getElementById('lvs-terug-onderaan');
+  if (t) t.style.display = 'none';
   el.querySelectorAll('.lvs-klas-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      lvsRenderLeerlingen(item.dataset.groep);
-    });
+    item.addEventListener('click', function() { lvsRenderLeerlingen(item.dataset.groep); });
   });
 }
 
@@ -4155,39 +4152,21 @@ function lvsRenderLeerlingen(groep) {
   const el = document.getElementById('lvs-lijst');
   if (!el) return;
   _lvsHuidigeGroep = groep;
-
   const lijst = lvsLeerlingen.filter(function(l) { return l.groep === groep; });
-
-  let html = '<button onclick="lvsRenderKlassen()" style="'
-    + 'display:block;width:100%;background:#2d6a2d;border:none;'
-    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
-    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
-    + '‹ Terug naar groepen</button>';
-
-  if (!lijst.length) {
-    html += '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in deze groep.</div>';
-    el.innerHTML = html;
-    return;
-  }
-
+  let html = '<button onclick="lvsRenderKlassen()" style="display:block;width:100%;background:#2d6a2d;border:none;color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">‹ Terug naar groepen</button>';
   html += lijst.map(function(l) {
-    const actief   = lvsHuidig && lvsHuidig?.id === l.id;
-    const signalen = _lvsSignalen[l.id] || [];
-    const hoogste  = signalen.length > 0 ? signalen[0] : null;
-    const badgeHtml = hoogste
-      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:'
-        + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + '">'
-        + (hoogste.urgentie === 'hoog' ? '⚠' : '!') + '</span>'
-      : '';
-    return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
+    const actief = lvsHuidig && lvsHuidig?.id === l.id;
+    const sig = (_lvsSignalen[l.id]||[])[0];
+    const badge = sig ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + (sig.urgentie==='hoog'?'#991b1b':'#92400e') + '">' + (sig.urgentie==='hoog'?'⚠':'!') + '</span>' : '';
+    return '<div class="lvs-item ' + (actief?'actief':'') + '" data-id="' + l.id + '">'
       + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
       + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div></div>'
-      + badgeHtml
-      + '</div>';
+      + badge + '</div>';
   }).join('');
-
   el.innerHTML = html;
-
+  // Toon onderste terugknop
+  const t = document.getElementById('lvs-terug-onderaan');
+  if (t) t.style.display = 'block';
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() { lvsSelecteer(item.dataset.id); });
   });
@@ -5760,86 +5739,68 @@ function aawRender() {
     el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Selecteer een klas hierboven.</div>';
     return;
   }
-  const sleutel = aawDatumSleutel(aawDatum);
-  const dagData = aawRegistraties[sleutel] || {};
-  const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
-  if (!klasLeerlingen.length) {
+  const sleutel   = aawDatumSleutel(aawDatum);
+  const dagData   = aawRegistraties[sleutel] || {};
+  const klasLln   = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
+  if (!klasLln.length) {
     el.innerHTML = '<div style="color:var(--tz);font-size:13px;padding:20px">Geen leerlingen gevonden.</div>';
     return;
   }
-  const tellen = { aanwezig:0, afwezig:0, onbekend:0 };
-  klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id]||{}).status||'onbekend']++; });
-  const telAan = document.getElementById('aaw-tel-aanwezig'); if(telAan) telAan.textContent = tellen.aanwezig;
-  const telAf  = document.getElementById('aaw-tel-afwezig');  if(telAf)  telAf.textContent  = tellen.afwezig;
-  const telLaat = document.getElementById('aaw-tel-laat'); if(telLaat) telLaat.textContent = '';
+  const sBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
+  const sRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'#ccc' };
+  let aan = 0, af = 0;
+  klasLln.forEach(function(l) {
+    const s = (dagData[l.id]||{}).status||'onbekend';
+    if (s==='aanwezig') aan++; else if (s==='afwezig') af++;
+  });
+  const telAan = document.getElementById('aaw-tel-aanwezig'); if (telAan) telAan.textContent = aan;
+  const telAf  = document.getElementById('aaw-tel-afwezig');  if (telAf)  telAf.textContent  = af;
+  const telLaat = document.getElementById('aaw-tel-laat');    if (telLaat) telLaat.textContent = '';
 
-  const statusBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
-  const statusRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
-
-  // VERTICALE lijst — één rij per leerling
-  el.style.display = 'flex';
-  el.style.flexDirection = 'column';
-  el.style.gap = '0';
-  el.style.padding = '0';
-
-  el.innerHTML = klasLeerlingen.map(function(l) {
-    const d   = dagData[l.id] || { status: 'onbekend' };
-    const bg  = statusBg[d.status]  || '#fff';
-    const rnd = statusRnd[d.status] || 'var(--rand)';
+  el.innerHTML = '<div style="display:flex;flex-direction:column">' + klasLln.map(function(l) {
+    const d   = dagData[l.id] || { status:'onbekend' };
+    const bg  = sBg[d.status]  || '#fff';
+    const brd = sRnd[d.status] || '#ccc';
     function knop(lbl, val, icoon) {
-      const actief = d.status === val;
-      return '<button onclick="aawZetStatus(\'' + l.id + '\',\'' + val + '\')" style="'
-        + 'padding:8px 20px;border:1.5px solid ' + (actief ? statusRnd[val] : '#ddd') + ';'
-        + 'background:' + (actief ? statusBg[val] : '#fff') + ';'
-        + 'color:' + (actief ? statusRnd[val] : '#999') + ';'
-        + 'font-size:12px;font-weight:' + (actief?'700':'400') + ';cursor:pointer;'
-        + 'font-family:inherit;border-radius:6px">' + icoon + ' ' + lbl + '</button>';
+      const a = d.status === val;
+      return '<button onclick="aawZetStatus(\'' + l.id + '\',\'' + val + '\')" style="padding:7px 18px;border:1.5px solid ' + (a?sRnd[val]:'#ddd') + ';background:' + (a?sBg[val]:'#fff') + ';color:' + (a?sRnd[val]:'#999') + ';font-size:12px;font-weight:' + (a?'700':'400') + ';cursor:pointer;font-family:inherit;border-radius:6px">' + icoon + ' ' + lbl + '</button>';
     }
-    return '<div id="aaw-item-' + l.id + '" style="'
-      + 'display:flex;align-items:center;justify-content:space-between;'
-      + 'padding:12px 20px;background:' + bg + ';border-bottom:1px solid #f0f0f0;'
-      + 'border-left:4px solid ' + rnd + '">'
+    return '<div id="aaw-item-' + l.id + '" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;background:' + bg + ';border-bottom:1px solid #f0f0f0;border-left:4px solid ' + brd + '">'
       + '<div style="font-size:14px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
       + '<div style="display:flex;gap:8px">' + knop('Aanwezig','aanwezig','✓') + knop('Afwezig','afwezig','✗') + '</div>'
       + '</div>';
-  }).join('');
+  }).join('') + '</div>';
 }
+
+
 
 function aawZetStatus(id, status) {
   const sleutel = aawDatumSleutel(aawDatum);
   if (!aawRegistraties[sleutel]) aawRegistraties[sleutel] = {};
-  if (!aawRegistraties[sleutel][id]) aawRegistraties[sleutel][id] = { status: 'onbekend' };
+  if (!aawRegistraties[sleutel][id]) aawRegistraties[sleutel][id] = { status:'onbekend' };
   aawRegistraties[sleutel][id].status = status;
-
-  const statusBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
-  const statusRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
-
-  // Update alleen dit item in-place
+  const sBg  = { aanwezig:'#f0faf0', afwezig:'#fff5f5', onbekend:'#fff' };
+  const sRnd = { aanwezig:'#4a7a4a', afwezig:'#8a3a3a', onbekend:'#ccc' };
   const item = document.getElementById('aaw-item-' + id);
   if (item) {
-    item.style.background   = statusBg[status]  || '#fff';
-    item.style.borderLeftColor = statusRnd[status] || 'var(--rand)';
+    item.style.background    = sBg[status]  || '#fff';
+    item.style.borderLeftColor = sRnd[status] || '#ccc';
     item.querySelectorAll('button').forEach(function(btn) {
       const oc = btn.getAttribute('onclick') || '';
-      const vm = oc.match(/['"](aanwezig|afwezig|onbekend)['"]\)/);
+      const vm = oc.match(/'(aanwezig|afwezig|onbekend)'\)/);
       const val = vm ? vm[1] : null;
       if (!val) return;
-      const actief = val === status;
-      btn.style.borderColor  = actief ? (statusRnd[val]||'#888') : '#ddd';
-      btn.style.background   = actief ? (statusBg[val] ||'#eee') : '#fff';
-      btn.style.color        = actief ? (statusRnd[val]||'#333') : '#999';
-      btn.style.fontWeight   = actief ? '700' : '400';
+      const a = val === status;
+      btn.style.borderColor = a ? (sRnd[val]||'#888') : '#ddd';
+      btn.style.background  = a ? (sBg[val] ||'#eee') : '#fff';
+      btn.style.color       = a ? (sRnd[val]||'#333') : '#999';
+      btn.style.fontWeight  = a ? '700' : '400';
     });
   }
-
-  // Update tellers
   const dagData = aawRegistraties[sleutel] || {};
   const klas = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
   let aan = 0, af = 0;
-  klas.forEach(function(l) {
-    const s = (dagData[l.id]||{}).status||'onbekend';
-    if (s==='aanwezig') aan++; else if (s==='afwezig') af++;
-  });
+  klas.forEach(function(l) { const s=(dagData[l.id]||{}).status||'onbekend'; if(s==='aanwezig')aan++; else if(s==='afwezig')af++; });
   const telAan = document.getElementById('aaw-tel-aanwezig'); if(telAan) telAan.textContent = aan;
   const telAf  = document.getElementById('aaw-tel-afwezig');  if(telAf)  telAf.textContent  = af;
 }
@@ -6590,6 +6551,8 @@ function notitieRenderKlassen() {
   }).join('');
 
   // Event delegation
+  const tn = document.getElementById('notitie-terug-onderaan');
+  if (tn) tn.style.display = 'none';
   el.querySelectorAll('.notitie-klas-item').forEach(function(item) {
     item.addEventListener('click', function() {
       notitieRenderLeerlingenVanGroep(item.dataset.groep);
@@ -6601,31 +6564,17 @@ function notitieRenderLeerlingenVanGroep(groep) {
   const el = document.getElementById('notitie-leerlingen-lijst');
   if (!el) return;
   _notitieHuidigeGroep = groep;
-
   const lijst = leerlingen.filter(function(l) { return String(l.groep) === String(groep); });
-
-  let html = '<button onclick="notitieRenderKlassen()" style="'
-    + 'display:block;width:100%;background:#2d6a2d;border:none;'
-    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
-    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
-    + '‹ Terug naar groepen</button>';
-
+  let html = '<button onclick="notitieRenderKlassen()" style="display:block;width:100%;background:#2d6a2d;border:none;color:#fff;font-size:13px;font-weight:700;font-family:inherit;padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">‹ Terug naar groepen</button>';
   html += lijst.map(function(l) {
     const actief = window._huidigeLeerlingId === l.id;
-    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="'
-      + 'padding:9px 12px;cursor:pointer;margin-bottom:2px;'
-      + 'border-left:3px solid ' + (actief ? '#2d6a2d' : 'transparent') + ';'
-      + 'background:' + (actief ? '#f0f7f0' : 'transparent') + '">'
-      + '<div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
-      + '</div>';
+    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="padding:9px 12px;cursor:pointer;margin-bottom:2px;border-left:3px solid ' + (actief?'#2d6a2d':'transparent') + ';background:' + (actief?'#f0f7f0':'transparent') + '"><div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div></div>';
   }).join('');
-
   el.innerHTML = html;
-
+  const t = document.getElementById('notitie-terug-onderaan');
+  if (t) t.style.display = 'block';
   el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      notitieSelecteerLeerling(item.dataset.id);
-    });
+    item.addEventListener('click', function() { notitieSelecteerLeerling(item.dataset.id); });
   });
 }
 
