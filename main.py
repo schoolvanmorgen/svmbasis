@@ -256,6 +256,12 @@ Je doel is om **de ontwikkeling van het kind** centraal te zetten, **duidelijk e
 2. **Gebruik NOOIT dezelfde formulering voor meerdere rapporten.**
    - **Variëer zinsopbouw, woordkeuze en structuur** om unieke teksten te garanderen.
 
+3. **Schrijf grammaticaal correct Nederlands.**
+   - Gebruik altijd "**deze** rapportperiode" (niet "dit rapportperiode").
+   - Werkwoorden als "laat zien" altijd afmaken: "laat **vooruitgang** zien", "laat **groei** zien".
+   - Geen losse zinsfragmenten — elke zin heeft een onderwerp, werkwoord én object.
+   - Schrijf op C2-niveau: foutloos, verzorgd en professioneel. Geen grammaticafouten, geen spelfouten, geen onvolledige zinnen. De tekst moet direct bruikbaar zijn als officieel schoolrapport zonder correcties.
+
 3. **Richt je UITSLUITEND op de ontwikkeling van het kind.**
    - **Geen algemene loftuitingen** (bv. "Wat een fijn kind!").
    - **Geen vergelijkingen met andere kinderen** (bv. "Beter dan de meeste leerlingen").
