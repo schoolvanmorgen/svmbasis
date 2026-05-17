@@ -4226,7 +4226,12 @@ async function lvsSelecteer(id) {
       + '→ ' + oppMeta.uitstroombestemming.slice(0, 50) + (oppMeta.uitstroombestemming.length > 50 ? '…' : '')
       + '</span>';
   }
-  lvsRenderLijst(lvsLeerlingen);
+  // Herbouw de zijbalk — behoud groepsweergave als actief
+  if (_lvsHuidigeGroep) {
+    lvsRenderLeerlingen(_lvsHuidigeGroep);
+  } else {
+    lvsRenderKlassen();
+  }
   lvsRenderDomeinen();
   lvsRenderRadar();
   lvsRenderTijdlijn();
