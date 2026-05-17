@@ -199,7 +199,7 @@ async def startup():
     global _supabase_client, _claude_client
 
     _supabase_client = httpx.AsyncClient(
-        base_url=SUPABASE_URL.rstrip('/') + '/rest/v1/',
+        base_url=SUPABASE_URL,
         timeout=httpx.Timeout(connect=5.0, read=30.0, write=10.0, pool=5.0),
         limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
         headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
@@ -614,29 +614,22 @@ async def get_user(credentials: HTTPAuthorizationCredentials = Depends(security)
         raise HTTPException(status_code=401, detail="Niet ingelogd.")
     token = credentials.credentials
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
-            url = SUPABASE_URL.rstrip('/') + '/auth/v1/user'
+        async with httpx.AsyncClient(timeout=10) as client:
             res = await client.get(
-                url,
+                f"{SUPABASE_URL}/auth/v1/user",
                 headers={
                     "apikey": SUPABASE_ANON_KEY,
                     "Authorization": f"Bearer {token}"
                 }
             )
-            logger.info(f"get_user → {url} → {res.status_code}")
-            if res.status_code == 401:
-                raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
             if res.status_code != 200:
-                logger.error(f"get_user fout: {res.status_code} {res.text[:100]}")
-                raise HTTPException(status_code=401, detail="Authenticatie mislukt.")
+                raise HTTPException(status_code=401, detail="Sessie verlopen. Log opnieuw in.")
             return res.json()
     except HTTPException:
         raise
     except httpx.TimeoutException:
-        logger.error(f"get_user timeout")
-        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar (timeout).")
+        raise HTTPException(status_code=503, detail="Authenticatieserver niet bereikbaar.")
     except httpx.RequestError as e:
-        logger.error(f"get_user verbindingsfout: {e}")
         raise HTTPException(status_code=503, detail=f"Verbindingsfout: {str(e)}")
 
 # ══════════════════════════════════════════════════════════
@@ -772,7 +765,7 @@ async def supabase_get(path: str, token: str, params: dict | None = None) -> lis
     client = _get_supabase_client()
     try:
         res = await client.get(
-            f"{path}",
+            f"/rest/v1/{path}",
             headers={"Authorization": f"Bearer {token}"},
             params=params,
         )
@@ -803,7 +796,7 @@ async def supabase_post(path: str, token: str, data: dict) -> list | dict:
     client = _get_supabase_client()
     try:
         res = await client.post(
-            f"{path}",
+            f"/rest/v1/{path}",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Prefer": "return=representation",
@@ -835,7 +828,7 @@ async def supabase_patch(path: str, token: str, data: dict) -> list | dict:
     client = _get_supabase_client()
     try:
         res = await client.patch(
-            f"{path}",
+            f"/rest/v1/{path}",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Prefer": "return=representation",
@@ -867,7 +860,7 @@ async def supabase_delete(path: str, token: str) -> None:
     client = _get_supabase_client()
     try:
         res = await client.delete(
-            f"{path}",
+            f"/rest/v1/{path}",
             headers={"Authorization": f"Bearer {token}"},
         )
         if res.status_code == 401:
@@ -1255,6 +1248,186 @@ def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[st
 # STATISCHE BESTANDEN
 # ══════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════
+# SPRAAKHERKENNING — Whisper via OpenAI API
+# ══════════════════════════════════════════════════════════
+
+from fastapi import UploadFile, File
+
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+@app.post("/spraak/transcribeer")
+async def transcribeer_spraak(
+    audio: UploadFile = File(...),
+    user=Depends(get_user),
+):
+    """
+    Transcribeert een audiobestand via OpenAI Whisper.
+
+    Verwacht: multipart/form-data met een 'audio' veld (webm, mp3, wav, m4a).
+    Geeft terug: { "tekst": "getranscribeerde tekst" }
+
+    Kosten: ~€0.006 per minuut audio.
+    AVG: audio wordt direct verwijderd na transcriptie — niet opgeslagen.
+    """
+    if not OPENAI_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Spraakherkenning niet geconfigureerd. Voeg OPENAI_API_KEY toe aan de omgevingsvariabelen."
+        )
+
+    # Lees audio data
+    audio_bytes = await audio.read()
+    if len(audio_bytes) < 100:
+        raise HTTPException(status_code=400, detail="Audiofragment te kort of leeg.")
+    if len(audio_bytes) > 25 * 1024 * 1024:  # 25MB max (Whisper limiet)
+        raise HTTPException(status_code=400, detail="Audiobestand te groot (max 25MB).")
+
+    # Stuur naar Whisper API
+    try:
+        import httpx as _httpx
+        async with _httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                files={
+                    "file": (audio.filename or "opname.webm", audio_bytes, audio.content_type or "audio/webm"),
+                    "model": (None, "whisper-1"),
+                    "language": (None, "nl"),
+                    "response_format": (None, "text"),
+                }
+            )
+
+        if response.status_code == 401:
+            raise HTTPException(status_code=500, detail="Ongeldige OpenAI API-sleutel.")
+        if response.status_code != 200:
+            logger.error(f"Whisper API fout: {response.status_code} {response.text[:100]}")
+            raise HTTPException(status_code=502, detail="Spraakherkenning tijdelijk niet beschikbaar.")
+
+        tekst = response.text.strip()
+        logger.info(f"Whisper transcriptie: {len(tekst)} tekens")
+        return {"tekst": tekst}
+
+    except HTTPException:
+        raise
+    except _httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Spraakherkenning timeout. Probeer een kortere opname.")
+    except Exception as e:
+        logger.error(f"Whisper fout: {e}")
+        raise HTTPException(status_code=500, detail="Spraakherkenning mislukt.")
+
+# ══════════════════════════════════════════════════════════
+# OCR CITO-SCORES — Claude Vision
+# ══════════════════════════════════════════════════════════
+
+class OcrScoresVerzoek(BaseModel):
+    afbeelding: str   # base64-gecodeerde afbeelding
+    mime_type: str = "image/jpeg"
+
+@app.post("/lvs/ocr-scores")
+async def ocr_cito_scores(
+    verzoek: OcrScoresVerzoek,
+    user=Depends(get_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+):
+    """
+    Extraheert CITO-scores en gestandaardiseerde scores uit een foto
+    van een rapport, scoreoverzicht of uitdraai via Claude Vision.
+
+    Herkent:
+    - CITO niveaus (I t/m V, I+, V-)
+    - AVI niveaus (M3 t/m E7, Plus)
+    - Vaardigheidsscores (numerieke waarden)
+    - Functioneringsniveaus (A t/m E)
+    - Vakgebieden: DMT, AVI, Rekenen, Spelling, Taalverzorging,
+      Woordenschat, Begrijpend lezen, Engels, Sociaal-emotioneel
+
+    Geeft terug: { scores: {...}, leerling_info: {...} }
+    """
+    system = """Je bent een expert in het lezen van Nederlandse basisschool CITO-rapporten
+en scoreoverzichten. Extraheer alle scores uit de afbeelding.
+
+Geef ALTIJD een JSON-object terug, nooit tekst erbuiten. Formaat:
+{
+  "scores": {
+    "lezen": "III",
+    "avi": "E5",
+    "rekenen": "II",
+    "rekenen_basis": "II",
+    "spelling": "IV",
+    "taalverzorging": null,
+    "woordenschat": null,
+    "begrijpend": "III",
+    "begrijpend_luisteren": null,
+    "engels": null,
+    "sociaal_emotioneel": null,
+    "executieve_functies": null,
+    "werkhouding": null
+  },
+  "leerling_info": {
+    "naam": "Sem",
+    "groep": "6",
+    "schooljaar": "2024-2025",
+    "toetsmoment": "M6"
+  },
+  "betrouwbaarheid": "hoog"
+}
+
+Gebruik voor niveaus: I+, I, II, III, IV, V, V- (CITO) of A+, A, B, C, D, E (sociaal/werkhouding)
+Voor AVI: Start, M3, E3, M4, E4, M5, E5, M6, E6, M7, E7, Plus
+Als een score niet zichtbaar of leesbaar is: gebruik null
+Geef nooit scores in als je ze niet zeker kunt lezen."""
+
+    user_prompt = """Analyseer dit scoreoverzicht en extraheer alle zichtbare scores.
+Retourneer uitsluitend het JSON-object, geen uitleg."""
+
+    try:
+        if not ANTHROPIC_API_KEY:
+            raise HTTPException(status_code=503, detail="AI niet geconfigureerd.")
+
+        client = _get_claude_client()
+        res = await client.post(
+            "/v1/messages",
+            json={
+                "model": "claude-opus-4-5",
+                "max_tokens": 1000,
+                "system": system,
+                "messages": [{
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": verzoek.mime_type,
+                                "data": verzoek.afbeelding,
+                            }
+                        },
+                        {"type": "text", "text": user_prompt}
+                    ]
+                }]
+            }
+        )
+
+        if res.status_code != 200:
+            logger.error(f"Claude OCR fout: {res.status_code}")
+            raise HTTPException(status_code=502, detail="Score-herkenning mislukt.")
+
+        import json as _json
+        tekst = res.json()["content"][0]["text"].strip()
+
+        # Strip markdown code blocks indien aanwezig
+        tekst = tekst.replace("```json", "").replace("```", "").strip()
+
+        data = _json.loads(tekst)
+        return data
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OCR fout: {e}")
+        raise HTTPException(status_code=500, detail="Score-herkenning mislukt. Probeer een duidelijkere foto.")
+
 @app.get("/health")
 async def health():
     """
@@ -1269,7 +1442,7 @@ async def health():
     try:
         client = _get_supabase_client()
         res = await client.get(
-            "",
+            "/rest/v1/",
             headers={"apikey": SUPABASE_ANON_KEY},
             timeout=3.0,
         )

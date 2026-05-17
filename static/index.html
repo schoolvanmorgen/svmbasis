@@ -137,6 +137,8 @@ header {
   letter-spacing: .04em;
   text-transform: uppercase;
   transition: color .15s;
+  display: flex;
+  align-items: center;
 }
 .tab-hoofd:hover { color: var(--n-700); }
 .tab-hoofd.actief {
@@ -2203,16 +2205,16 @@ function toonTab(tab, knop) {
 
 <div id="hoofdtabbar" style="flex-shrink:0;border-bottom:1px solid var(--n-200);background:var(--n-0)">
 
-  <!-- Rij 1: Hoofd-categorieën -->
-  <div style="display:flex;align-items:stretch;border-bottom:1px solid var(--n-100);padding:0 12px;gap:2px">
-    <button class="tab-hoofd actief" onclick="selecteerGroep('dagelijks',this)" data-groep="dagelijks">Dagelijks</button>
-    <button class="tab-hoofd" onclick="selecteerGroep('rapporten',this)" data-groep="rapporten">Rapporten</button>
-    <button class="tab-hoofd" onclick="selecteerGroep('inspectie',this)" data-groep="inspectie">Inspectie</button>
-    <button class="tab-hoofd" onclick="selecteerGroep('jaar',this)" data-groep="jaar">Begin van het jaar</button>
+  <!-- Rij 1: Hoofd-categorieën — volle breedte -->
+  <div style="display:flex;align-items:stretch;border-bottom:1px solid var(--n-100);padding:0 28px;gap:0;width:100%">
+    <button class="tab-hoofd actief" onclick="selecteerGroep('dagelijks',this)" data-groep="dagelijks" style="flex:1;justify-content:center">Dagelijks</button>
+    <button class="tab-hoofd" onclick="selecteerGroep('rapporten',this)" data-groep="rapporten" style="flex:1;justify-content:center">Rapporten</button>
+    <button class="tab-hoofd" onclick="selecteerGroep('inspectie',this)" data-groep="inspectie" style="flex:1;justify-content:center">Inspectie</button>
+    <button class="tab-hoofd" onclick="selecteerGroep('jaar',this)" data-groep="jaar" style="flex:1;justify-content:center">Begin van het jaar</button>
   </div>
 
-  <!-- Rij 2: Sub-tabs van de actieve groep -->
-  <div style="display:flex;align-items:stretch;padding:0 20px;gap:2px;min-height:36px">
+  <!-- Rij 2: Sub-tabs — gecentreerd onder actieve groep -->
+  <div style="display:flex;align-items:stretch;padding:0 28px;gap:2px;min-height:36px;border-bottom:1px solid var(--n-100)">
 
     <div id="subtabs-dagelijks" style="display:flex;gap:2px">
       <button class="tab-sub actief" onclick="toonTabVanGroep('notities','dagelijks',this)">Snelle notitie</button>
@@ -2713,7 +2715,18 @@ function toonTab(tab, knop) {
               style="padding:5px 12px;font-size:11px;border:1.5px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;border-radius:20px">Bijzonderheid</button>
           </div>
           <input type="hidden" id="lvs-notitie-type" value="notitie">
-          <div class="vlabel" style="margin-top:10px">SCORES BIJWERKEN <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
+          <div class="vlabel" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
+            <span>SCORES BIJWERKEN <span style="font-weight:400;color:var(--tz)">— optioneel</span></span>
+            <button onclick="lvsOcrScores()" title="Scan CITO-rapport of scoreoverzicht"
+              style="background:var(--accent-subtle);border:1px solid var(--accent-border);color:var(--accent);
+              padding:3px 10px;font-size:11px;font-family:inherit;cursor:pointer;border-radius:4px;
+              display:flex;align-items:center;gap:5px;font-weight:600">
+              📷 Scan scores
+            </button>
+          </div>
+          <!-- Verborgen file input voor camera/foto -->
+          <input type="file" id="lvs-ocr-input" accept="image/*" capture="environment"
+            style="display:none" onchange="lvsVerwerkOcrFoto(this)">
 
           <!-- Compact score grid — alle vakken in één oogopslag -->
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px">
@@ -6576,47 +6589,239 @@ function escHtml(str) {
 let activeMic = null;
 let actieveKnop = null;
 
-function toggleMic(veldId, knop) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert('Spraakherkenning wordt niet ondersteund in deze browser. Gebruik Chrome of Safari.');
+// ══════════════════════════════════════════════════════════
+// SPRAAKHERKENNING — Whisper via backend
+// Werkt op alle browsers (Chrome, Safari, Firefox, mobiel).
+// Kwaliteit veel beter dan Web Speech API, met name voor
+// Nederlands en onderwijsvakjargon.
+// Kosten: ~€0.006 per minuut — verwaarloosbaar.
+// ══════════════════════════════════════════════════════════
+
+let _micStream     = null;  // MediaStream (microfoon)
+let _micRecorder   = null;  // MediaRecorder
+let _micChunks     = [];    // Audio chunks
+let _micVeldId     = null;  // Welk tekstveld
+let _micKnop       = null;  // Welke knop
+let _micBezig      = false; // Is er een opname actief?
+
+async function toggleMic(veldId, knop) {
+  if (_micBezig) {
+    // Tweede klik: stop opname en stuur naar Whisper
+    _stopEnTranscribeer();
     return;
   }
-  if (activeMic) {
-    activeMic.stop();
+  _micVeldId = veldId;
+  _micKnop   = knop;
+
+  // Vraag microfoon toestemming
+  try {
+    _micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    alert('Microfoon niet beschikbaar. Geef toestemming in de browser.');
     return;
   }
-  const rec = new SpeechRecognition();
-  rec.lang = 'nl-NL';
-  rec.continuous = true;
-  rec.interimResults = false;
-  activeMic = rec;
-  actieveKnop = knop;
-  knop.classList.add('luistert');
-  knop.title = 'Klik om te stoppen';
-  knop.textContent = '⏹';
-  rec.onresult = function(e) {
-    const veld = document.getElementById(veldId);
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        const tekst = e.results[i][0].transcript;
-        veld.value += (veld.value && !veld.value.endsWith(' ') ? ' ' : '') + tekst;
-        veld.dispatchEvent(new Event('input'));
-      }
-    }
+
+  // Start opname
+  _micChunks  = [];
+  _micBezig   = true;
+  _micRecorder = new MediaRecorder(_micStream, { mimeType: 'audio/webm' });
+
+  _micRecorder.ondataavailable = function(e) {
+    if (e.data.size > 0) _micChunks.push(e.data);
   };
-  rec.onerror = function(e) { stopMic(); };
-  rec.onend = function() { stopMic(); };
-  rec.start();
+
+  _micRecorder.start(100); // Chunk elke 100ms
+
+  // UI: knop rood + pulserende animatie
+  knop.textContent = '⏹';
+  knop.classList.add('luistert');
+  knop.title = 'Klik om te stoppen en te transcriberen';
 }
 
-function stopMic() {
-  if (activeMic) { try { activeMic.stop(); } catch(e) {} activeMic = null; }
-  if (actieveKnop) {
-    actieveKnop.classList.remove('luistert');
-    actieveKnop.title = 'Spraak naar tekst';
-    actieveKnop.textContent = '🎤';
-    actieveKnop = null;
+async function _stopEnTranscribeer() {
+  if (!_micRecorder || !_micBezig) return;
+
+  _micBezig = false;
+  const knop   = _micKnop;
+  const veldId = _micVeldId;
+
+  // Stop recorder
+  _micRecorder.stop();
+  _micStream.getTracks().forEach(function(t) { t.stop(); });
+
+  // UI: laadstatus
+  knop.textContent = '⏳';
+  knop.classList.remove('luistert');
+  knop.title = 'Transcriberen…';
+
+  // Wacht tot alle chunks binnen zijn
+  await new Promise(function(resolve) {
+    _micRecorder.onstop = resolve;
+  });
+
+  try {
+    // Maak audiobestand
+    const blob     = new Blob(_micChunks, { type: 'audio/webm' });
+    const formData = new FormData();
+    formData.append('audio', blob, 'opname.webm');
+
+    // Stuur naar backend Whisper endpoint
+    const res = await fetch(API_BASE + '/spraak/transcribeer', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + huidigToken },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const fout = await res.json().catch(() => ({}));
+      throw new Error(fout.detail || 'Transcriptie mislukt');
+    }
+
+    const data  = await res.json();
+    const tekst = data.tekst || '';
+
+    // Voeg tekst toe aan het veld
+    const veld = document.getElementById(veldId);
+    if (veld && tekst) {
+      veld.value += (veld.value && !veld.value.endsWith(' ') ? ' ' : '') + tekst;
+      veld.dispatchEvent(new Event('input'));
+    }
+
+  } catch (e) {
+    alert('Spraakherkenning mislukt: ' + e.message);
+  } finally {
+    knop.textContent = '🎤';
+    knop.title = 'Spraak naar tekst (Whisper)';
+    _micRecorder = null;
+    _micStream   = null;
+    _micChunks   = [];
+    _micKnop     = null;
+    _micVeldId   = null;
+  }
+}
+
+// Backwards compat
+function stopMic() { _stopEnTranscribeer(); }
+
+// ══════════════════════════════════════════════════════════
+// OCR CITO-SCORES — scan foto van rapport/scoreoverzicht
+// ══════════════════════════════════════════════════════════
+
+function lvsOcrScores() {
+  /** Open camera of fotobibliotheek om scores te scannen. */
+  const input = document.getElementById('lvs-ocr-input');
+  if (input) input.click();
+}
+
+async function lvsVerwerkOcrFoto(input) {
+  /**
+   * Verwerkt een foto van een CITO-rapport of scoreoverzicht.
+   * Stuurt de afbeelding naar Claude (vision) om scores te extraheren.
+   * Vult automatisch de scoreselects in het LVS-formulier.
+   */
+  const file = input.files[0];
+  if (!file) return;
+
+  // Toon laadstatus
+  const knop = document.querySelector('[onclick="lvsOcrScores()"]');
+  if (knop) { knop.textContent = '⏳ Scannen…'; knop.disabled = true; }
+
+  try {
+    // Converteer naar base64
+    const base64 = await new Promise(function(resolve, reject) {
+      const reader = new FileReader();
+      reader.onload  = function(e) { resolve(e.target.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Stuur naar backend OCR endpoint
+    const res = await fetch(API_BASE + '/lvs/ocr-scores', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + huidigToken,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        afbeelding: base64,
+        mime_type: file.type || 'image/jpeg'
+      })
+    });
+
+    if (!res.ok) {
+      const fout = await res.json().catch(() => ({}));
+      throw new Error(fout.detail || 'Scannen mislukt');
+    }
+
+    const data   = await res.json();
+    const scores = data.scores || {};
+    const info   = data.leerling_info || {};
+    let gevonden = 0;
+
+    // Vul de scoreselects in
+    const scoremap = {
+      lezen:          scores.lezen      || scores.technisch_lezen || scores.dmt,
+      avi:            scores.avi,
+      rekenen:        scores.rekenen    || scores.rekenen_wiskunde,
+      rekenen_basis:  scores.rekenen_basis || scores.basisbewerkingen,
+      spelling:       scores.spelling,
+      taalverzorging: scores.taalverzorging,
+      woordenschat:   scores.woordenschat,
+      begrijpend:     scores.begrijpend || scores.begrijpend_lezen,
+      begrijpend_luis:scores.begrijpend_luisteren,
+      engels:         scores.engels,
+      sociaal:        scores.sociaal    || scores.sociaal_emotioneel,
+      executief:      scores.executief  || scores.executieve_functies,
+      groeimeter:     scores.groeimeter,
+      werkhouding:    scores.werkhouding,
+    };
+
+    Object.entries(scoremap).forEach(function([vak, waarde]) {
+      if (!waarde) return;
+      const sel = document.getElementById('lvs-s-' + vak);
+      if (!sel) return;
+
+      // Waarde is een niveau (I, II, III, IV, V) of score (95, 85, 70...)
+      let numWaarde = null;
+      if (typeof waarde === 'number') {
+        numWaarde = waarde;
+      } else {
+        // Converteer niveau-label naar score
+        const niveauMap = {
+          'I+': 95, 'I': 85, 'II': 70, 'III': 55, 'IV': 38, 'V': 22, 'V-': 10,
+          'A+': 95, 'A': 85,  'B': 70,  'C': 55,  'D': 38,  'E': 22,
+          // AVI niveaus
+          'M3': 15, 'E3': 25, 'M4': 35, 'E4': 43, 'M5': 52,
+          'E5': 60, 'M6': 68, 'E6': 75, 'M7': 83, 'E7': 90, 'Plus': 97
+        };
+        const key = String(waarde).trim().toUpperCase().replace('PLUS','Plus');
+        numWaarde = niveauMap[key] || niveauMap[String(waarde).trim()];
+      }
+
+      if (numWaarde !== null) {
+        // Kies de dichtsbijzijnde optie
+        let beste = null, besteDiff = Infinity;
+        Array.from(sel.options).forEach(function(opt) {
+          if (!opt.value) return;
+          const diff = Math.abs(parseInt(opt.value) - numWaarde);
+          if (diff < besteDiff) { besteDiff = diff; beste = opt.value; }
+        });
+        if (beste) { sel.value = beste; gevonden++; }
+      }
+    });
+
+    // Toon resultaat
+    const msg = gevonden > 0
+      ? `✓ ${gevonden} scores gevonden en ingevuld${info.naam ? ' voor ' + info.naam : ''}. Controleer en sla op.`
+      : 'Geen herkenbare scores gevonden. Zorg dat het rapport goed leesbaar is op de foto.';
+
+    alert(msg);
+
+  } catch(e) {
+    alert('Scannen mislukt: ' + e.message);
+  } finally {
+    if (knop) { knop.textContent = '📷 Scan scores'; knop.disabled = false; }
+    input.value = ''; // Reset zodat dezelfde foto opnieuw gescand kan worden
   }
 }
 
