@@ -3990,12 +3990,19 @@ function lvsRenderLijst(lijst) {
     const badgeHtml  = badgeTekst
       ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + badgeKleur + ';flex-shrink:0" title="' + hoogste.tekst + '">' + badgeTekst + '</span>'
       : '';
-    return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" onclick="lvsSelecteer(' + JSON.stringify(l.id) + ')">'
+    return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
       + '<div class="lvs-av" style="background:' + l.kleur + '22;color:' + l.kleur + ';border:1px solid ' + l.kleur + '44">' + l.initialen + '</div>'
       + '<div class="lvs-item-info"><div class="lvs-item-naam">' + esc(l.naam) + '</div><div class="lvs-item-groep">Groep ' + (l.groep || '?') + '</div></div>'
       + badgeHtml
       + '</div>';
   }).join('');
+
+  // Event delegation — UUID-veilig
+  el.querySelectorAll('.lvs-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      lvsSelecteer(item.dataset.id);
+    });
+  });
 }
 
 function lvsFilter(zoek) {
@@ -6300,13 +6307,6 @@ function notitieRenderZijbalk(lijst) {
       + '<div style="font-size:10px;color:var(--tz);margin-top:1px">Groep ' + (l.groep || '?') + '</div>'
       + '</div>';
   }).join('');
-
-  // Event delegation — voorkomt onclick/UUID problemen
-  el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      notitieSelecteerLeerling(item.dataset.id);
-    });
-  });
 }
 
 function notitieSelecteerLeerling(id) {
