@@ -1264,7 +1264,8 @@ async function laadLeerlingenRest(offset) {
           });
         }
       });
-      lvsRenderLijst(lvsLeerlingen);
+      // Behoud groepsweergave — herbouw alleen als al in groep
+      if (_lvsHuidigeGroep) { lvsRenderLeerlingen(_lvsHuidigeGroep); } else { lvsRenderKlassen(); }
     }
     if (batch.length === BATCH) laadLeerlingenRest(offset + BATCH);
   } catch(e) { /* stil falen — eerste batch is al zichtbaar */ }
@@ -2345,7 +2346,7 @@ function toonTab(tab, knop) {
           border-radius:6px;padding:8px 12px;font-size:12px;color:var(--accent);
           display:flex;align-items:center;gap:8px">
           <span style="font-size:14px">✓</span>
-          <span>Notities en observaties worden <strong>automatisch</strong> meegenomen in het rapport.</span>
+          <span>Notities en observaties worden <strong>automatisch</strong> meegenomen bij het genereren.</span>
         </div>
         <!-- Verborgen notities veld — wordt gevuld vanuit notities-tab -->
         <textarea id="notities" maxlength="5000" style="display:none"></textarea>
@@ -2614,7 +2615,8 @@ function toonTab(tab, knop) {
       </div>
 
       <div style="padding:8px;border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:6px">
-        <button onclick="if(_lvsHuidigeGroep) lvsRenderKlassen()" style="width:100%;background:#2d6a2d;color:#fff;border:none;padding:11px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.01em">‹ Terug naar groepen</button>
+        <button onclick="lvsVoegToe()" style="width:100%;background:#4a7a4a;color:#fff;border:none;padding:8px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">+ Leerling</button>
+        <button onclick="openImportModal()" style="width:100%;background:#fff;color:#4a7a4a;border:1.5px solid #4a7a4a;padding:7px;font-size:11px;font-weight:600;letter-spacing:.04em;cursor:pointer;font-family:inherit">↑ Importeer klas</button>
       </div>
     </div>
 
@@ -2914,7 +2916,7 @@ function toonTab(tab, knop) {
 
   <!-- Leerlingenlijst -->
   <div style="flex:1;overflow-y:auto;padding:20px 24px">
-    <div id="aaw-lijst"></div>
+    <div id="aaw-lijst" style="display:flex;flex-direction:column;gap:0"></div>
     <div id="aaw-leeg" style="color:var(--tz);font-size:13px;padding:40px 0;text-align:center">Selecteer een klas om de leerlingen te zien.</div>
   </div>
 
@@ -4125,32 +4127,37 @@ function lvsRenderKlassen() {
 }
 
 function lvsRenderLeerlingen(groep) {
+  /**
+   * Toon leerlingen van een specifieke klas — tweede niveau.
+   * Toont een "← Terug" knop om terug te gaan naar het klassenoverzicht.
+   */
   const el = document.getElementById('lvs-lijst');
+  const bc = document.getElementById('lvs-nav-breadcrumb');
   if (!el) return;
+
   _lvsHuidigeGroep = groep;
+
+  // Breadcrumb met terugknop
+  if (bc) {
+    bc.innerHTML = '<button onclick="lvsRenderKlassen()" style="'
+      + 'background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);'
+      + 'font-family:inherit;padding:0;display:flex;align-items:center;gap:4px">'
+      + '‹ Groep ' + esc(groep) + '</button>';
+  }
 
   const lijst = lvsLeerlingen.filter(function(l) { return l.groep === groep; });
 
-  // Terugknop als eerste item — zelfde stijl als snelle notitie
-  let html = '<button onclick="lvsRenderKlassen()" style="'
-    + 'display:block;width:100%;background:#2d6a2d;border:none;'
-    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
-    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
-    + '‹ Terug naar groepen</button>';
-
   if (!lijst.length) {
-    html += '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in groep ' + esc(groep) + '.</div>';
-    el.innerHTML = html;
+    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in groep ' + esc(groep) + '.</div>';
     return;
   }
 
-  html += lijst.map(function(l) {
-    const actief   = lvsHuidig && lvsHuidig?.id === l.id;
+  el.innerHTML = lijst.map(function(l) {
+    const actief = lvsHuidig && lvsHuidig?.id === l.id;
     const signalen = _lvsSignalen[l.id] || [];
     const hoogste  = signalen.length > 0 ? signalen[0] : null;
     const badgeHtml = hoogste
-      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:'
-        + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + '">'
+      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + ';flex-shrink:0">'
         + (hoogste.urgentie === 'hoog' ? '⚠' : '!') + '</span>'
       : '';
     return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
@@ -4160,8 +4167,7 @@ function lvsRenderLeerlingen(groep) {
       + '</div>';
   }).join('');
 
-  el.innerHTML = html;
-
+  // Event delegation
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() {
       lvsSelecteer(item.dataset.id);
@@ -4225,12 +4231,7 @@ async function lvsSelecteer(id) {
       + '→ ' + oppMeta.uitstroombestemming.slice(0, 50) + (oppMeta.uitstroombestemming.length > 50 ? '…' : '')
       + '</span>';
   }
-  // Herbouw de zijbalk — behoud groepsweergave als actief
-  if (_lvsHuidigeGroep) {
-    lvsRenderLeerlingen(_lvsHuidigeGroep);
-  } else {
-    lvsRenderKlassen();
-  }
+  lvsRenderLijst(lvsLeerlingen);
   lvsRenderDomeinen();
   lvsRenderRadar();
   lvsRenderTijdlijn();
@@ -5281,8 +5282,8 @@ async function lvsLaadSignalen() {
         _lvsSignalen[s.leerling_id] = s.signalen;
       });
 
-      // Herrender de lijst zodat badges zichtbaar worden
-      lvsRenderLijst(lvsLeerlingen);
+      // Herrender — behoud groepsweergave
+      if (_lvsHuidigeGroep) { lvsRenderLeerlingen(_lvsHuidigeGroep); } else { lvsRenderKlassen(); }
 
       // Als er een actieve leerling is, update diens signaalbalk
       if (lvsHuidig && _lvsSignalen[lvsHuidig.id]) {
@@ -5403,22 +5404,36 @@ function aawRenderKlassen() {
   });
 
   if (huidig && groepen.includes(huidig)) {
-    // Herstel vorige selectie
     sel.value = huidig;
-  } else if (groepen.length === 1) {
-    // Automatisch selecteren als er maar één klas is
-    sel.value = groepen[0];
-    aawGeselecteerdeKlas = groepen[0];
-    aawToonKlas(groepen[0]);
-  } else if (groepen.length > 1 && !aawGeselecteerdeKlas) {
-    // Meerdere klassen: toon de eerste automatisch
+    // Herstel ook de leerlingenweergave
+    aawGeselecteerdeKlas = huidig;
+    aawToonKlas(huidig);
+  } else if (groepen.length >= 1) {
+    // Automatisch eerste klas tonen
     sel.value = groepen[0];
     aawGeselecteerdeKlas = groepen[0];
     aawToonKlas(groepen[0]);
   }
 }
 
-// aawRenderKlassen: zie definitie hierboven (duplicate verwijderd)
+function aawRenderKlassen() {
+  const el = document.getElementById('aaw-klassen-lijst');
+  if (!el) return;
+  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))].sort(function(a,b) {
+    return parseInt(a) - parseInt(b);
+  });
+  if (!groepen.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--tz);padding:10px 0">Nog geen leerlingen — voeg ze hieronder toe.</div>';
+    aawToonLeerlingToevoegen();
+    return;
+  }
+  el.style.display = 'flex'; el.style.gap = '6px'; el.style.flexWrap = 'wrap';
+  el.innerHTML = groepen.map(function(g) {
+    const actief = aawGeselecteerdeKlas === g;
+    const aantal = aawLeerlingen.filter(function(l) { return l.groep === g; }).length;
+    return '<button onclick="aawToonKlas(this.getAttribute(\'data-g\'))" data-g="' + g + '" style="padding:6px 16px;border:1.5px solid ' + (actief ? '#2a3a2a' : 'var(--rand)') + ';background:' + (actief ? '#2a3a2a' : '#fff') + ';color:' + (actief ? '#fff' : 'var(--tm)') + ';font-size:12px;font-weight:' + (actief ? '600' : '400') + ';cursor:pointer;font-family:inherit">Groep ' + g + ' <span style="opacity:.6;font-size:11px">(' + aantal + ')</span></button>';
+  }).join('');
+}
 
 // ── Leerling toevoegen vanuit aanwezigheidstab ──────────────
 function aawToonLeerlingToevoegen() {
@@ -5660,42 +5675,31 @@ async function aawToonKlas(groep) {
   }
   if (leeg) leeg.style.display = 'none';
 
-  // Horizontaal grid — alle leerlingen in kaartjes naast elkaar
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;padding:16px 20px">';
+  let html = '';
   klasLeerlingen.forEach(function(l) {
-    const status     = (aawStatus[aawDatum] || {})[l.id] || 'aanwezig';
+    const status = (aawStatus[aawDatum] || {})[l.id] || 'aanwezig';
     const isAanwezig = status === 'aanwezig';
     const isAfwezig  = status === 'afwezig';
+    const ach = [l.tussenvoegsel, l.achternaam].filter(Boolean).join(' ');
 
-    const borderKleur = isAfwezig ? '#991b1b' : isAanwezig ? '#4a7a4a' : '#c07000';
-    const bgKleur     = isAfwezig ? '#fff5f5' : isAanwezig ? '#f0f7f0' : '#fffbeb';
+    const stijlAanwezig = isAanwezig
+      ? 'border:1.5px solid #4a7a4a;background:#4a7a4a;color:#fff'
+      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
+    const stijlAfwezig = isAfwezig
+      ? 'border:1.5px solid #991b1b;background:#991b1b;color:#fff'
+      : 'border:1.5px solid var(--rand);background:#fff;color:var(--tz)';
 
-    html += '<div class="aaw-kaartje" data-id="' + l.id + '" style="border:2px solid ' + borderKleur + ';background:' + bgKleur + ';'
-      + 'border-radius:10px;padding:10px 8px;display:flex;flex-direction:column;gap:8px;'
-      + 'align-items:center;text-align:center">';
-
-    // Naam
-    html += '<div style="font-size:13px;font-weight:600;color:#1a2a1a;line-height:1.2">'
-      + esc(l.voornaam) + '</div>';
-
-    // Status knoppen
-    html += '<div style="display:flex;gap:4px;width:100%">';
-    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="aanwezig" style="'
-      + 'flex:1;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;'
-      + 'border-radius:5px;border:1.5px solid ' + (isAanwezig ? '#4a7a4a' : '#ddd') + ';'
-      + 'background:' + (isAanwezig ? '#4a7a4a' : '#fff') + ';'
-      + 'color:' + (isAanwezig ? '#fff' : '#888') + '">✓</button>';
-    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="afwezig" style="'
-      + 'flex:1;padding:5px 2px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;'
-      + 'border-radius:5px;border:1.5px solid ' + (isAfwezig ? '#991b1b' : '#ddd') + ';'
-      + 'background:' + (isAfwezig ? '#991b1b' : '#fff') + ';'
-      + 'color:' + (isAfwezig ? '#fff' : '#888') + '">✗</button>';
-
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#fff;border-bottom:1px solid var(--warmrand)">';
+    html += '<div style="font-size:14px;font-weight:500;color:var(--t)">' + l.voornaam;
+    if (ach) html += ' <span style="font-weight:400;color:var(--tz)">' + ach + '</span>';
     html += '</div>';
-
-    html += '</div>';
+    html += '<div style="display:flex;gap:8px">';
+    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="aanwezig"'
+          + ' style="padding:8px 22px;' + stijlAanwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Aanwezig</button>';
+    html += '<button class="aaw-status-knop" data-id="' + l.id + '" data-status="afwezig"'
+          + ' style="padding:8px 22px;' + stijlAfwezig + ';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-radius:7px">Afwezig</button>';
+    html += '</div></div>';
   });
-  html += '</div>';
 
   lijst.innerHTML = html;
 
@@ -5708,35 +5712,7 @@ async function aawToonKlas(groep) {
   aawTelBijwerken();
 }
 
-function aawZetStatus(leerlingId, status) {
-  if (!aawStatus[aawDatum]) aawStatus[aawDatum] = {};
-  aawStatus[aawDatum][leerlingId] = status;
-
-  // Update het kaartje in-place — geen volledige herrender
-  const kaartje = document.querySelector('.aaw-kaartje[data-id="' + leerlingId + '"]');
-  if (kaartje) {
-    const isAanwezig = status === 'aanwezig';
-    const isAfwezig  = status === 'afwezig';
-    kaartje.style.borderColor = isAfwezig ? '#991b1b' : '#4a7a4a';
-    kaartje.style.background  = isAfwezig ? '#fff5f5' : '#f0f7f0';
-
-    const knopAan = kaartje.querySelector('[data-status="aanwezig"]');
-    const knopAf  = kaartje.querySelector('[data-status="afwezig"]');
-
-    if (knopAan) {
-      knopAan.style.background   = isAanwezig ? '#4a7a4a' : '#fff';
-      knopAan.style.color        = isAanwezig ? '#fff' : '#888';
-      knopAan.style.borderColor  = isAanwezig ? '#4a7a4a' : '#ddd';
-    }
-    if (knopAf) {
-      knopAf.style.background    = isAfwezig ? '#991b1b' : '#fff';
-      knopAf.style.color         = isAfwezig ? '#fff' : '#888';
-      knopAf.style.borderColor   = isAfwezig ? '#991b1b' : '#ddd';
-    }
-  }
-
-  aawTelBijwerken();
-}
+// aawZetStatus: zie definitie hieronder (eerste versie verwijderd)
 
 function aawTelBijwerken() {
   if (!aawDatum || !aawStatus[aawDatum] || !aawGeselecteerdeKlas) {
@@ -5792,9 +5768,9 @@ function aawRender() {
   }
   const tellen = { aanwezig: 0, afwezig: 0, laat: 0, onbekend: 0 };
   klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id] || {}).status || 'onbekend']++; });
-  const telAan = document.getElementById('aaw-tel-aanwezig'); if (telAan) telAan.textContent = tellen.aanwezig;
-  const telAf  = document.getElementById('aaw-tel-afwezig');  if (telAf)  telAf.textContent  = tellen.afwezig;
-  const telLaat = document.getElementById('aaw-tel-laat'); if (telLaat) telLaat.textContent = tellen.laat;
+  document.getElementById('aaw-tel-aanwezig').textContent = tellen.aanwezig;
+  document.getElementById('aaw-tel-afwezig').textContent = tellen.afwezig;
+  const _telLaat = document.getElementById('aaw-tel-laat'); if (_telLaat) _telLaat.textContent = tellen.laat;
   const statusBg  = { aanwezig:'#f0faf0', laat:'#fffbeb', afwezig:'#fff5f5', onbekend:'#fff' };
   const statusRnd = { aanwezig:'#4a7a4a', laat:'#92661a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
   el.innerHTML = klasLeerlingen.map(function(l) {
@@ -5821,7 +5797,33 @@ function aawZetStatus(id, status) {
   if (!aawRegistraties[sleutel]) aawRegistraties[sleutel] = {};
   if (!aawRegistraties[sleutel][id]) aawRegistraties[sleutel][id] = { status: 'onbekend', reden: '', opmerking: '' };
   aawRegistraties[sleutel][id].status = status;
-  aawRender();
+
+  // Update alleen het item in-place — scherm blijft staan
+  const item = document.getElementById('aaw-item-' + id);
+  if (item) {
+    const statusBg  = { aanwezig:'#f0faf0', laat:'#fffbeb', afwezig:'#fff5f5', onbekend:'#fff' };
+    const statusRnd = { aanwezig:'#4a7a4a', laat:'#92661a', afwezig:'#8a3a3a', onbekend:'var(--rand)' };
+    item.style.background   = statusBg[status]  || '#fff';
+    item.style.borderColor  = statusRnd[status] || 'var(--rand)';
+    // Update knopstijlen
+    item.querySelectorAll('button[data-val]').forEach(function(knop) {
+      const isActief = knop.dataset.val === status;
+      const v = knop.dataset.val;
+      knop.style.borderColor  = isActief ? (statusRnd[v] || '#888') : 'var(--rand)';
+      knop.style.background   = isActief ? (statusBg[v]  || '#eee') : '#fff';
+      knop.style.color        = isActief ? (statusRnd[v] || '#333') : '#888';
+      knop.style.fontWeight   = isActief ? '600' : '400';
+    });
+  }
+
+  // Update tellers
+  const dagData      = aawRegistraties[sleutel] || {};
+  const klasLeerlingen = aawLeerlingen.filter(function(l) { return l.groep === aawGeselecteerdeKlas; });
+  const tellen = { aanwezig:0, afwezig:0, laat:0, onbekend:0 };
+  klasLeerlingen.forEach(function(l) { tellen[(dagData[l.id]||{}).status||'onbekend']++; });
+  const telAan  = document.getElementById('aaw-tel-aanwezig'); if (telAan)  telAan.textContent  = tellen.aanwezig;
+  const telAf   = document.getElementById('aaw-tel-afwezig');  if (telAf)   telAf.textContent   = tellen.afwezig;
+  const telLaat = document.getElementById('aaw-tel-laat');     if (telLaat) telLaat.textContent = tellen.laat;
 }
 
 async function aawVandaag() {
@@ -6578,36 +6580,20 @@ function notitieRenderKlassen() {
 }
 
 function notitieRenderLeerlingenVanGroep(groep) {
+  /** Toon leerlingen van een klas — tweede niveau. */
   const el = document.getElementById('notitie-leerlingen-lijst');
+  const bc = document.getElementById('notitie-nav-breadcrumb');
   if (!el) return;
+
   _notitieHuidigeGroep = groep;
+  if (bc) {
+    bc.innerHTML = '<button onclick="notitieRenderKlassen()" style="'
+      + 'background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);'
+      + 'font-family:inherit;padding:0">‹ Groep ' + esc(groep) + '</button>';
+  }
 
   const lijst = leerlingen.filter(function(l) { return String(l.groep) === String(groep); });
-
-  // Terugknop als allereerste item in de lijst — altijd zichtbaar
-  let html = '<button onclick="notitieRenderKlassen()" style="'
-    + 'display:block;width:100%;background:#2d6a2d;border:none;'
-    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
-    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
-    + '‹ Terug naar groepen</button>';
-
-  html += lijst.map(function(l) {
-    const actief = window._huidigeLeerlingId === l.id;
-    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="'
-      + 'padding:9px 12px;cursor:pointer;margin-bottom:2px;'
-      + 'border-left:3px solid ' + (actief ? '#2d6a2d' : 'transparent') + ';'
-      + 'background:' + (actief ? '#f0f7f0' : 'transparent') + '">'
-      + '<div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
-      + '</div>';
-  }).join('');
-
-  el.innerHTML = html;
-
-  el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-      notitieSelecteerLeerling(item.dataset.id);
-    });
-  });
+  notitieRenderZijbalk(lijst);
 }
 
 function notitieRenderZijbalk(lijst) {
@@ -6638,20 +6624,14 @@ function notitieRenderZijbalk(lijst) {
 function notitieSelecteerLeerling(id) {
   const l = leerlingen.find(x => x.id === id);
   if (!l) return;
+  // Zet als actieve leerling (sync met rest van de app)
   stelLeerlingIn(l);
-
-  // Update highlight zonder de lijst te herbouwen — terugknop blijft staan
-  if (_notitieHuidigeGroep) {
-    // We zijn in groepsweergave — herbouw de groepslijst met nieuwe highlight
-    notitieRenderLeerlingenVanGroep(_notitieHuidigeGroep);
-  } else {
-    // Zoekresultaten of alle leerlingen — herbouw zonder terugknop
-    const zoek = document.getElementById('notitie-zoek')?.value || '';
-    const gefilterd = zoek
-      ? leerlingen.filter(x => x.voornaam.toLowerCase().includes(zoek.toLowerCase()))
-      : leerlingen;
-    notitieRenderZijbalk(gefilterd);
-  }
+  // Update zijbalk highlight
+  notitieRenderZijbalk(
+    document.getElementById('notitie-zoek')?.value
+      ? leerlingen.filter(x => x.voornaam.toLowerCase().includes(document.getElementById('notitie-zoek').value.toLowerCase()))
+      : leerlingen
+  );
   // Toon header
   const header = document.getElementById('notitie-leerling-header');
   const naamEl = document.getElementById('notitie-actieve-naam');
