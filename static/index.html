@@ -2338,15 +2338,28 @@ function toonTab(tab, knop) {
         </div>
       </div>
 
-      <!-- Notities: flex:1 zodat het de resterende ruimte vult -->
-      <div style="flex:1;display:flex;flex-direction:column;min-height:0">
-        <div class="vlabel">NOTITIES</div>
-        <div class="nwrap" style="flex:1;display:flex;flex-direction:column;min-height:0">
-          <textarea id="notities" maxlength="2000"
-            style="flex:1;min-height:80px;resize:none;width:100%;border:1px solid #ccc;border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
-            placeholder="Aanvullende notities (optioneel — eerdere observaties worden automatisch meegenomen)"></textarea>
-          <span class="teller" id="teller" style="right:52px">0 / 2000</span>
-          <button class="mic-knop" onclick="toggleMic('notities',this)" title="Spraak naar tekst">🎤</button>
+      <!-- Notities: automatisch meegenomen — verborgen veld + info banner -->
+      <div style="flex:1;display:flex;flex-direction:column;min-height:0;gap:8px">
+        <!-- Info banner -->
+        <div style="background:var(--accent-subtle);border:1px solid var(--accent-border);
+          border-radius:6px;padding:8px 12px;font-size:12px;color:var(--accent);
+          display:flex;align-items:center;gap:8px">
+          <span style="font-size:14px">✓</span>
+          <span>Notities en observaties worden <strong>automatisch</strong> meegenomen bij het genereren.</span>
+        </div>
+        <!-- Verborgen notities veld — wordt gevuld vanuit notities-tab -->
+        <textarea id="notities" maxlength="5000" style="display:none"></textarea>
+        <!-- Optionele aanvulling -->
+        <div>
+          <div class="vlabel" style="margin-bottom:4px">AANVULLENDE OPMERKING <span style="font-weight:400;color:var(--tz)">— optioneel</span></div>
+          <div class="nwrap" style="display:flex;flex-direction:column;min-height:0">
+            <textarea id="notities-extra" maxlength="500"
+              style="min-height:60px;resize:none;width:100%;border:1px solid #ccc;
+              border-bottom:1.5px solid #4a7a4a;padding:9px 12px;font-size:13px;
+              font-family:inherit;outline:none;box-sizing:border-box;line-height:1.6"
+              placeholder="Iets extra vermelden? (optioneel)"></textarea>
+            <button class="mic-knop" onclick="toggleMic('notities-extra',this)" title="Spraak naar tekst">🎤</button>
+          </div>
         </div>
       </div>
 
@@ -3232,7 +3245,10 @@ function rapportSelecteerLeerling(id) {
 async function genereer() {
   const naam     = document.getElementById('naam').value.trim();
   const groep    = document.getElementById('groep').value;
-  const notities = document.getElementById('notities').value.trim();
+  // Notities: combineer automatisch geladen notities + optionele aanvulling
+  const notitiesAuto  = document.getElementById('notities')?.value.trim() || '';
+  const notitiesExtra = document.getElementById('notities-extra')?.value.trim() || '';
+  const notities = [notitiesAuto, notitiesExtra].filter(Boolean).join('\n\n');
   // Notities zijn optioneel — data uit DB wordt altijd meegenomen
 
   document.getElementById('spin').style.display = 'block';
@@ -4363,7 +4379,7 @@ function dossierRender(data) {
     html += '<div style="flex:1;height:1px;background:var(--warmrand)"></div>';
     html += '<div style="font-size:10px;color:var(--tz)">';
     html += nRapporten + ' rapport' + (nRapporten !== 1 ? 'en' : '') + ' · ';
-    html += nNotities + ' notitie' + (nNotities !== 1 ? 's' : '');
+    html += nNotities + ' notitie/observatie' + (nNotities !== 1 ? 's' : '');
     if (aaw) html += ' · ' + aaw.aanwezigheid_pct + '% aanwezig';
     html += '</div></div>';
 
@@ -4993,7 +5009,7 @@ function lvsRenderTijdlijn() {
   const el = document.getElementById('lvs-tijdlijn');
   if (!el) return;
   if (!lvsHuidig.tijdlijn || !lvsHuidig.tijdlijn.length) {
-    el.innerHTML = '<div style="color:#444;font-size:12px">Nog geen notities of rapporten.</div>';
+    el.innerHTML = '<div style="color:#444;font-size:12px">Nog geen notities, observaties of rapporten.</div>';
     return;
   }
 
@@ -5005,7 +5021,7 @@ function lvsRenderTijdlijn() {
     taalverzorging:'Taalverzorging', woordenschat:'Woordenschat',
     begrijpend:'Begrijpend lezen', begrijpend_luis:'Begrijpend luisteren',
     engels:'Engels', rapport:'Rapport', handelingsplan:'Handelingsplan',
-    opp:'OPP', toets:'Toets', gesprek:'Gesprek', algemeen:'Observatie'
+    opp:'OPP', toets:'Toets', gesprek:'Gesprek', algemeen:'Observatie', observatie:'Observatie', notitie:'Notitie'
   };
   // Kleur per sentiment
   const sentimentKleur = { positief:'#2d6a2d', neutraal:'#555', aandacht:'#c07000' };
@@ -5025,7 +5041,7 @@ function lvsRenderTijdlijn() {
     const bronLabels = { notitie:'uit notitie', aanwezigheid:'aanwezigheidssignaal', rapport:'rapport', toets:'toets' };
     const bron = item.bron && bronLabels[item.bron] ? ' · ' + bronLabels[item.bron] : '';
     return '<div class="lvs-tl-item">'
-      + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0">' + (item.type==='rapport'?'R':item.type==='toets'?'T':item.type==='opp'?'O':'N') + '</div>'
+      + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0">' + (item.type==='rapport'?'R':item.type==='toets'?'T':item.type==='opp'?'O':item.type==='observatie'?'O':'N') + '</div>'
       + '<div class="lvs-tl-inhoud" style="flex:1;min-width:0">'
       + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">'
       + '<span style="font-size:10px;font-weight:700;color:' + kleur + ';letter-spacing:.04em;text-transform:uppercase">' + label + '</span>'
