@@ -6561,20 +6561,36 @@ function notitieRenderKlassen() {
 }
 
 function notitieRenderLeerlingenVanGroep(groep) {
-  /** Toon leerlingen van een klas — tweede niveau. */
   const el = document.getElementById('notitie-leerlingen-lijst');
-  const bc = document.getElementById('notitie-nav-breadcrumb');
   if (!el) return;
-
   _notitieHuidigeGroep = groep;
-  if (bc) {
-    bc.innerHTML = '<button onclick="notitieRenderKlassen()" style="'
-      + 'background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);'
-      + 'font-family:inherit;padding:0">‹ Groep ' + esc(groep) + '</button>';
-  }
 
   const lijst = leerlingen.filter(function(l) { return String(l.groep) === String(groep); });
-  notitieRenderZijbalk(lijst);
+
+  // Terugknop als allereerste item in de lijst — altijd zichtbaar
+  let html = '<button onclick="notitieRenderKlassen()" style="'
+    + 'display:block;width:100%;background:#2d6a2d;border:none;'
+    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
+    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
+    + '‹ Terug naar groepen</button>';
+
+  html += lijst.map(function(l) {
+    const actief = window._huidigeLeerlingId === l.id;
+    return '<div class="notitie-leerling-item" data-id="' + l.id + '" style="'
+      + 'padding:9px 12px;cursor:pointer;margin-bottom:2px;'
+      + 'border-left:3px solid ' + (actief ? '#2d6a2d' : 'transparent') + ';'
+      + 'background:' + (actief ? '#f0f7f0' : 'transparent') + '">'
+      + '<div style="font-size:13px;font-weight:500;color:#1a2a1a">' + esc(l.voornaam) + '</div>'
+      + '</div>';
+  }).join('');
+
+  el.innerHTML = html;
+
+  el.querySelectorAll('.notitie-leerling-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      notitieSelecteerLeerling(item.dataset.id);
+    });
+  });
 }
 
 function notitieRenderZijbalk(lijst) {
