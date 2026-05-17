@@ -3460,7 +3460,6 @@ async function genereer() {
     const parsed = JSON.parse(schoon);
     huidigeSectieData = parsed;
     toonResultaten(parsed, naam, groep);
-    registreerRapport();
     if (window._huidigeLeerlingId) slaRapportOp(parsed);
     // Werk LVS bij met scores en tijdlijn uit het rapport
     await werkLvsVanuitRapportBij(parsed, naam, groep);
