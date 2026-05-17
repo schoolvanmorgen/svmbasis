@@ -2345,7 +2345,7 @@ function toonTab(tab, knop) {
           border-radius:6px;padding:8px 12px;font-size:12px;color:var(--accent);
           display:flex;align-items:center;gap:8px">
           <span style="font-size:14px">✓</span>
-          <span>Notities en observaties worden <strong>automatisch</strong> meegenomen bij het genereren.</span>
+          <span>Notities en observaties worden <strong>automatisch</strong> meegenomen in het rapport.</span>
         </div>
         <!-- Verborgen notities veld — wordt gevuld vanuit notities-tab -->
         <textarea id="notities" maxlength="5000" style="display:none"></textarea>
@@ -4126,37 +4126,32 @@ function lvsRenderKlassen() {
 }
 
 function lvsRenderLeerlingen(groep) {
-  /**
-   * Toon leerlingen van een specifieke klas — tweede niveau.
-   * Toont een "← Terug" knop om terug te gaan naar het klassenoverzicht.
-   */
   const el = document.getElementById('lvs-lijst');
-  const bc = document.getElementById('lvs-nav-breadcrumb');
   if (!el) return;
-
   _lvsHuidigeGroep = groep;
-
-  // Breadcrumb met terugknop
-  if (bc) {
-    bc.innerHTML = '<button onclick="lvsRenderKlassen()" style="'
-      + 'background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);'
-      + 'font-family:inherit;padding:0;display:flex;align-items:center;gap:4px">'
-      + '‹ Groep ' + esc(groep) + '</button>';
-  }
 
   const lijst = lvsLeerlingen.filter(function(l) { return l.groep === groep; });
 
+  // Terugknop als eerste item — zelfde stijl als snelle notitie
+  let html = '<button onclick="lvsRenderKlassen()" style="'
+    + 'display:block;width:100%;background:#2d6a2d;border:none;'
+    + 'color:#fff;font-size:13px;font-weight:700;font-family:inherit;'
+    + 'padding:13px;text-align:center;cursor:pointer;margin-bottom:8px">'
+    + '‹ Terug naar groepen</button>';
+
   if (!lijst.length) {
-    el.innerHTML = '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in groep ' + esc(groep) + '.</div>';
+    html += '<div style="color:var(--tz);font-size:12px;padding:10px">Geen leerlingen in groep ' + esc(groep) + '.</div>';
+    el.innerHTML = html;
     return;
   }
 
-  el.innerHTML = lijst.map(function(l) {
-    const actief = lvsHuidig && lvsHuidig?.id === l.id;
+  html += lijst.map(function(l) {
+    const actief   = lvsHuidig && lvsHuidig?.id === l.id;
     const signalen = _lvsSignalen[l.id] || [];
     const hoogste  = signalen.length > 0 ? signalen[0] : null;
     const badgeHtml = hoogste
-      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:' + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + ';flex-shrink:0">'
+      ? '<span style="margin-left:auto;font-size:10px;font-weight:700;color:'
+        + (hoogste.urgentie === 'hoog' ? '#991b1b' : '#92400e') + '">'
         + (hoogste.urgentie === 'hoog' ? '⚠' : '!') + '</span>'
       : '';
     return '<div class="lvs-item ' + (actief ? 'actief' : '') + '" data-id="' + l.id + '">'
@@ -4166,7 +4161,8 @@ function lvsRenderLeerlingen(groep) {
       + '</div>';
   }).join('');
 
-  // Event delegation
+  el.innerHTML = html;
+
   el.querySelectorAll('.lvs-item').forEach(function(item) {
     item.addEventListener('click', function() {
       lvsSelecteer(item.dataset.id);
@@ -5418,24 +5414,7 @@ function aawRenderKlassen() {
   }
 }
 
-function aawRenderKlassen() {
-  const el = document.getElementById('aaw-klassen-lijst');
-  if (!el) return;
-  const groepen = [...new Set(aawLeerlingen.map(function(l) { return l.groep; }).filter(Boolean))].sort(function(a,b) {
-    return parseInt(a) - parseInt(b);
-  });
-  if (!groepen.length) {
-    el.innerHTML = '<div style="font-size:12px;color:var(--tz);padding:10px 0">Nog geen leerlingen — voeg ze hieronder toe.</div>';
-    aawToonLeerlingToevoegen();
-    return;
-  }
-  el.style.display = 'flex'; el.style.gap = '6px'; el.style.flexWrap = 'wrap';
-  el.innerHTML = groepen.map(function(g) {
-    const actief = aawGeselecteerdeKlas === g;
-    const aantal = aawLeerlingen.filter(function(l) { return l.groep === g; }).length;
-    return '<button onclick="aawToonKlas(this.getAttribute(\'data-g\'))" data-g="' + g + '" style="padding:6px 16px;border:1.5px solid ' + (actief ? '#2a3a2a' : 'var(--rand)') + ';background:' + (actief ? '#2a3a2a' : '#fff') + ';color:' + (actief ? '#fff' : 'var(--tm)') + ';font-size:12px;font-weight:' + (actief ? '600' : '400') + ';cursor:pointer;font-family:inherit">Groep ' + g + ' <span style="opacity:.6;font-size:11px">(' + aantal + ')</span></button>';
-  }).join('');
-}
+// aawRenderKlassen: zie definitie hierboven (duplicate verwijderd)
 
 // ── Leerling toevoegen vanuit aanwezigheidstab ──────────────
 function aawToonLeerlingToevoegen() {
