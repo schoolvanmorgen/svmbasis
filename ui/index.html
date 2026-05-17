@@ -633,6 +633,22 @@ function _scheduleTokenRefresh(expiresAt) {
 }
 
 // ══════════════════════════════════════════════════════════
+// AVG: Client-side input sanitisatie
+// Aanvulling op de server-side pseudonimisering in main.py.
+// Verwijdert achternamen en geboortedatums voor ze de server
+// bereiken via vrije tekstvelden (notities, observaties).
+// ══════════════════════════════════════════════════════════
+function sanitizeInput(tekst) {
+  if (!tekst) return '';
+  // Vervang datumpatronen door [DATUM]
+  tekst = tekst.replace(/\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}/g, '[DATUM]');
+  tekst = tekst.replace(/\d{1,2}\s+(januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december)\s+\d{4}/gi, '[DATUM]');
+  // Vervang BSN-achtige nummers
+  tekst = tekst.replace(/\d{9}/g, '[BSN]');
+  return tekst;
+}
+
+// ══════════════════════════════════════════════════════════
 // SECURITY: XSS-sanitization helper
 // Gebruik altijd esc() bij het injecteren van user data in HTML
 // ══════════════════════════════════════════════════════════
@@ -2116,13 +2132,24 @@ function toonTab(tab, knop) {
   <!-- Klas-sidebar: selecteer klas → leerlingen → klik leerling -->
   <div style="border-right:1px solid var(--warmrand);background:var(--warm);display:flex;flex-direction:column;overflow:hidden;height:100%">
 
-    <!-- Klas selector -->
-    <div style="padding:10px 10px 8px;border-bottom:1px solid var(--warmrand);flex-shrink:0">
-      <div class="vlabel" style="margin-bottom:5px">KLAS</div>
-      <select id="rapport-klas" onchange="rapportLaadKlas(this.value)"
-        style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
-        <option value="">Kies groep…</option>
-      </select>
+    <!-- Klas + schooljaar selector -->
+    <div style="padding:10px 10px 8px;border-bottom:1px solid var(--warmrand);flex-shrink:0;display:flex;flex-direction:column;gap:6px">
+      <div>
+        <div class="vlabel" style="margin-bottom:3px">KLAS</div>
+        <select id="rapport-klas" onchange="rapportLaadKlas(this.value)"
+          style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+          <option value="">Kies groep…</option>
+        </select>
+      </div>
+      <div>
+        <div class="vlabel" style="margin-bottom:3px">SCHOOLJAAR</div>
+        <select id="rapport-schooljaar"
+          style="width:100%;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:6px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+          <option value="2025-2026">2025–2026</option>
+          <option value="2024-2025">2024–2025</option>
+          <option value="2023-2024">2023–2024</option>
+        </select>
+      </div>
     </div>
 
     <!-- Leerlingenlijst -->
