@@ -105,12 +105,9 @@ async def _check_rate_limit(request: Request) -> None:
 
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
-    """Pas rate limiting toe op AI-endpoints vóór de handler wordt uitgevoerd.
-    Alleen zware AI-aanroepen worden beperkt — niet data endpoints zoals /leerlingen.
-    """
-    AI_PATHS = ["/rapporten/batch", "/opp", "/handelingsplan", "/analyseer",
-                "/inspectie/rapport", "/overdracht"]
-    if any(request.url.path.startswith(p) for p in AI_PATHS):
+    """Pas rate limiting toe op AI-endpoints vóór de handler wordt uitgevoerd."""
+    ai_paths = ["/rapporten/batch", "/opp", "/handelingsplan", "/analyseer"]
+    if any(request.url.path.startswith(p) for p in ai_paths):
         await _check_rate_limit(request)
     response = await call_next(request)
     return response
@@ -1456,10 +1453,17 @@ async def maak_leerling_aan(
     - Als er al een leerling bestaat met dezelfde voornaam+groep binnen de school,
       wordt die teruggegeven (zachte deduplicatie, geen error).
     """
+    logger.info(f"POST /leerlingen — voornaam={leerling.voornaam!r} groep={leerling.groep!r}")
     if not leerling.voornaam or not leerling.voornaam.strip():
         raise HTTPException(status_code=400, detail="Voornaam is verplicht.")
     token = credentials.credentials
-    ctx   = await get_school_context(user, token)
+    logger.info(f"POST /leerlingen — token aanwezig: {bool(token)}")
+    try:
+        ctx = await get_school_context(user, token)
+        logger.info(f"POST /leerlingen — school_id={ctx.get('school_id')}")
+    except Exception as e:
+        logger.error(f"POST /leerlingen — get_school_context fout: {e}")
+        raise
 
     # ── Deduplicatie: check op leerlingnummer binnen school ──
     if leerling.leerlingnummer and ctx["school_id"]:
