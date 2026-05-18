@@ -3239,8 +3239,9 @@ const THEORIEEN = [
 let huidigeSectieData = null;
 let feedbackWaarde    = null;
 
-document.getElementById('notities').addEventListener('input', function() {
-  document.getElementById('teller').textContent = `${this.value.length} / 2000`;
+var _notitiesEl = document.getElementById('notities');
+if (_notitiesEl) _notitiesEl.addEventListener('input', function() {
+  var _teller = document.getElementById('teller'); if (_teller) _teller.textContent = this.value.length + ' / 2000';
 });
 
 function laad(type) {
