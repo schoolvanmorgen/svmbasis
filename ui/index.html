@@ -4233,6 +4233,7 @@ async function lvsSlaProfielOp(leerlingId, profiel) {
 async function lvsSla() {
   if (!lvsHuidig) return;
   await lvsSlaProfielOp(lvsHuidig.id, {
+    leerling_id: lvsHuidig.id,
     scores: lvsHuidig.scores,
     vorige_scores: lvsHuidig.vorige,
     tijdlijn: lvsHuidig.tijdlijn
