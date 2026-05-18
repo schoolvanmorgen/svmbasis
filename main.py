@@ -1211,6 +1211,67 @@ def _extra_naamscan(tekst: str, originele_naam: str) -> str:
     return resultaat
 
 
+def _initialen_scan(tekst: str, voornaam: str, achternaam: str = "") -> str:
+    """Laag 5 (A) — Initialen herkenning: A., A.B., A. de V."""
+    if not voornaam:
+        return tekst
+    import re as _re5
+    resultaat = tekst
+    init_v = voornaam.strip()[0].upper() if voornaam.strip() else ""
+    if not init_v:
+        return tekst
+    patroon_enkelvoud = r'' + _re5.escape(init_v) + r'\.(?=\s|$)'
+    if _re5.search(patroon_enkelvoud, resultaat):
+        _privacy_log.warning(f"Laag 5: initiaal '{init_v}.' vervangen")
+        resultaat = _re5.sub(patroon_enkelvoud, '[LEERLING]', resultaat)
+    if achternaam and achternaam.strip():
+        for deel in achternaam.strip().split():
+            if len(deel) > 1 and deel[0].isupper():
+                init_a = deel[0].upper()
+                patroon_dubbel = r'' + _re5.escape(init_v) + r'\.\s*' + _re5.escape(init_a) + r'\.'
+                if _re5.search(patroon_dubbel, resultaat):
+                    _privacy_log.warning(f"Laag 5: initialen '{init_v}.{init_a}.' vervangen")
+                    resultaat = _re5.sub(patroon_dubbel, '[LEERLING]', resultaat)
+    return resultaat
+
+
+def _achternaam_scan(tekst: str, achternaam: str, tussenvoegsel: str = "") -> str:
+    """Laag 6 (C) — Achternaam herkenning inclusief tussenvoegsel."""
+    if not achternaam or not achternaam.strip():
+        return tekst
+    import re as _re6
+    resultaat = tekst
+    ach = achternaam.strip()
+    varianten = {ach, ach.lower(), ach.capitalize()}
+    if tussenvoegsel and tussenvoegsel.strip():
+        tv = tussenvoegsel.strip()
+        vol = tv + ' ' + ach
+        varianten.update({vol, vol.lower(), vol.capitalize()})
+    for variant in varianten:
+        if len(variant) < 3:
+            continue
+        patroon = r'' + _re6.escape(variant) + r''
+        if _re6.search(patroon, resultaat, _re6.IGNORECASE):
+            _privacy_log.warning(f"Laag 6: achternaam '{variant}' vervangen")
+            resultaat = _re6.sub(patroon, '[LEERLING]', resultaat, flags=_re6.IGNORECASE)
+    return resultaat
+
+
+def _tweede_volledige_pass(tekst: str, naam: str, achternaam: str = "", tussenvoegsel: str = "") -> str:
+    """Laag 7 (D) — Tweede volledige pass na alle eerdere lagen."""
+    if not naam and not achternaam:
+        return tekst
+    import re as _re7
+    resultaat = tekst
+    alle_namen = [n.strip() for n in [naam, achternaam, tussenvoegsel] if n and len(n.strip()) >= 3]
+    for n in alle_namen:
+        patroon = r'' + _re7.escape(n) + r''
+        if _re7.search(patroon, resultaat, _re7.IGNORECASE):
+            _privacy_log.warning(f"Laag 7: tweede pass vond '{n}' — vervangen")
+            resultaat = _re7.sub(patroon, '[LEERLING]', resultaat, flags=_re7.IGNORECASE)
+    return resultaat
+
+
 # ═══════════════════════════════════════════════════════════════
 # PRIVACY LAGEN 8-18
 # ═══════════════════════════════════════════════════════════════
