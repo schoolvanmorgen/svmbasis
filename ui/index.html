@@ -3070,9 +3070,14 @@ function toonTab(tab, knop) {
       <div style="flex-shrink:0;padding:1rem 1.8rem;background:var(--warm);border-top:1px solid var(--warmrand);display:flex;flex-direction:column;gap:10px">
         <div style="display:flex;align-items:center;justify-content:space-between">
           <div class="vlabel">NIEUWE NOTITIE</div>
-          <button onclick="toggleMic('notitie-tekst',this)" title="Spraakopname starten"
-            class="mic-knop"
-            style="width:56px;height:56px;font-size:26px;background:#2d6a2d;box-shadow:0 3px 10px rgba(45,106,45,.4)">🎤</button>
+          <div style="display:flex;gap:10px">
+            <button onclick="lvsOcrScores()" title="Scan CITO-scores"
+              class="mic-knop"
+              style="width:56px;height:56px;font-size:26px;background:#1565c0;box-shadow:0 3px 10px rgba(21,101,192,.4)">📷</button>
+            <button onclick="toggleMic('notitie-tekst',this)" title="Spraakopname starten"
+              class="mic-knop"
+              style="width:56px;height:56px;font-size:26px;background:#2d6a2d;box-shadow:0 3px 10px rgba(45,106,45,.4)">🎤</button>
+          </div>
         </div>
         <textarea id="notitie-tekst" rows="3" style="width:100%;resize:none;border:1px solid var(--rand);border-bottom:1.5px solid #4a7a4a;padding:10px 12px;font-size:13px;font-family:inherit;outline:none;background:#fff" placeholder="Schrijf of spreek een notitie…"></textarea>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
