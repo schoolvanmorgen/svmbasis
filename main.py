@@ -3693,6 +3693,29 @@ async def haal_dossier_op(
     # ── Meest recente LVS-profiel ──────────────────────────
     huidig_lvs = lvs_profielen[0] if lvs_profielen else None
 
+    # ── Voeg LVS tijdlijn observaties toe aan dossier notities ──
+    # Observaties via "Observatie toevoegen" worden opgeslagen in lvs_profielen.tijdlijn
+    # Ze moeten ook in het dossier verschijnen
+    for profiel in lvs_profielen:
+        for item in (profiel.get("tijdlijn") or []):
+            item_type = item.get("type", "notitie")
+            # Sla rapporten over — die komen al via de rapporten tabel
+            if item_type in ("rapport", "opp", "handelingsplan"):
+                continue
+            # Haal datum op — items hebben soms alleen een display datum
+            item_datum = item.get("datum_iso") or item.get("datum", "")
+            if not item_datum:
+                item_datum = date.today().isoformat()
+            sj = bepaal_schooljaar(item_datum[:10])
+            if sj not in schooljaren:
+                schooljaren[sj] = {"rapporten": [], "notities": [], "toetsen": [], "aanwezigheid": []}
+            schooljaren[sj]["notities"].append({
+                "datum":      item_datum[:10],
+                "tekst":      item.get("tekst", ""),
+                "type":       item_type,
+                "leerkracht": leraar_namen.get(profiel.get("leerkracht_id"), "Onbekend")
+            })
+
     # ── Bouw tijdlijn van alle schooljaren ─────────────────
     # Gesorteerd van oud naar nieuw
     tijdlijn_schooljaren = sorted(schooljaren.keys(), key=lambda s: s[:4] if s != "onbekend" else "0")
