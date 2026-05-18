@@ -3702,10 +3702,30 @@ async def haal_dossier_op(
             # Sla rapporten over — die komen al via de rapporten tabel
             if item_type in ("rapport", "opp", "handelingsplan"):
                 continue
-            # Haal datum op — items hebben soms alleen een display datum
-            item_datum = item.get("datum_iso") or item.get("datum", "")
+            # Haal datum op — items hebben soms display formaat ("17 mei 2026")
+            item_datum = item.get("datum_iso") or ""
             if not item_datum:
-                item_datum = date.today().isoformat()
+                raw = item.get("datum", "")
+                # Probeer ISO formaat direct
+                if raw and len(raw) >= 10 and raw[4:5] == "-":
+                    item_datum = raw[:10]
+                else:
+                    # Converteer Nederlands display formaat naar ISO
+                    nl_maanden = {
+                        "jan":"01","feb":"02","mrt":"03","apr":"04","mei":"05","jun":"06",
+                        "jul":"07","aug":"08","sep":"09","okt":"10","nov":"11","dec":"12"
+                    }
+                    try:
+                        delen = raw.replace(",","").split()
+                        if len(delen) >= 3:
+                            dag  = delen[0].zfill(2)
+                            mnd  = nl_maanden.get(delen[1][:3].lower(), "01")
+                            jaar = delen[2] if len(delen[2]) == 4 else date.today().strftime("%Y")
+                            item_datum = f"{jaar}-{mnd}-{dag}"
+                        else:
+                            item_datum = date.today().isoformat()
+                    except Exception:
+                        item_datum = date.today().isoformat()
             sj = bepaal_schooljaar(item_datum[:10])
             if sj not in schooljaren:
                 schooljaren[sj] = {"rapporten": [], "notities": [], "toetsen": [], "aanwezigheid": []}
