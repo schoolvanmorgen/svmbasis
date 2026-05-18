@@ -4307,19 +4307,17 @@ function lvsRenderKlassen() {
 }
 
 async function lvsVerwijderGroep(groep) {
-  if (!confirm('Groep ' + groep + ' en alle leerlingen verwijderen? Dit kan niet ongedaan worden gemaakt.')) return;
+  if (!confirm('Groep ' + groep + ' afsluiten? De data blijft 5 jaar bewaard (AVG) maar verdwijnt uit de actieve weergave.')) return;
   try {
-    const klasLeerlingen = lvsLeerlingen.filter(function(l) { return l.groep === groep; });
-    for (var i = 0; i < klasLeerlingen.length; i++) {
-      await apiCall('/leerlingen/' + klasLeerlingen[i].id, { method: 'DELETE' });
-    }
-    // Verwijder uit lokale staat
+    var afgesloten = JSON.parse(localStorage.getItem('svm_afgesloten_groepen') || '[]');
+    if (!afgesloten.includes(groep)) afgesloten.push(groep);
+    localStorage.setItem('svm_afgesloten_groepen', JSON.stringify(afgesloten));
     lvsLeerlingen = lvsLeerlingen.filter(function(l) { return l.groep !== groep; });
     leerlingen    = leerlingen.filter(function(l)    { return l.groep !== groep; });
     lvsRenderKlassen();
     toonLeerlingenLijst();
   } catch(e) {
-    alert('Verwijderen mislukt: ' + e.message);
+    alert('Afsluiten mislukt: ' + e.message);
   }
 }
 
