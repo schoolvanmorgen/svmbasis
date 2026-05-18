@@ -2861,6 +2861,9 @@ function toonTab(tab, knop) {
             <button type="button" class="type-keuze" data-type="bijzonderheid"
               onclick="lvsKiesType(this)"
               style="padding:5px 12px;font-size:11px;border:1.5px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;border-radius:20px">Bijzonderheid</button>
+            <button type="button" class="type-keuze" data-type="oudergesprek"
+              onclick="lvsKiesType(this)"
+              style="padding:5px 12px;font-size:11px;border:1.5px solid var(--rand);background:#fff;color:var(--tm);cursor:pointer;font-family:inherit;border-radius:20px">Oudergesprek</button>
           </div>
           <input type="hidden" id="lvs-notitie-type" value="notitie">
           <div class="vlabel" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between">
@@ -5199,7 +5202,7 @@ function lvsRenderTijdlijn() {
     taalverzorging:'Taalverzorging', woordenschat:'Woordenschat',
     begrijpend:'Begrijpend lezen', begrijpend_luis:'Begrijpend luisteren',
     engels:'Engels', rapport:'Rapport', handelingsplan:'Handelingsplan',
-    opp:'OPP', toets:'Toets', gesprek:'Gesprek', algemeen:'Observatie', observatie:'Observatie', notitie:'Notitie'
+    opp:'OPP', toets:'Toets', gesprek:'Gesprek', algemeen:'Observatie', observatie:'Observatie', notitie:'Notitie', oudergesprek:'Oudergesprek'
   };
   // Kleur per sentiment
   const sentimentKleur = { positief:'#2d6a2d', neutraal:'#555', aandacht:'#c07000' };
@@ -5209,7 +5212,7 @@ function lvsRenderTijdlijn() {
     rapport:'#2a3a2a', handelingsplan:'#3a4a2a', opp:'#2a3a4a', aanwezigheid:'#1a4a8a',
     sociaal:'#5a3a7a', werkhouding:'#4a7a4a', executief:'#7a4a3a',
     groeimeter:'#3a6a6a', toets:'#1a4a8a', algemeen:'#666'
-  };
+  , oudergesprek:'#7c3aed'};
 
   el.innerHTML = lvsHuidig.tijdlijn.map(function(item) {
     const label  = domeinLabels[item.type] || item.type || 'Observatie';
@@ -5219,7 +5222,7 @@ function lvsRenderTijdlijn() {
     const bronLabels = { notitie:'uit notitie', aanwezigheid:'aanwezigheidssignaal', rapport:'rapport', toets:'toets' };
     const bron = item.bron && bronLabels[item.bron] ? ' · ' + bronLabels[item.bron] : '';
     return '<div class="lvs-tl-item">'
-      + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0">' + (item.type==='rapport'?'R':item.type==='toets'?'T':item.type==='opp'?'O':item.type==='observatie'?'O':'N') + '</div>'
+      + '<div class="lvs-tl-dot" style="background:' + kleur + ';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex-shrink:0">' + (item.type==='rapport'?'R':item.type==='toets'?'T':item.type==='opp'?'O':item.type==='observatie'?'O':item.type==='oudergesprek'?'G':'N') + '</div>'
       + '<div class="lvs-tl-inhoud" style="flex:1;min-width:0">'
       + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">'
       + '<span style="font-size:10px;font-weight:700;color:' + kleur + ';letter-spacing:.04em;text-transform:uppercase">' + label + '</span>'
