@@ -1255,18 +1255,38 @@ def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[st
     else:
         _privacy_log.info("Privacy audit: schoon — geen persoonsgegevens gedetecteerd")
 
-    # ── Laag 4: Extra naamscan — tweede pass op naamvarianten ──
-    # (Laag 3 vervangt nu stil; blokkering is verwijderd om valse alarmen te voorkomen.)
+    # ── Laag 4: Extra naamscan ──
     stap4 = _extra_naamscan(stap3, naam)
     if stap3 != stap4:
-        audit["waarschuwingen"].append("Laag 4: extra naamscan vond en verving naamvarianten")
+        audit["waarschuwingen"].append("Laag 4: extra naamscan vond naamvarianten")
+
+    # ── Laag 5 (A): Initialen herkenning ──
+    # Haal voornaam en achternaam op uit naam string
+    naam_delen = naam.strip().split() if naam else []
+    voornaam_deel   = naam_delen[0]  if len(naam_delen) >= 1 else ""
+    achternaam_deel = naam_delen[-1] if len(naam_delen) >= 2 else ""
+    tussenvoegsel_deel = " ".join(naam_delen[1:-1]) if len(naam_delen) > 2 else ""
+
+    stap5 = _initialen_scan(stap4, voornaam_deel, achternaam_deel)
+    if stap4 != stap5:
+        audit["waarschuwingen"].append("Laag 5: initialen gevonden en vervangen")
+
+    # ── Laag 6 (C): Achternaam herkenning ──
+    stap6 = _achternaam_scan(stap5, achternaam_deel, tussenvoegsel_deel)
+    if stap5 != stap6:
+        audit["waarschuwingen"].append("Laag 6: achternaam gevonden en vervangen")
+
+    # ── Laag 7 (D): Tweede volledige pass ──
+    stap7 = _tweede_volledige_pass(stap6, voornaam_deel, achternaam_deel, tussenvoegsel_deel)
+    if stap6 != stap7:
+        audit["waarschuwingen"].append("Laag 7: tweede pass vond resterende namen")
 
     _privacy_log.info(
         f"Privacy audit voltooid: {len(audit['waarschuwingen'])} waarschuwing(en). "
-        f"Alle 4 lagen doorlopen."
+        f"Alle 7 lagen doorlopen."
     )
 
-    return stap4, naam_mapping
+    return stap7, naam_mapping
 
 # ══════════════════════════════════════════════════════════
 # STATISCHE BESTANDEN
