@@ -6844,8 +6844,11 @@ async function toggleMic(veldId, knop) {
   _micKnop   = knop;
 
   // Probeer eerst Whisper via backend
-  // Als OPENAI_API_KEY niet geconfigureerd is, valt het terug op Web Speech
-  const gebruikWhisper = typeof huidigToken !== 'undefined' && huidigToken;
+  // Gebruik Web Speech API als fallback — Whisper vereist OPENAI_API_KEY op de server
+  // window._whisperBeschikbaar wordt gezet na een succesvolle Whisper aanroep
+  // Standaard: gebruik Web Speech API (gratis, geen API key nodig)
+  const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const gebruikWhisper = window._whisperBeschikbaar === true;
 
   if (gebruikWhisper) {
     // Controleer of Whisper beschikbaar is via een snelle ping
@@ -6944,10 +6947,15 @@ async function _stopEnTranscribeer() {
 
     if (!res.ok) {
       const fout = await res.json().catch(() => ({}));
+      if (res.status === 503) {
+        window._whisperBeschikbaar = false;
+        throw new Error('Web Speech API wordt gebruikt (geen OpenAI key)');
+      }
       throw new Error(fout.detail || 'Transcriptie mislukt');
     }
 
     const data  = await res.json();
+    window._whisperBeschikbaar = true; // Whisper werkt — gebruik voortaan Whisper
     const tekst = data.tekst || '';
 
     // Voeg tekst toe aan het veld
