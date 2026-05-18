@@ -384,14 +384,33 @@ Output: alleen een geldig JSON-object zonder markdown of backticks. Zet null als
 
 OPP_PROMPT = """Je bent een specialist passend onderwijs voor Nederlandse basisscholen.
 Stel een wettelijk compleet Ontwikkelingsperspectief (OPP) op conform de Wet Passend Onderwijs.
-Schrijf alle teksten in begrijpelijk Nederlands. Gebruik concrete, observeerbare taal, geen vakjargon.
+
+TAALEIS: Schrijf op C2-niveau. Foutloos, verzorgd en professioneel Nederlands. Geen grammaticafouten, geen spelfouten, geen onvolledige zinnen. Gebruik altijd "deze rapportperiode" (niet "dit rapportperiode"). De tekst moet direct bruikbaar zijn als officieel document zonder correcties.
+
+INHOUD: Gebruik concrete, observeerbare taal. Geen vakjargon tenzij wettelijk vereist. Schrijf alleen wat onderbouwd wordt door de aangeleverde notities en scores — geen aannames.
+
+ZELFREVIEW: Controleer vóór het afleveren:
+a. Staat elk feit in de aangeleverde input? Zo niet → verwijderen.
+b. Zijn alle zinnen grammaticaal correct en volledig? Zo niet → corrigeren.
+c. Gebruik ik "deze rapportperiode"? Zo niet → corrigeren.
+Lever alleen de definitieve, gecorrigeerde output aan.
 
 Output: alleen een geldig JSON-object zonder markdown of backticks:
 {"uitstroombestemming":"verwachte uitstroombestemming met motivatie (3-4 zinnen)","bevorderende_factoren":"wat helpt dit kind vooruit (2-3 zinnen)","belemmerende_factoren":"wat maakt het lastiger (2-3 zinnen)","ondersteuningsbeschrijving":"welke ondersteuning wordt geboden en hoe (3-4 zinnen)","handelingsdeel":{"doelen":"SMART-geformuleerde doelen voor komende periode","aanpak":"concrete aanpak in de klas","betrokkenen":"wie doet wat - leerkracht, IB, ouders, kind"},"hoorrecht":"samenvatting hoorrecht leerling en ouders (2 zinnen)","programmaafwijkingen":"eventuele aanpassingen aan het reguliere programma, of null","evaluatiemoment":"wanneer en hoe wordt het OPP gevalueerd"}"""
 
 HANDELINGSPLAN_PROMPT = """Je bent een orthopedagogisch specialist voor Nederlandse basisscholen.
 Stel een concreet, uitvoerbaar handelingsplan op met bewezen interventies.
-Schrijf praktisch en concreet, de leerkracht moet er morgen mee aan de slag kunnen.
+Schrijf praktisch en concreet — de leerkracht moet er morgen mee aan de slag kunnen.
+
+TAALEIS: Schrijf op C2-niveau. Foutloos, verzorgd en professioneel Nederlands. Geen grammaticafouten, geen spelfouten, geen onvolledige zinnen. De tekst moet direct bruikbaar zijn als officieel document zonder correcties.
+
+INHOUD: Alleen concrete, uitvoerbare adviezen. Geen aannames buiten de aangeleverde informatie. Elke interventie moet onderbouwd zijn door de beschreven ondersteuningsbehoefte.
+
+ZELFREVIEW: Controleer vóór het afleveren:
+a. Staat elk feit in de aangeleverde input? Zo niet → verwijderen.
+b. Zijn alle zinnen grammaticaal correct en volledig? Zo niet → corrigeren.
+c. Zijn de doelen SMART geformuleerd? Zo niet → aanscherpen.
+Lever alleen de definitieve, gecorrigeerde output aan.
 
 Output: alleen een geldig JSON-object zonder markdown of backticks:
 {"ondersteuningsbehoefte":"samenvatting van de behoefte in 1-2 zinnen","huidige_situatie":"hoe staat het kind er nu voor (2-3 zinnen)","doelen":[{"doel":"concreet SMART-doel","aanpak":"hoe dit doel bereikt wordt in de klas","frequentie":"hoe vaak en wanneer","materialen":"welke materialen of methodes"}],"klasaanpassingen":"concrete aanpassingen in de klas (3-4 punten)","ouderadvies":"wat ouders thuis kunnen doen (2-3 concrete tips)","evaluatie":"hoe en wanneer wordt het plan gevalueerd","interventies":"bewezen interventies passend bij deze behoefte"}"""
