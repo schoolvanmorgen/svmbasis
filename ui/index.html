@@ -17,20 +17,26 @@
 
 /* MOBIEL: scrollen en layout */
 @media(max-width:768px){
-  #app-scherm{height:auto!important;min-height:100dvh!important;overflow-y:auto!important}
-  #tab-inhoud{overflow:visible!important;height:auto!important;flex:none!important}
-  .sectie.actief{height:auto!important;overflow:visible!important;min-height:60vh}
-  #tab-notities{height:auto!important;overflow:visible!important}
+  html,body{height:auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+  #app-scherm{height:auto!important;min-height:100svh;overflow:visible!important;display:flex!important;flex-direction:column}
+  #tab-inhoud{overflow:visible!important;height:auto!important;flex:1 1 auto!important;min-height:0}
+  .sectie{position:static!important;opacity:1!important;visibility:visible!important;height:auto!important;overflow:visible!important}
+  .sectie:not(.actief){display:none!important}
+  .sectie.actief{display:flex!important;flex-direction:column!important;height:auto!important;overflow:visible!important;min-height:50vh;position:static!important}
+  .sectie.actief>*{overflow:visible!important;height:auto!important}
   #tab-notities>div{flex-direction:column!important;height:auto!important;overflow:visible!important}
-  #tab-notities>div>div:first-child{width:100%!important;max-height:35vh;overflow-y:auto;border-right:none!important;border-bottom:1px solid var(--n-200)}
-  #tab-lvs>div{flex-direction:column!important;height:auto!important}
-  #tab-lvs>div>div:first-child{width:100%!important;max-height:40vh;border-right:none!important;border-bottom:1px solid var(--n-200)}
-  #tab-rapport-wrap{grid-template-columns:1fr!important;height:auto!important}
+  #tab-notities>div>div:first-child{width:100%!important;max-height:40vh;overflow-y:auto;border-right:none!important;border-bottom:1px solid var(--n-200)}
+  #tab-lvs>div{flex-direction:column!important;height:auto!important;overflow:visible!important}
+  #tab-lvs>div>div:first-child{width:100%!important;max-height:40vh;overflow-y:auto;border-right:none!important;border-bottom:1px solid var(--n-200)}
+  #tab-rapport-wrap{grid-template-columns:1fr!important;height:auto!important;overflow:visible!important}
+  #hoofdtabbar{flex-shrink:0}
   #hoofdtabbar>div:first-child{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #hoofdtabbar>div:first-child::-webkit-scrollbar{display:none}
   .tab-kolom-hoofd{font-size:9px;padding:5px 8px 3px}
   .tab-sub{font-size:11px;height:26px;padding:0 8px}
   #globale-leerling-selector{display:none!important}
   button{min-height:36px}
+  .invoer,.resultaat{height:auto!important;overflow:visible!important}
 }
 /* PERMANENT: aanwezigheid raster */
 #aaw-lijst{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(110px,1fr))!important;gap:8px!important;padding:4px 0!important}
