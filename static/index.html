@@ -6810,41 +6810,88 @@ let _micVeldId     = null;  // Welk tekstveld
 let _micKnop       = null;  // Welke knop
 let _micBezig      = false; // Is er een opname actief?
 
+// Web Speech API fallback — actieve herkenning instantie
+let _speechRec = null;
+
 async function toggleMic(veldId, knop) {
+  // ── Fallback: Web Speech API als Whisper niet beschikbaar is ──
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
   if (_micBezig) {
-    // Tweede klik: stop opname en stuur naar Whisper
+    if (_speechRec) { _speechRec.stop(); return; }
     _stopEnTranscribeer();
     return;
   }
+
   _micVeldId = veldId;
   _micKnop   = knop;
 
-  // Vraag microfoon toestemming
-  try {
-    _micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (e) {
-    alert('Microfoon niet beschikbaar. Geef toestemming in de browser.');
+  // Probeer eerst Whisper via backend
+  // Als OPENAI_API_KEY niet geconfigureerd is, valt het terug op Web Speech
+  const gebruikWhisper = typeof huidigToken !== 'undefined' && huidigToken;
+
+  if (gebruikWhisper) {
+    // Controleer of Whisper beschikbaar is via een snelle ping
+    try {
+      _micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      alert('Microfoon niet beschikbaar. Geef toestemming in de browser.');
+      return;
+    }
+    _micChunks   = [];
+    _micBezig    = true;
+    _micRecorder = new MediaRecorder(_micStream, { mimeType: 'audio/webm' });
+    _micRecorder.ondataavailable = function(e) { if (e.data.size > 0) _micChunks.push(e.data); };
+    _micRecorder.start(100);
+    knop.textContent = '⏹';
+    knop.classList.add('luistert');
+    knop.title = 'Klik om te stoppen';
     return;
   }
 
-  // Start opname
-  _micChunks  = [];
-  _micBezig   = true;
-  _micRecorder = new MediaRecorder(_micStream, { mimeType: 'audio/webm' });
+  // ── Web Speech API fallback ──
+  if (!SpeechRecognition) {
+    alert('Spraakherkenning niet beschikbaar in deze browser. Gebruik Chrome.');
+    return;
+  }
 
-  _micRecorder.ondataavailable = function(e) {
-    if (e.data.size > 0) _micChunks.push(e.data);
-  };
+  _micBezig = true;
+  _speechRec = new SpeechRecognition();
+  _speechRec.lang = 'nl-NL';
+  _speechRec.continuous = true;
+  _speechRec.interimResults = false;
 
-  _micRecorder.start(100); // Chunk elke 100ms
-
-  // UI: knop rood + pulserende animatie
   knop.textContent = '⏹';
   knop.classList.add('luistert');
-  knop.title = 'Klik om te stoppen en te transcriberen';
+  knop.title = 'Klik om te stoppen';
+
+  _speechRec.onresult = function(e) {
+    const veld = document.getElementById(veldId);
+    if (!veld) return;
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        const tekst = e.results[i][0].transcript;
+        veld.value += (veld.value && !veld.value.endsWith(' ') ? ' ' : '') + tekst;
+        veld.dispatchEvent(new Event('input'));
+      }
+    }
+  };
+
+  _speechRec.onerror = function() {
+    _micBezig = false; _speechRec = null;
+    knop.textContent = '🎤'; knop.classList.remove('luistert');
+  };
+
+  _speechRec.onend = function() {
+    _micBezig = false; _speechRec = null;
+    knop.textContent = '🎤'; knop.classList.remove('luistert');
+  };
+
+  _speechRec.start();
 }
 
 async function _stopEnTranscribeer() {
+  if (_speechRec) { _speechRec.stop(); return; }
   if (!_micRecorder || !_micBezig) return;
 
   _micBezig = false;
