@@ -5337,23 +5337,26 @@ async function lvsSlaNotitieOp() {
   const datum = new Date().toLocaleDateString('nl-NL', {day:'numeric',month:'short',year:'numeric'});
   const isoDate = new Date().toISOString().slice(0,10);
 
-  // Scores verwerken
+  // Scores verwerken — bijwerken in lvsHuidig.scores EN toevoegen aan gewijzigdeVakken
   const gewijzigdeVakken = [];
-  LVS_DOMEINEN.forEach(d => {
-    const val = document.getElementById('lvs-s-' + d.k)?.value;
+  LVS_DOMEINEN.forEach(function(d) {
+    const el  = document.getElementById('lvs-s-' + d.k);
+    const val = el ? el.value : '';
     if (val && val !== '') {
       const score = Math.min(100, Math.max(0, parseInt(val)));
-      lvsHuidig.vorige[d.k] = lvsHuidig?.scores?.[d.k];
-      lvsHuidig.vorige[d.k] = lvsHuidig.scores[d.k];
-      if (lvsHuidig && lvsHuidig.scores) lvsHuidig.scores[d.k] = score;
+      if (lvsHuidig.scores) {
+        lvsHuidig.vorige[d.k] = lvsHuidig.scores[d.k];  // vorige score opslaan
+        lvsHuidig.scores[d.k] = score;                    // nieuwe score opslaan
+      }
+      gewijzigdeVakken.push({ vakgebied: d.k, score: score });
     }
   });
 
   // Als het type 'toets' is: ook opslaan in toetsresultaten tabel
   if (type === 'toets' && gewijzigdeVakken.length > 0) {
-    await Promise.allSettled(gewijzigdeVakken.map(v =>
-      toetsRegistreer(lvsHuidig.id, v.vakgebied, v.score, null, 'handmatig')
-    ));
+    await Promise.allSettled(gewijzigdeVakken.map(function(v) {
+      return toetsRegistreer(lvsHuidig.id, v.vakgebied, v.score, null, 'handmatig');
+    }));
   }
 
   lvsHuidig.tijdlijn.unshift({ type, datum, tekst });
