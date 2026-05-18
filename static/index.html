@@ -5358,9 +5358,15 @@ async function lvsSlaNotitieOp() {
 
   lvsHuidig.tijdlijn.unshift({ type, datum, tekst });
   await lvsSla();
+  if (lvsHuidig && lvsHuidig.id && lvsProfielCache[lvsHuidig.id]) {
+    delete lvsProfielCache[lvsHuidig.id];
+  }
   lvsClearNotitie();
-  lvsRenderDomeinen(); lvsRenderRadar(); lvsRenderTijdlijn();
+  // Eerst tab tonen, dan renderen zodat het element zichtbaar is
   lvsToonTab('tijdlijn', document.querySelectorAll('.lvs-tab')[1]);
+  lvsRenderDomeinen();
+  lvsRenderRadar();
+  lvsRenderTijdlijn();
 }
 
 function lvsClearNotitie() {
