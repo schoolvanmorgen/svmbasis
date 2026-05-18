@@ -1210,6 +1210,206 @@ def _extra_naamscan(tekst: str, originele_naam: str) -> str:
 
     return resultaat
 
+
+# ═══════════════════════════════════════════════════════════════
+# PRIVACY LAGEN 8-18
+# ═══════════════════════════════════════════════════════════════
+
+import re as _re_priv
+
+def _adres_scan(tekst: str) -> str:
+    """Laag 8 — Adresherkenning: straten, postcodes, huisnummers."""
+    resultaat = tekst
+    # Postcode: 1234 AB of 1234AB
+    resultaat = _re_priv.sub(r'\d{4}\s?[A-Z]{2}', '[POSTCODE]', resultaat)
+    # Huisnummer na straatnaam: "Hoofdstraat 12" of "nr. 12"
+    resultaat = _re_priv.sub(r'(nr\.?\s*|nummer\s*)\d{1,4}', '[HUISNUMMER]', resultaat, flags=_re_priv.IGNORECASE)
+    # Straatnamen eindigen op -straat, -laan, -weg, -plein, -dijk, -singel
+    resultaat = _re_priv.sub(
+        r'[A-Z][a-zA-Zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ]+'
+        r'(?:straat|laan|weg|plein|dijk|singel|kade|gracht|steeg|pad|hof|dreef|allee)',
+        '[ADRES]', resultaat
+    )
+    return resultaat
+
+
+def _telefoon_scan(tekst: str) -> str:
+    """Laag 9 — Telefoonnummers: 06, +31, vaste nummers."""
+    resultaat = tekst
+    resultaat = _re_priv.sub(r'(?:\+31|0031|0)\s?6[\s\-]?\d{8}', '[TELEFOON]', resultaat)
+    resultaat = _re_priv.sub(r'0\d{2}[\s\-]?\d{6,7}', '[TELEFOON]', resultaat)
+    resultaat = _re_priv.sub(r'\+31\s?\d{2,3}[\s\-]?\d{6,7}', '[TELEFOON]', resultaat)
+    return resultaat
+
+
+def _email_scan(tekst: str) -> str:
+    """Laag 10 — E-mailadressen."""
+    return _re_priv.sub(
+        r'[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}',
+        '[EMAIL]', tekst
+    )
+
+
+def _school_scan(tekst: str) -> str:
+    """Laag 11 — Schoolnamen en locaties."""
+    resultaat = tekst
+    # Patronen zoals "OBS De ...", "CBS ...", "basisschool ..."
+    resultaat = _re_priv.sub(
+        r'(?:OBS|CBS|RBS|GBS|PC|basisschool|school|SBO|SO)\s+[A-Z][^\s,\.]{2,30}',
+        '[SCHOOL]', resultaat, flags=_re_priv.IGNORECASE
+    )
+    return resultaat
+
+
+def _medisch_scan(tekst: str) -> str:
+    """Laag 12 — Medische termen, diagnoses, medicijnen."""
+    medische_termen = [
+        'adhd', 'add', 'autisme', 'asd', 'dyslexie', 'dyscalculie', 'dyspraxie',
+        'pdd-nos', 'pdd nos', 'odd', 'cd', 'angststoornis', 'depressie',
+        'ritalin', 'concerta', 'methylfenidaat', 'strattera', 'sertraline',
+        'diagnose', 'gediagnosticeerd', 'stoornis', 'syndroom',
+        'ggz', 'psychiater', 'psycholoog', 'therapie', 'behandeling',
+        'medicatie', 'medicijn', 'voorgeschreven', 'dosis',
+    ]
+    resultaat = tekst
+    for term in medische_termen:
+        patroon = r'' + _re_priv.escape(term) + r''
+        resultaat = _re_priv.sub(patroon, '[MEDISCH]', resultaat, flags=_re_priv.IGNORECASE)
+    return resultaat
+
+
+def _gevoelig_scan(tekst: str) -> str:
+    """Laag 13 — Religie, etniciteit, gezinssituatie (AVG Art. 9)."""
+    gevoelig = [
+        # Religie
+        'moslim', 'islamitisch', 'christelijk', 'katholiek', 'protestant',
+        'joods', 'hindoe', 'boeddhistisch', 'gesluierd', 'moskee', 'kerk',
+        # Etniciteit (voorzichtig — alleen als identificerend)
+        'asielzoeker', 'vluchteling', 'statushouder', 'nieuwkomer',
+        # Gezinssituatie
+        'scheiding', 'gescheiden', 'echtscheiding', 'omgangsregeling',
+        'voogd', 'voogdij', 'pleeggezin', 'pleegouders', 'jeugdzorg',
+        'kinderbescherming', 'ots', 'ondertoezichtstelling',
+        'gezinscoach', 'maatschappelijk werk',
+    ]
+    resultaat = tekst
+    for term in gevoelig:
+        patroon = r'' + _re_priv.escape(term) + r''
+        if _re_priv.search(patroon, resultaat, _re_priv.IGNORECASE):
+            _privacy_log.warning(f"Laag 13: gevoelig begrip '{term}' gedetecteerd")
+            resultaat = _re_priv.sub(patroon, '[GEVOELIG]', resultaat, flags=_re_priv.IGNORECASE)
+    return resultaat
+
+
+def _leerkracht_scan(tekst: str, bekende_namen: list = None) -> str:
+    """Laag 15 — Leerkrachtnamen vervangen door [LEERKRACHT]."""
+    if not bekende_namen:
+        return tekst
+    resultaat = tekst
+    for naam in bekende_namen:
+        if not naam or len(naam.strip()) < 2:
+            continue
+        patroon = r'' + _re_priv.escape(naam.strip()) + r''
+        if _re_priv.search(patroon, resultaat, _re_priv.IGNORECASE):
+            _privacy_log.warning(f"Laag 15: leerkrachtnaam '{naam}' vervangen")
+            resultaat = _re_priv.sub(patroon, '[LEERKRACHT]', resultaat, flags=_re_priv.IGNORECASE)
+    return resultaat
+
+
+def _datum_combinatie_scan(tekst: str) -> str:
+    """Laag 16 — Datumcombinaties en geboortejaren."""
+    resultaat = tekst
+    # Geboortejaar (4-cijferig, 1990-2020)
+    resultaat = _re_priv.sub(r'(19[5-9]\d|200\d|201\d|202[0-4])', '[JAAR]', resultaat)
+    # Datum patronen
+    resultaat = _re_priv.sub(
+        r'\d{1,2}[\-/]\d{1,2}[\-/]\d{2,4}', '[DATUM]', resultaat
+    )
+    resultaat = _re_priv.sub(
+        r'\d{1,2}\s+'
+        r'(?:januari|februari|maart|april|mei|juni|juli|augustus|september|oktober|november|december)'
+        r'\s+\d{4}',
+        '[DATUM]', resultaat, flags=_re_priv.IGNORECASE
+    )
+    return resultaat
+
+
+def _kruisreferentie_check(tekst: str) -> str:
+    """
+    Laag 17 — Kruisreferentie check.
+    Als twee of meer identificerende placeholders samen voorkomen
+    (bijv. [DATUM] + [ADRES]) in dezelfde zin, vervang de hele zin
+    door [VERWIJDERD - meerdere identificerende elementen].
+    """
+    resultaat = tekst
+    identificeerders = ['[DATUM]', '[POSTCODE]', '[ADRES]', '[TELEFOON]',
+                        '[EMAIL]', '[SCHOOL]', '[JAAR]', '[HUISNUMMER]']
+
+    zinnen = _re_priv.split(r'(?<=[.!?])\s+', resultaat)
+    nieuwe_zinnen = []
+
+    for zin in zinnen:
+        gevonden = sum(1 for marker in identificeerders if marker in zin)
+        if gevonden >= 2:
+            _privacy_log.warning(f"Laag 17: kruisreferentie — {gevonden} identificeerders in één zin, zin verwijderd")
+            nieuwe_zinnen.append('[VERWIJDERD - meerdere identificerende elementen]')
+        else:
+            nieuwe_zinnen.append(zin)
+
+    return ' '.join(nieuwe_zinnen)
+
+
+def differentieel_privaat(waarde: float, epsilon: float = 1.0, gevoeligheid: float = 5.0) -> float:
+    """
+    Laag 18 — Differentiële privacy via Laplace mechanisme.
+    Voegt willekeurige ruis toe aan numerieke scores in geaggregeerde data.
+    Gebruik ALLEEN op groepsstatistieken, NIET op individuele scores.
+
+    epsilon=1.0, gevoeligheid=5.0 is geschikt voor schoolscores (0-100).
+    """
+    import random
+    import math
+    schaal = gevoeligheid / epsilon
+    # Laplace verdeling via inverse CDF
+    u = random.uniform(-0.5, 0.5)
+    ruis = -schaal * math.copysign(1, u) * math.log(1 - 2 * abs(u))
+    return round(max(0.0, min(100.0, waarde + ruis)), 1)
+
+
+async def _output_filter(tekst: str, naam: str, client) -> str:
+    """
+    Laag 19 — Output-filter: scan de gegenereerde Claude-output
+    nog eenmaal op namen die per ongeluk zijn gereconstrueerd.
+    Gebruikt een lichtgewicht Claude-aanroep.
+    """
+    if not tekst or not naam or not client:
+        return tekst
+
+    try:
+        check_prompt = (
+            f"Controleer of de volgende tekst de naam '{naam}' of varianten daarvan bevat. "
+            f"Als ja, vervang alle voorkomens door '[LEERLING]' en geef alleen de gecorrigeerde tekst terug. "
+            f"Als nee, geef de tekst ongewijzigd terug.\n\nTekst:\n{tekst[:2000]}"
+        )
+        res = await client.post(
+            "/v1/messages",
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 2048,
+                "messages": [{"role": "user", "content": check_prompt}]
+            }
+        )
+        if res.status_code == 200:
+            gefilterd = res.json()["content"][0]["text"].strip()
+            if gefilterd != tekst:
+                _privacy_log.warning("Laag 19: output-filter vond en verving resterende naam in output")
+            return gefilterd
+    except Exception as e:
+        _privacy_log.error(f"Laag 19: output-filter mislukt: {e}")
+
+    return tekst
+
+
 # ── Hoofd-privacyfunctie: alle vier lagen ─────────────────────
 
 def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[str, dict]:
@@ -1281,12 +1481,57 @@ def privacy_filter(tekst: str, naam: str = "", strict: bool = False) -> tuple[st
     if stap6 != stap7:
         audit["waarschuwingen"].append("Laag 7: tweede pass vond resterende namen")
 
+    # ── Laag 8: Adresherkenning ──
+    stap8 = _adres_scan(stap7)
+    if stap7 != stap8:
+        audit["waarschuwingen"].append("Laag 8: adresgegevens gevonden en vervangen")
+
+    # ── Laag 9: Telefoonnummers ──
+    stap9 = _telefoon_scan(stap8)
+    if stap8 != stap9:
+        audit["waarschuwingen"].append("Laag 9: telefoonnummer gevonden en vervangen")
+
+    # ── Laag 10: E-mailadressen ──
+    stap10 = _email_scan(stap9)
+    if stap9 != stap10:
+        audit["waarschuwingen"].append("Laag 10: e-mailadres gevonden en vervangen")
+
+    # ── Laag 11: Schoolnamen ──
+    stap11 = _school_scan(stap10)
+    if stap10 != stap11:
+        audit["waarschuwingen"].append("Laag 11: schoolnaam gevonden en vervangen")
+
+    # ── Laag 12: Medische termen ──
+    stap12 = _medisch_scan(stap11)
+    if stap11 != stap12:
+        audit["waarschuwingen"].append("Laag 12: medische term gevonden en vervangen")
+
+    # ── Laag 13: Gevoelige categorieën (AVG Art. 9) ──
+    stap13 = _gevoelig_scan(stap12)
+    if stap12 != stap13:
+        audit["waarschuwingen"].append("Laag 13: gevoelig begrip gevonden en vervangen")
+
+    # ── Laag 15: Leerkrachtnamen ──
+    stap15 = _leerkracht_scan(stap13)
+    if stap13 != stap15:
+        audit["waarschuwingen"].append("Laag 15: leerkrachtnaam gevonden en vervangen")
+
+    # ── Laag 16: Datumcombinaties ──
+    stap16 = _datum_combinatie_scan(stap15)
+    if stap15 != stap16:
+        audit["waarschuwingen"].append("Laag 16: datum/jaar gevonden en vervangen")
+
+    # ── Laag 17: Kruisreferentie check ──
+    stap17 = _kruisreferentie_check(stap16)
+    if stap16 != stap17:
+        audit["waarschuwingen"].append("Laag 17: kruisreferentie gedetecteerd en verwijderd")
+
     _privacy_log.info(
         f"Privacy audit voltooid: {len(audit['waarschuwingen'])} waarschuwing(en). "
-        f"Alle 7 lagen doorlopen."
+        f"Alle lagen doorlopen (1-13, 15-17)."
     )
 
-    return stap7, naam_mapping
+    return stap17, naam_mapping
 
 # ══════════════════════════════════════════════════════════
 # STATISCHE BESTANDEN
@@ -1934,6 +2179,8 @@ async def genereer_batch_rapporten(
             )
 
             tekst = await roep_claude_aan(SYSTEM_PROMPT, prompt, max_tokens=1200)
+            # Laag 19: output-filter — scan gegenereerde tekst op resterende namen
+            tekst = await _output_filter(tekst, naam, _get_claude_client())
 
             try:
                 parsed = _veilig_json_parse(tekst)
@@ -2207,6 +2454,7 @@ async def opp(verzoek: OppVerzoek, user=Depends(get_user), credentials: HTTPAuth
     parts.append(f'Notities van de leerkracht:\n"{notities_anon}"')
 
     tekst = await roep_claude_aan(OPP_PROMPT, "\n".join(parts), max_tokens=2500)
+    tekst = await _output_filter(tekst, verzoek.naam, _get_claude_client())  # Laag 19
     tekst = herstel_pseudoniem(tekst, naam_mapping)
 
     try:
@@ -2580,6 +2828,7 @@ async def handelingsplan(verzoek: HandelingsplanVerzoek, user=Depends(get_user),
     parts.append(f'Notities van de leerkracht:\n"{notities_anon}"')
 
     tekst = await roep_claude_aan(HANDELINGSPLAN_PROMPT, "\n".join(parts), max_tokens=2500)
+    tekst = await _output_filter(tekst, verzoek.naam, _get_claude_client())  # Laag 19
     tekst = herstel_pseudoniem(tekst, naam_mapping)
 
     try:
